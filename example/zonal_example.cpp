@@ -86,9 +86,6 @@ int main(int argc, char** argv) {
 
                 GDALRasterIO(band, GF_Read, rci.min_col(), rci.min_row(), rci.cols(), rci.rows(), m.data(), rci.cols(), rci.rows(), GDT_Float32, 0, 0);
 
-                //std::cout << m << std::endl << std::endl;
-                //std::cout << rci.overlap_areas() << std::endl << std::endl;
-
                 float wm = weighted_mean(rci, m, -999);
                 std::cout << wm << std::endl;
 

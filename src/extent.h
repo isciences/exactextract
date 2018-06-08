@@ -22,8 +22,8 @@ class Extent {
 
     size_t get_column(double x) const;
     size_t get_row(double x) const;
-    size_t num_rows() const { return m_num_rows; }
-    size_t num_cols() const { return m_num_cols; }
+    size_t rows() const { return m_num_rows; }
+    size_t cols() const { return m_num_cols; }
     size_t row_offset() const { return m_first_row; }
     size_t col_offset() const { return m_first_col; }
 

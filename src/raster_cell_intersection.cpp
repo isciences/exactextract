@@ -23,10 +23,10 @@ RasterCellIntersection::RasterCellIntersection(const Extent & raster_extent, con
     m_geometry_extent = raster_extent.shrink_to_fit(geos_get_box(g));
 
     m_min_row = m_geometry_extent.row_offset();
-    m_max_row = m_min_row + m_geometry_extent.num_rows();
+    m_max_row = m_min_row + m_geometry_extent.rows();
 
     m_min_col = m_geometry_extent.col_offset();
-    m_max_col = m_min_col + m_geometry_extent.num_cols();
+    m_max_col = m_min_col + m_geometry_extent.cols();
 
     m_overlap_areas = std::make_unique<Matrix<float>>(m_max_row - m_min_row, m_max_col - m_min_col);
 
@@ -55,14 +55,14 @@ void RasterCellIntersection::process_ring(const GEOSGeometry* ls, bool exterior_
 
     Extent ring_extent = m_geometry_extent.shrink_to_fit(geos_get_box(ls));
 
-    size_t rows = ring_extent.num_rows();
-    size_t cols = ring_extent.num_cols();
+    size_t rows = ring_extent.rows();
+    size_t cols = ring_extent.cols();
 
     // TODO avoid copying matrix when geometry has only one polygon, and polygon has only one ring
     Matrix<float> areas(rows, cols);
     Matrix<std::unique_ptr<Cell>> cells(rows, cols);
 
-    std::deque<Coordinate> stk; 
+    std::deque<Coordinate> stk;
     {
         unsigned int npoints = geos_get_num_points(seq);
 
@@ -79,7 +79,7 @@ void RasterCellIntersection::process_ring(const GEOSGeometry* ls, bool exterior_
             }
         }
     }
-    
+
     size_t row = ring_extent.get_row(stk.front().y);
     size_t col = ring_extent.get_column(stk.front().x);
 
