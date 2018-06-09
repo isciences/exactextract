@@ -5,15 +5,15 @@
 TEST_CASE( "Extent dimensions calculated correctly", "[extent]") {
     Extent ex{-180, -90, 180, 90, 0.5, 0.5};
 
-    CHECK( ex.num_rows() == 360);
-    CHECK( ex.num_cols() == 720);
+    CHECK( ex.rows() == 360);
+    CHECK( ex.cols() == 720);
     }
 
     TEST_CASE( "Extent dimension robustness", "[extent]") {
     Extent ex{8.5, 1.6, 16.2, 13.1, 0.1, 0.1};
 
-    CHECK(ex.num_cols() == 77);
-    CHECK(ex.num_rows() == 115);
+    CHECK(ex.cols() == 77);
+    CHECK(ex.rows() == 115);
 }
 
 TEST_CASE( "Extent index lookups are correct", "[extent]") {
@@ -61,8 +61,8 @@ TEST_CASE("Repeated shrink has no effect", "[extent]") {
     Extent ex2 = ex.shrink_to_fit(x0, y0, x1, y1);
     Extent ex3 = ex2.shrink_to_fit(x0, y0, x1, y1);
 
-    CHECK( ex2.num_rows() == ex3.num_rows() );
-    CHECK( ex2.num_cols() == ex3.num_cols() );
+    CHECK( ex2.rows() == ex3.rows() );
+    CHECK( ex2.cols() == ex3.cols() );
 }
 
 TEST_CASE("Shrink robustness", "[extent]") {
