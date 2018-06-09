@@ -8,7 +8,7 @@ include(GNUInstallDirs)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(GEOS REQUIRED)
-find_package(GDAL REQUIRED)
+find_package(GDAL)
 
 set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
 set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
@@ -74,29 +74,33 @@ target_include_directories(
 
 add_executable(catch_tests ${TEST_SOURCES})
 
-add_executable(zonal_example
-        example/zonal_example.cpp
+
+if (GDAL_FOUND)
+    add_executable(zonal_example
+            example/zonal_example.cpp
+            )
+
+    target_compile_features(
+            zonal_example PUBLIC cxx_std_14
     )
 
-target_compile_features(
-        zonal_example PUBLIC cxx_std_14
-)
+    target_link_libraries(
+            zonal_example
+            PRIVATE
+                ${LIB_NAME}
+                ${GDAL_LIBRARY}
+                ${GEOS_LIBRARY}
+    )
 
-target_link_libraries(
-        zonal_example
-        PRIVATE
-            ${LIB_NAME}
-            ${GDAL_LIBRARY}
-            ${GEOS_LIBRARY}
-)
+    target_include_directories(
+            zonal_example
+            PRIVATE
+                ${GDAL_INCLUDE_DIR}
+                ${GEOS_INCLUDE_DIR}
+                ${CMAKE_SOURCE_DIR}/src
+    )
 
-target_include_directories(
-        zonal_example
-        PRIVATE
-            ${GDAL_INCLUDE_DIR}
-            ${GEOS_INCLUDE_DIR}
-            ${CMAKE_SOURCE_DIR}/src
-)
+endif(GDAL_FOUND)
 
 target_compile_features(
         catch_tests PUBLIC cxx_std_14
