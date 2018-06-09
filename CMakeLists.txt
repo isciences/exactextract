@@ -3,6 +3,10 @@ project(exactextract)
 
 set(LIB_NAME exactextract)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
@@ -62,10 +66,6 @@ set(TEST_SOURCES
 
 add_library(${LIB_NAME} SHARED ${PROJECT_SOURCES})
 
-target_compile_features(
-        ${LIB_NAME} PUBLIC cxx_std_14
-)
-
 target_include_directories(
         ${LIB_NAME}
         PRIVATE
@@ -79,10 +79,6 @@ if (GDAL_FOUND)
     add_executable(zonal_example
             example/zonal_example.cpp
             )
-
-    target_compile_features(
-            zonal_example PUBLIC cxx_std_14
-    )
 
     target_link_libraries(
             zonal_example
@@ -101,10 +97,6 @@ if (GDAL_FOUND)
     )
 
 endif(GDAL_FOUND)
-
-target_compile_features(
-        catch_tests PUBLIC cxx_std_14
-)
 
 target_include_directories(
         catch_tests
