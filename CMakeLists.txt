@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
-project(raster_overlay_cpp)
+project(exactextract)
+
+set(LIB_NAME exactextract)
 
 include(GNUInstallDirs)
 
@@ -58,9 +60,21 @@ set(TEST_SOURCES
         test/test_traversal_areas.cpp
 )
 
-add_executable(catch_tests ${PROJECT_SOURCES} ${TEST_SOURCES})
+add_library(${LIB_NAME} SHARED ${PROJECT_SOURCES})
 
-add_executable(zonal_example ${PROJECT_SOURCES}
+target_compile_features(
+        ${LIB_NAME} PUBLIC cxx_std_14
+)
+
+target_include_directories(
+        ${LIB_NAME}
+        PRIVATE
+            ${GEOS_INCLUDE_DIR}
+)
+
+add_executable(catch_tests ${TEST_SOURCES})
+
+add_executable(zonal_example
         example/zonal_example.cpp
     )
 
@@ -71,6 +85,7 @@ target_compile_features(
 target_link_libraries(
         zonal_example
         PRIVATE
+            ${LIB_NAME}
             ${GDAL_LIBRARY}
             ${GEOS_LIBRARY}
 )
@@ -98,6 +113,7 @@ target_include_directories(
 target_link_libraries(
         catch_tests
         PRIVATE
+            ${LIB_NAME}
             ${GEOS_LIBRARY}
 )
 
