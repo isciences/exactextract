@@ -2,6 +2,8 @@
 
 #include "box.h"
 
+using namespace exactextract;
+
 TEST_CASE("Box dimensions are calculated correctly", "[box]" ) {
     Box b{5, 7, 7, 10};
 

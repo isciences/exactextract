@@ -3,15 +3,18 @@
 
 #include <iostream>
 
-enum class Side {
-    NONE,
-    LEFT,
-    RIGHT,
-    TOP,
-    BOTTOM
-};
+namespace exactextract {
 
-std::ostream& operator<< (std::ostream & os, const Side & s);
+    enum class Side {
+        NONE,
+        LEFT,
+        RIGHT,
+        TOP,
+        BOTTOM
+    };
+
+    std::ostream &operator<<(std::ostream &os, const Side &s);
+
+}
 
 #endif
-

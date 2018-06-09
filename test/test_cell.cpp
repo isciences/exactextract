@@ -2,6 +2,8 @@
 
 #include "cell.h"
 
+using namespace exactextract;
+
 TEST_CASE("Test multi-traversal area calculations", "[cell]" ) {
     Cell c{0, 0, 20, 20};
 

@@ -8,6 +8,8 @@
 
 #define CHECK_BOUNDS false
 
+namespace exactextract {
+
 template<typename T>
 class Matrix {
 
@@ -108,6 +110,8 @@ std::ostream& operator<<(std::ostream & os, const Matrix<T> & m) {
     }
 
     return os;
+}
+
 }
 
 #endif

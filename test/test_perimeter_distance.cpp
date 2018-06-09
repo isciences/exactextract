@@ -2,6 +2,8 @@
 
 #include "perimeter_distance.h"
 
+using namespace exactextract;
+
 TEST_CASE( "Perimeter distance from origin", "[perimeter-distance]" ) {
     Box b{0, 0, 13, 17};
 

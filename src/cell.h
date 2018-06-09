@@ -7,44 +7,51 @@
 #include "side.h"
 #include "traversal.h"
 
-class Cell {
+namespace exactextract {
+
+    class Cell {
 
     public:
 
-    Cell(double xmin, double ymin, double xmax, double ymax) :
-        m_box{xmin, ymin, xmax, ymax} {}
+        Cell(double xmin, double ymin, double xmax, double ymax) :
+                m_box{xmin, ymin, xmax, ymax} {}
 
-    void force_exit();
+        void force_exit();
 
-    double width() const;
-    double height() const;
-    double area() const;
+        double width() const;
 
-    double covered_fraction() const;
+        double height() const;
 
-    Traversal& last_traversal();
-    const Box& box() const { return m_box; }
+        double area() const;
 
-    bool take(const Coordinate & c);
+        double covered_fraction() const;
+
+        Traversal &last_traversal();
+
+        const Box &box() const { return m_box; }
+
+        bool take(const Coordinate &c);
 
     private:
         enum class Location {
             INSIDE, OUTSIDE, BOUNDARY
         };
 
-    Box m_box;
+        Box m_box;
 
-    std::vector<Traversal> m_traversals;
+        std::vector<Traversal> m_traversals;
 
-    Side side(const Coordinate & c) const;
+        Side side(const Coordinate &c) const;
 
-    Location location(const Coordinate & c) const;
+        Location location(const Coordinate &c) const;
 
-    Traversal& traversal_in_progress();
+        Traversal &traversal_in_progress();
 
-    friend std::ostream& operator<< (std::ostream & os, const Cell & c);
-};
+        friend std::ostream &operator<<(std::ostream &os, const Cell &c);
+    };
 
-std::ostream& operator<< (std::ostream & os, const Cell & c);
+    std::ostream &operator<<(std::ostream &os, const Cell &c);
+
+}
 
 #endif

@@ -2,6 +2,8 @@
 
 #include "traversal_areas.h"
 
+using namespace exactextract;
+
 TEST_CASE("Exit from same side as entry", "[traversal-areas]" ) {
     Box b{0, 0, 10, 10};
 

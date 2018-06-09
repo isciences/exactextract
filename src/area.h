@@ -7,7 +7,12 @@
 
 #include "coordinate.h"
 
-double area_signed(const std::vector<Coordinate> & ring);
-double area(const std::vector<Coordinate> & ring);
+namespace exactextract {
+
+    double area_signed(const std::vector<Coordinate> &ring);
+
+    double area(const std::vector<Coordinate> &ring);
+
+}
 
 #endif

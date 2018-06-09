@@ -2,6 +2,8 @@
 
 #include "extent.h"
 
+using namespace exactextract;
+
 TEST_CASE( "Extent dimensions calculated correctly", "[extent]") {
     Extent ex{-180, -90, 180, 90, 0.5, 0.5};
 

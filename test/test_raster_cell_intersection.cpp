@@ -5,6 +5,8 @@
 #include "geos_utils.h"
 #include "raster_cell_intersection.h"
 
+using namespace exactextract;
+
 void check_cell_intersections(const RasterCellIntersection & rci, const std::vector<std::vector<float>> & v) {
     const Matrix<float>& actual = rci.overlap_areas();
     Matrix<float> expected{v};

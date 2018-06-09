@@ -4,27 +4,31 @@
 #include <cmath>
 #include <iostream>
 
-struct Coordinate {
-    double x;
-    double y;
+namespace exactextract {
 
-    Coordinate() {}
+    struct Coordinate {
+        double x;
+        double y;
 
-    Coordinate(double x, double y) : x{x}, y{y} {}
+        Coordinate() {}
 
-    bool equals(const Coordinate & other, double tol) const {
-        return std::abs(other.x - x) < tol && std::abs(other.y - y) < tol;
-    }
+        Coordinate(double x, double y) : x{x}, y{y} {}
 
-    bool operator==(const Coordinate & other) const {
-        return x == other.x && y == other.y;
-    }
+        bool equals(const Coordinate &other, double tol) const {
+            return std::abs(other.x - x) < tol && std::abs(other.y - y) < tol;
+        }
 
-    bool operator!=(const Coordinate & other) const {
-        return !(*this == other);
-    }
-};
+        bool operator==(const Coordinate &other) const {
+            return x == other.x && y == other.y;
+        }
 
-std::ostream& operator<< (std::ostream & os, const Coordinate & c);
+        bool operator!=(const Coordinate &other) const {
+            return !(*this == other);
+        }
+    };
+
+    std::ostream &operator<<(std::ostream &os, const Coordinate &c);
+
+}
 
 #endif
