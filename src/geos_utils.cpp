@@ -60,10 +60,10 @@ bool segment_intersection(const Coordinate & a0, const Coordinate & a1, const Co
 Box geos_get_box(const GEOSGeometry *g) {
     double xmin, ymin, xmax, ymax;
 #if HAVE_370
-    if (!(GEOSGeom_getXMin(g, xmin) &&
-          GEOSGeom_getYMin(g, ymin) &&
-          GEOSGeom_getXMax(g, xmax) &&
-          GEOSGeom_getYMax(g, ymax))) {
+    if (!(GEOSGeom_getXMin(g, &xmin) &&
+          GEOSGeom_getYMin(g, &ymin) &&
+          GEOSGeom_getXMax(g, &xmax) &&
+          GEOSGeom_getYMax(g, &ymax))) {
         throw std::runtime_error("Error getting geometry extent.");
     }
 #else
@@ -97,7 +97,7 @@ bool geos_is_ccw(const GEOSCoordSequence* s) {
 #if HAVE_370
     char result;
     if (!GEOSCoordSeq_isCCW(s, &result)) {
-        throw std::runtime_error("Error calling GEOSCoordSeq_isCCW.")
+        throw std::runtime_error("Error calling GEOSCoordSeq_isCCW.");
     }
     return result;
 #else
