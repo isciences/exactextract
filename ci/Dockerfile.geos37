@@ -17,5 +17,6 @@ RUN wget https://github.com/dbaston/libgeos/archive/trac-882.zip -O geos.zip && 
     cd / && \
     rm -rf /geos-build && \
     rm -rf /libgeos-trac-882 && \
-    rm /geos.zip
+    rm /geos.zip && \
+    ldconfig
   

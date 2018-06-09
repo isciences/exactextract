@@ -7,3 +7,12 @@ test-stable:
                 - make catch_tests
                 - ./catch_tests
 
+test-geos37:
+        image: isciences/exactextract-build-env:geos37
+        script:
+                - mkdir build-master
+                - cd build-master
+                - cmake ..
+                - make catch_tests
+                - ./catch_tests
+
