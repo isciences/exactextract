@@ -2,6 +2,7 @@ Makefile
 cmake-build-debug
 *.csv
 *.o
+*.swp
 .vscode
 zonal_test
 .idea/

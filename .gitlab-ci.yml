@@ -1,0 +1,9 @@
+test-stable:
+        image: isciences/exactextract-build-env:stable
+        script:
+                - mkdir build-master
+                - cd build-master
+                - cmake ..
+                - make catch_tests
+                - ./catch_tests
+
