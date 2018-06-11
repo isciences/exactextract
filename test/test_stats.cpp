@@ -37,8 +37,8 @@ namespace exactextract {
         RasterStats<float> stats{rci, values};
 
         CHECK( stats.count() ==
-               (0.25 + 0.5 + 0.25 ) +
-               (0.50 + 1.0 + 0.50 ) +
+               (0.25 + 0.5 + 0.25) +
+               (0.50 + 1.0 + 0.50) +
                (0.25 + 0.0 + 0.25)
         );
 

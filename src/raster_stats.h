@@ -26,7 +26,9 @@ namespace exactextract {
                     T val = rast(i, j);
                     float weight = rci.get(i, j);
 
-                    if (weight > 0 && !std::isnan(val) && (nodata == nullptr || val != *nodata)) {
+                    if (weight > 0 &&
+                        !(std::is_floating_point<T>::value && std::isnan(val)) &&
+                        (nodata == nullptr || val != *nodata)) {
                         m_weights += weight;
                         m_weighted_vals += weight * val;
 
