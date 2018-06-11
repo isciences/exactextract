@@ -62,7 +62,7 @@ set(TEST_SOURCES
         test/test_perimeter_distance.cpp
         test/test_raster_cell_intersection.cpp
         test/test_traversal_areas.cpp
-)
+        test/test_stats.cpp)
 
 add_library(${LIB_NAME} SHARED ${PROJECT_SOURCES})
 

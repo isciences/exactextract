@@ -21,7 +21,7 @@ void check_cell_intersections(const RasterCellIntersection & rci, const std::vec
     }
 }
 
-void init_geos() {
+static void init_geos() {
     static bool initialized = false;
 
     if (!initialized) {
