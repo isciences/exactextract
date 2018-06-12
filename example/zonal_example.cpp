@@ -15,7 +15,7 @@
 #include "raster_stats.h"
 #include "raster_cell_intersection.h"
 
-Extent get_raster_extent(GDALDataset* rast) {
+exactextract::Extent get_raster_extent(GDALDataset* rast) {
     double adfGeoTransform[6];
     if (rast->GetGeoTransform(adfGeoTransform) != CE_None) {
         throw std::runtime_error("Error reading transform");
@@ -56,8 +56,8 @@ int main(int argc, char** argv) {
     GDALDataset* shp = (GDALDataset*) GDALOpenEx(poly_filename, GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
     OGRLayer* polys = shp->GetLayer(0);
 
-    Extent raster_extent = get_raster_extent(rast);
-    geom_ptr box = geos_make_box_polygon(raster_extent.xmin, raster_extent.ymin, raster_extent.xmax, raster_extent.ymax);
+    exactextract::Extent raster_extent = get_raster_extent(rast);
+    exactextract::geom_ptr box = exactextract::geos_make_box_polygon(raster_extent.xmin, raster_extent.ymin, raster_extent.xmax, raster_extent.ymax);
 
     OGRFeature* feature;
     polys->ResetReading();
@@ -73,16 +73,16 @@ int main(int argc, char** argv) {
         if (strlen(filter) == 0 || name == filter) {
             std::cout << name << ": ";
 
-            geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
+            exactextract::geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
 
             if (!GEOSContains(box.get(), geom.get())) {
                 geom = { GEOSIntersection(box.get(), geom.get()), GEOSGeom_destroy };
             }
 
             try {
-                RasterCellIntersection rci(raster_extent, geom.get());
+                exactextract::RasterCellIntersection rci(raster_extent, geom.get());
 
-                Matrix<float> m(rci.rows(), rci.cols());
+                exactextract::Matrix<float> m(rci.rows(), rci.cols());
 
                 GDALRasterIO(band, GF_Read, rci.min_col(), rci.min_row(), rci.cols(), rci.rows(), m.data(), rci.cols(), rci.rows(), GDT_Float32, 0, 0);
 
