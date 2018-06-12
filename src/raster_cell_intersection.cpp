@@ -35,7 +35,12 @@ namespace exactextract {
             throw std::invalid_argument("Can't get statistics for empty geometry");
         }
 
-        m_geometry_extent = raster_extent.shrink_to_fit(geos_get_box(g));
+        try {
+            m_geometry_extent = raster_extent.shrink_to_fit(geos_get_box(g));
+        } catch (const std::range_error & e) {
+            throw std::runtime_error("Can't shrink raster extent to fit geometry. "
+                                     "Is the geometry extent larger than the raster?");
+        }
 
         m_min_row = m_geometry_extent.row_offset();
         m_max_row = m_min_row + m_geometry_extent.rows();

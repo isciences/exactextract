@@ -47,7 +47,6 @@ TEST_CASE("Basic", "[raster-cell-intersection]" ) {
 
 }
 
-
 TEST_CASE("Diagonals", "[raster-cell-intersection]") {
     init_geos();
 
@@ -289,4 +288,15 @@ TEST_CASE("Result indexing is correct", "[raster-cell-intersection]") {
     }};
 
     CHECK( actual == expected );
+}
+
+TEST_CASE("Sensible error when geometry extent is larger than raster", "[raster-cell-intersection]") {
+    init_geos();
+
+    Extent ex{-180, -90, 180, 90, 0.5, 0.5};
+
+    auto g = GEOSGeom_read("POLYGON ((-179 0, 180.000000004 0, 180 1, -179 0))");
+
+    CHECK_THROWS_WITH( RasterCellIntersection(ex, g.get()),
+                       Catch::Matchers::Contains("geometry extent larger than the raster") );
 }
