@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PERIMETERDISTANCE_H
-#define PERIMETERDISTANCE_H
+#ifndef EXACTEXTRACT_PERIMETERDISTANCE_H
+#define EXACTEXTRACT_PERIMETERDISTANCE_H
 
 #include "box.h"
 #include "coordinate.h"

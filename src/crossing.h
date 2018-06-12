@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef CELL_CROSSING_H
-#define CELL_CROSSING_H
+#ifndef EXACTEXTRACT_CELL_CROSSING_H
+#define EXACTEXTRACT_CELL_CROSSING_H
 
 #include "coordinate.h"
 #include "side.h"

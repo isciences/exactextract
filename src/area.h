@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef AREA_H
-#define AREA_H
+#ifndef EXACTEXTRACT_AREA_H
+#define EXACTEXTRACT_AREA_H
 
 #include <cmath>
 #include <vector>

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTENT_H
-#define EXTENT_H
+#ifndef EXACTEXTRACT_EXTENT_H
+#define EXACTEXTRACT_EXTENT_H
 
 #include <memory>
 

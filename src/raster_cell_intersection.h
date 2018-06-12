@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RASTER_CELL_INTERSECTION_H
-#define RASTER_CELL_INTERSECTION_H
+#ifndef EXACTEXTRACT_RASTER_CELL_INTERSECTION_H
+#define EXACTEXTRACT_RASTER_CELL_INTERSECTION_H
 
 #include <memory>
 

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef CELL_H
-#define CELL_H
+#ifndef EXACTEXTRACT_CELL_H
+#define EXACTEXTRACT_CELL_H
 
 #include "box.h"
 #include "crossing.h"

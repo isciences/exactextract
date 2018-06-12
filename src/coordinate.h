@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef COORDINATE_H
-#define COORDINATE_H
+#ifndef EXACTEXTRACT_COORDINATE_H
+#define EXACTEXTRACT_COORDINATE_H
 
 #include <cmath>
 #include <iostream>

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RASTER_STATS_H
-#define RASTER_STATS_H
+#ifndef EXACTEXTRACT_RASTER_STATS_H
+#define EXACTEXTRACT_RASTER_STATS_H
 
 #include <algorithm>
 #include <limits>

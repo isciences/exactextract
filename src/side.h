@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SIDE_H
-#define SIDE_H
+#ifndef EXACTEXTRACT_SIDE_H
+#define EXACTEXTRACT_SIDE_H
 
 #include <iostream>
 

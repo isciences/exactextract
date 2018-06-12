@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef MATRIX_H
-#define MATRIX_H
+#ifndef EXACTEXTRACT_MATRIX_H
+#define EXACTEXTRACT_MATRIX_H
 
 #include <iomanip>
 #include <iterator>

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef TRAVERSAL_H
-#define TRAVERSAL_H
+#ifndef EXACTEXTRACT_TRAVERSAL_H
+#define EXACTEXTRACT_TRAVERSAL_H
 
 #include <vector>
 

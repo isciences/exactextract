@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BOX_H
-#define BOX_H
+#ifndef EXACTEXTRACT_BOX_H
+#define EXACTEXTRACT_BOX_H
 
 #include "coordinate.h"
 #include "crossing.h"

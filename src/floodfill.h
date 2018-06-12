@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef FLOODFILL_H
-#define FLOODFILL_H
+#ifndef EXACTEXTRACT_FLOODFILL_H
+#define EXACTEXTRACT_FLOODFILL_H
 
 #include <queue>
 

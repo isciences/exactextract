@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RASTER_OVERLAY_CPP_GEOS_UTILS_H
-#define RASTER_OVERLAY_CPP_GEOS_UTILS_H
+#ifndef EXACTEXTRACT_GEOS_UTILS_H
+#define EXACTEXTRACT_GEOS_UTILS_H
 
 #include <algorithm>
 #include <limits>
