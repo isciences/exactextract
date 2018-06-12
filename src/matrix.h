@@ -14,6 +14,8 @@ template<typename T>
 class Matrix {
 
     public:
+        using value_type = T;
+
         Matrix(size_t rows, size_t cols) :
             m_rows{rows},
             m_cols{cols}

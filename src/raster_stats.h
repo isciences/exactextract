@@ -9,11 +9,13 @@
 
 namespace exactextract {
 
-    template<typename T>
+    template<typename Container>
     class RasterStats {
 
+    using T= typename Container::value_type;
+
     public:
-        RasterStats(const RasterCellIntersection & rci, const Matrix<T> & rast, const T* nodata = nullptr) :
+        RasterStats(const RasterCellIntersection & rci, const Container & rast, const T* nodata = nullptr) :
                 m_max{std::numeric_limits<T>::lowest()},
                 m_min{std::numeric_limits<T>::max()},
                 m_rows{rci.rows()},
