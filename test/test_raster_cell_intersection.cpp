@@ -44,7 +44,6 @@ TEST_CASE("Basic", "[raster-cell-intersection]" ) {
             {0.50, 1.0, 0.50},
             {0.25, 0.5, 0.25}
     });
-
 }
 
 TEST_CASE("Diagonals", "[raster-cell-intersection]") {
@@ -103,7 +102,7 @@ TEST_CASE("Bouncing off boundary (2)", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 1.5 0.5, 1.5 1.5, 0.5 1.5, 1 1.2, 0.5 0.5))");
 
-    RasterCellIntersection rci{ex, g.get()}; // shouldn't throw
+    CHECK_NOTHROW( RasterCellIntersection(ex, g.get()) );
 }
 
 
@@ -171,7 +170,6 @@ TEST_CASE("Starts on vertical boundary, moving down at rightmost extent of grid"
             {0.50, 1.0, 1.0},
             {0.25, 0.5, 0.5},
     });
-
 }
 
 TEST_CASE("Starts on horizontal boundary, moving right", "[raster-cell-intersection]") {
@@ -217,7 +215,7 @@ TEST_CASE("Regression test - Fiji", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("MULTIPOLYGON (((178.3736000000001 -17.33992000000002, 178.71806000000007 -17.62845999999996, 178.5527099999999 -18.150590000000008, 177.93266000000008 -18.287990000000036, 177.38145999999992 -18.164319999999975, 177.28504000000007 -17.72464999999997, 177.67087 -17.381139999999974, 178.12557000000007 -17.50480999999995, 178.3736000000001 -17.33992000000002)), ((179.36414266196417 -16.801354076946836, 178.7250593629972 -17.012041674368007, 178.5968385951172 -16.63915000000003, 179.0966093629972 -16.43398427754741, 179.4135093629972 -16.379054277547382, 180.00000000000003 -16.06713266364241, 180.00000000000003 -16.555216566639146, 179.36414266196417 -16.801354076946836)), ((-179.91736938476527 -16.501783135649347, -179.99999999999997 -16.555216566639146, -179.99999999999997 -16.06713266364241, -179.79332010904858 -16.020882256741217, -179.91736938476527 -16.501783135649347)))");
 
-    RasterCellIntersection(ex, g.get()); // just don't throw exception
+    CHECK_NOTHROW( RasterCellIntersection(ex, g.get()) );
 }
 
 TEST_CASE("Small polygon", "[raster-cell-intersection]") {
