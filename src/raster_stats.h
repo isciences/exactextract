@@ -29,12 +29,12 @@ namespace exactextract {
 
     public:
         RasterStats(const RasterCellIntersection & rci, const Container & rast, const T* nodata = nullptr) :
-                m_max{std::numeric_limits<T>::lowest()},
                 m_min{std::numeric_limits<T>::max()},
-                m_rows{rci.rows()},
-                m_cols{rci.cols()},
+                m_max{std::numeric_limits<T>::lowest()},
                 m_weights{0},
-                m_weighted_vals{0} {
+                m_weighted_vals{0},
+                m_rows{rci.rows()},
+                m_cols{rci.cols()} {
 
             for (size_t i = rci.min_row(); i < rci.max_row(); i++) {
                 for (size_t j = rci.min_col(); j < rci.max_col(); j++) {

@@ -221,8 +221,9 @@ namespace exactextract {
 
                 return SegmentOrientation::ANGLED;
             }
-
         }
+
+        throw std::runtime_error("Couldn't find segment orientation.");
     }
 
 }

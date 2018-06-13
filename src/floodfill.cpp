@@ -23,9 +23,9 @@
 namespace exactextract {
 
     FloodFill::FloodFill(const GEOSGeometry *g, const Extent &extent) :
+            m_extent{extent},
             m_g{nullptr, GEOSGeom_destroy},
-            m_pg{nullptr, GEOSPreparedGeom_destroy},
-            m_extent{extent} {
+            m_pg{nullptr, GEOSPreparedGeom_destroy} {
         geom_ptr ring_copy{GEOSGeom_clone(g), GEOSGeom_destroy};
         m_g = {GEOSGeom_createPolygon(ring_copy.release(), nullptr, 0), GEOSGeom_destroy};
         m_pg = {GEOSPrepare(m_g.get()), GEOSPreparedGeom_destroy};
