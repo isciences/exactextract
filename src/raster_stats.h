@@ -28,41 +28,39 @@ namespace exactextract {
     using T= typename Container::value_type;
 
     public:
-        RasterStats(const RasterCellIntersection & rci, const Container & rast, const T* nodata = nullptr) :
+        /**
+         * Compute raster statistics from the results of a RasterCellIntersection
+         * and a set of raster values.
+         *
+         * If rast_cropped is true, then 'rast' will be assumed to have been
+         * cropped to have the same dimensions as 'rci'. If rast_cropped is
+         * false, then 'rast' should have the same extent and resolution used
+         * to create 'rci'.
+         *
+         * A NODATA value may optionally be provided in addition to NaN.
+         */
+        RasterStats(const RasterCellIntersection & rci, const Container & rast, bool rast_cropped, const T* nodata = nullptr) :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_weights{0},
                 m_weighted_vals{0},
                 m_rows{rci.rows()},
-                m_cols{rci.cols()} {
+                m_cols{rci.cols()},
+                m_nodata{nodata} {
 
-            for (size_t i = rci.min_row(); i < rci.max_row(); i++) {
-                for (size_t j = rci.min_col(); j < rci.max_col(); j++) {
-                    T val = rast(i, j);
-                    float weight = rci.get(i, j);
-
-                    if (weight > 0 &&
-                        !(std::is_floating_point<T>::value && std::isnan(val)) &&
-                        (nodata == nullptr || val != *nodata)) {
-                        m_weights += weight;
-                        m_weighted_vals += weight * val;
-
-                        if (val < m_min) {
-                            m_min = val;
-                        }
-
-                        if (val > m_max) {
-                            m_max = val;
-                        }
-
-                        m_freq[val] += weight;
+            if (rast_cropped) {
+                for (size_t i = 0; i < rci.rows(); i++) {
+                    for (size_t j = 0; j < rci.cols(); j++) {
+                        process(rast(i, j), rci.get_local(i, j));
                     }
-
-
+                }
+            } else {
+                for (size_t i = rci.min_row(); i < rci.max_row(); i++) {
+                    for (size_t j = rci.min_col(); j < rci.max_col(); j++) {
+                        process(rast(i, j), rci.get(i ,j));
+                    }
                 }
             }
-
-
         }
 
         /**
@@ -151,6 +149,27 @@ namespace exactextract {
 
         size_t m_rows;
         size_t m_cols;
+
+        const T* m_nodata;
+
+        void process(const T& val, float weight) {
+            if (weight > 0 &&
+                !(std::is_floating_point<T>::value && std::isnan(val)) &&
+                (m_nodata == nullptr || val != *m_nodata)) {
+                m_weights += weight;
+                m_weighted_vals += weight * val;
+
+                if (val < m_min) {
+                    m_min = val;
+                }
+
+                if (val > m_max) {
+                    m_max = val;
+                }
+
+                m_freq[val] += weight;
+            }
+        }
     };
 
 }

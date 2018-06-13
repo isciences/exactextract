@@ -14,10 +14,9 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <vector>
 
 #include <geos_c.h>
-
-#include "geos_utils.h"
 
 #include "gdal.h"
 #include "gdal_priv.h"
@@ -25,6 +24,7 @@
 #include "ogrsf_frmts.h"
 
 #include "extent.h"
+#include "geos_utils.h"
 #include "raster_stats.h"
 #include "raster_cell_intersection.h"
 
@@ -69,6 +69,9 @@ int main(int argc, char** argv) {
     GDALDataset* shp = (GDALDataset*) GDALOpenEx(poly_filename, GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
     OGRLayer* polys = shp->GetLayer(0);
 
+    int has_nodata;
+    double nodata = GDALGetRasterNoDataValue(band, &has_nodata);
+
     exactextract::Extent raster_extent = get_raster_extent(rast);
     exactextract::geom_ptr box = exactextract::geos_make_box_polygon(raster_extent.xmin, raster_extent.ymin, raster_extent.xmax, raster_extent.ymax);
 
@@ -79,6 +82,8 @@ int main(int argc, char** argv) {
     csvout.open(output_filename);
 
     csvout << field_name << ",avg" << std::endl;;
+
+    std::vector<std::string> failures;
 
     while ((feature = polys->GetNextFeature()) != nullptr) {
         std::string name{feature->GetFieldAsString(field_name)};
@@ -95,21 +100,30 @@ int main(int argc, char** argv) {
             try {
                 exactextract::RasterCellIntersection rci(raster_extent, geom.get());
 
-                exactextract::Matrix<float> m(rci.rows(), rci.cols());
+                exactextract::Matrix<double> m(rci.rows(), rci.cols());
 
-                GDALRasterIO(band, GF_Read, rci.min_col(), rci.min_row(), rci.cols(), rci.rows(), m.data(), rci.cols(), rci.rows(), GDT_Float32, 0, 0);
+                GDALRasterIO(band, GF_Read, rci.min_col(), rci.min_row(), rci.cols(), rci.rows(), m.data(), rci.cols(), rci.rows(), GDT_Float64, 0, 0);
 
-                exactextract::RasterStats stats{rci, m};
+                exactextract::RasterStats<decltype(m)> stats{rci, m, true, has_nodata ? &nodata : nullptr};
+
                 double weighted_mean = stats.mean();
 
-                std::cout << weighted_mean;
+                std::cout << weighted_mean << std::endl;
 
                 csvout << "\"" << name << "\"" << "," << weighted_mean << std::endl;
             } catch (...) {
+                failures.push_back(name);
                 std::cout << "failed." << std::endl;
             }
         }
         OGRFeature::DestroyFeature(feature);
+
+        if (!failures.empty()) {
+            std::cerr << "Failures:" << std::endl;
+            for (const auto& name : failures) {
+                std::cerr << name << std::endl;
+            }
+        }
     }
 
     GDALClose(rast);

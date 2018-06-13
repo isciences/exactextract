@@ -34,7 +34,7 @@ namespace exactextract {
                                       {1, 1,   1, 1, 1}
                               });
 
-        RasterStats<Matrix<float>> stats{rci, values};
+        RasterStats<Matrix<float>> stats{rci, values, false};
 
         CHECK( stats.count() ==
                (0.25 + 0.5 + 0.25) +
@@ -78,7 +78,7 @@ namespace exactextract {
                                       {1, 1,      1, 1, 1}
                               });
 
-        RasterStats<Matrix<int>> stats{rci, values, &NODATA};
+        RasterStats<Matrix<int>> stats{rci, values, false, &NODATA};
 
         CHECK( stats.count() ==
                (0.25 + 0.5 + 0.25 ) +
