@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <cstddef>
+#include <stdexcept>
 
 #include "traversal.h"
 

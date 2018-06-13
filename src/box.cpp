@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <cmath>
+#include <stdexcept>
 
 #include "box.h"
 

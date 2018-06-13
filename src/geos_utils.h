@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include <geos_c.h>
