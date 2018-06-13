@@ -80,8 +80,8 @@ namespace exactextract {
          * be returned.
          */
         T mode() {
-            return std::max_element(std::cbegin(m_freq),
-                                    std::cend(m_freq),
+            return std::max_element(m_freq.cbegin(),
+                                    m_freq.cend(),
                                     [](const auto &a, const auto &b) {
                                         return a.second < b.second || (a.second == b.second && a.first < b.first);
                                     })->first;
@@ -125,8 +125,8 @@ namespace exactextract {
          * be returned.
          */
         T minority() {
-            return std::min_element(std::cbegin(m_freq),
-                                    std::cend(m_freq),
+            return std::min_element(m_freq.cbegin(),
+                                    m_freq.cend(),
                                     [](const auto &a, const auto &b) {
                                         return a.second < b.second || (a.second == b.second && a.first < b.first);
                                     })->first;
