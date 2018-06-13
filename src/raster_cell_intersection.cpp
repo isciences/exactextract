@@ -75,7 +75,14 @@ namespace exactextract {
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq(ls);
         bool is_ccw = geos_is_ccw(seq);
 
-        Extent ring_extent = m_geometry_extent.shrink_to_fit(geos_get_box(ls));
+        Extent ring_extent;
+
+        try {
+            ring_extent = m_geometry_extent.shrink_to_fit(geos_get_box(ls));
+        } catch (const std::range_error & e) {
+            throw std::runtime_error("Error shrinking ring extent."
+                                     "Does the polygon have a hole outside of its shell?");
+        }
 
         size_t rows = ring_extent.rows();
         size_t cols = ring_extent.cols();

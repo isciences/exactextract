@@ -298,3 +298,13 @@ TEST_CASE("Sensible error when geometry extent is larger than raster", "[raster-
     CHECK_THROWS_WITH( RasterCellIntersection(ex, g.get()),
                        Catch::Matchers::Contains("geometry extent larger than the raster") );
 }
+
+TEST_CASE("Sensible error when hole is outside of shell", "[raster-cell-intersection]") {
+    init_geos();
+
+    Extent ex{-180, -90, 180, 90, 0.5, 0.5};
+    auto g = GEOSGeom_read("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (9 9, 9 9.1, 10.6 9.1, 9 9))");
+
+    CHECK_THROWS_WITH( RasterCellIntersection(ex, g.get()),
+                       Catch::Matchers::Contains("hole outside of its shell") );
+}
