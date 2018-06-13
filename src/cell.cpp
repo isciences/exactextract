@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <stdexcept>
+
 #include "area.h"
 #include "cell.h"
 #include "crossing.h"
