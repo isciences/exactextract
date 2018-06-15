@@ -19,7 +19,7 @@
 #include <memory>
 #include <cstring>
 
-#define CHECK_BOUNDS false
+#define CHECK_BOUNDS true
 
 namespace exactextract {
 

@@ -308,3 +308,31 @@ TEST_CASE("Sensible error when hole is outside of shell", "[raster-cell-intersec
     CHECK_THROWS_WITH( RasterCellIntersection(ex, g.get()),
                        Catch::Matchers::Contains("hole outside of its shell") );
 }
+
+TEST_CASE("Robustness regression test #1", "[raster-cell-intersection]") {
+    // This test exercises some challenging behavior where a polygon follows
+    // ymin, but the grid resolution is such that ymin < (ymax - ny*dy)
+    init_geos();
+
+    Extent ex{-180, -90, 180, 90, 1.0/6, 1.0/6};
+
+    auto g = GEOSGeom_read(
+#include "resources/antarctica.wkt"
+            );
+
+    CHECK_NOTHROW( RasterCellIntersection(ex, g.get()) );
+}
+
+TEST_CASE("Robustness regression test #2", "[raster-cell-intersection]") {
+    // This test exercises some challenging behavior where a polygon follows
+    // xmax, but the grid resolution is such that xmax < (xmin + nx*dx)
+    init_geos();
+
+    Extent ex{-180, -90, 180, 90, 1.0/6, 1.0/6};
+
+    auto g = GEOSGeom_read(
+#include "resources/russia.wkt"
+    );
+
+    CHECK_NOTHROW( RasterCellIntersection(ex, g.get()) );
+}
