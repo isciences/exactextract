@@ -19,6 +19,16 @@
 
 namespace exactextract {
 
+    static double tol = 5e-14;
+
+    static inline bool lt(double a, double b) {
+        return (b - a) > tol;
+    }
+
+    static inline bool gt(double a, double b) {
+        return lt(b, a);
+    }
+
     Extent::Extent(double xmin, double ymin, double xmax, double ymax, double dx, double dy) :
             xmin{xmin},
             ymin{ymin},
@@ -42,13 +52,13 @@ namespace exactextract {
     }
 
     size_t Extent::get_column(double x) const {
-        if (x < xmin || x > xmax) {
+        if (lt(x, xmin) || gt(x, xmax)) {
             throw std::out_of_range("x");
         }
 
         // special case for xmax, returning the cell for which xmax is the
         // right-hand side
-        if (x == xmax) {
+        if (xmax - x <= tol) {
             return m_num_cols - 1;
         }
 
@@ -56,12 +66,12 @@ namespace exactextract {
     }
 
     size_t Extent::get_row(double y) const {
-        if (y < ymin || y > ymax)
+        if (lt(y, ymin) || gt(y,  ymax))
             throw std::out_of_range("y");
 
         // special case for ymin, returning the cell for which ymin is the
         // bottom
-        if (y == ymin)
+        if (y - ymin <= tol)
             return m_num_rows - 1;
 
         return (size_t) std::floor((ymax - y) / dy);
@@ -72,7 +82,7 @@ namespace exactextract {
     }
 
     Extent Extent::shrink_to_fit(double x0, double y0, double x1, double y1) const {
-        if (x0 < xmin || y0 < ymin || x1 > xmax || y1 > ymax) {
+        if (lt(x0, xmin) || lt(y0, ymin) || gt(x1, xmax) || gt(y1, ymax)) {
             throw std::range_error("Cannot shrink extent to bounds larger than original.");
         }
 
@@ -107,13 +117,13 @@ namespace exactextract {
         // inputs to produce different results.
         Extent reduced(
                 snapped_xmin,
-                snapped_ymax - numRows * dy,
-                snapped_xmin + numCols * dx,
+                std::min(snapped_ymax - numRows * dy, y0),
+                std::max(snapped_xmin + numCols * dx, x1),
                 snapped_ymax,
                 dx,
                 dy);
 
-        if (x0 < reduced.xmin || y0 < reduced.ymin || x1 > reduced.xmax || y1 > reduced.ymax) {
+        if (lt(x0, reduced.xmin) || lt(y0, reduced.ymin) || gt(x1, reduced.xmax) || gt(y1, reduced.ymax)) {
             throw std::runtime_error("Shrink operation failed.");
         }
 
@@ -124,11 +134,17 @@ namespace exactextract {
     }
 
     std::unique_ptr<Cell> Extent::get_cell_ptr(size_t row, size_t col) const {
+        // The ternary clauses below are used to make sure that the cells along
+        // the right and bottom edges of our grid are slightly larger than dx,dy
+        // if needed to make sure that we capture our whole extent. This is necessary
+        // because xmin + nx*dx may be less than xmax because of floating point
+        // errors.
         return std::make_unique<Cell>(
                 xmin + col * dx,
-                ymax - (row + 1) * dy,
-                xmin + (col + 1) * dx,
+                row == (m_num_rows - 1) ? ymin : (ymax - (row + 1) * dy),
+                col == (m_num_cols - 1) ? xmax : (xmin + (col + 1) * dx),
                 ymax - row * dy
+
         );
     }
 

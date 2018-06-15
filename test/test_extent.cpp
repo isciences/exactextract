@@ -26,8 +26,8 @@ TEST_CASE( "Extent index lookups are correct", "[extent]") {
     CHECK( ex.get_row(-89.5) == 359 );
     CHECK( ex.get_row(-90) == 359 );
 
-    CHECK_THROWS( ex.get_row(std::nextafter(-90, -91)) );
-    CHECK_THROWS( ex.get_row(std::nextafter(90, 91)) );
+    CHECK_THROWS( ex.get_row(-90.00000001) );
+    CHECK_THROWS( ex.get_row( 90.00000001) );
 
     CHECK( ex.get_column(-180) == 0 );
     CHECK( ex.get_column(-179.000001) == 0 );
@@ -35,8 +35,8 @@ TEST_CASE( "Extent index lookups are correct", "[extent]") {
     CHECK( ex.get_column(179) == 359 );
     CHECK( ex.get_column(180) == 359 );
 
-    CHECK_THROWS( ex.get_column(std::nextafter(-180, -181)) );
-    CHECK_THROWS( ex.get_column(std::nextafter(180, 181)) );
+    CHECK_THROWS( ex.get_column(-180.0000001) );
+    CHECK_THROWS( ex.get_column( 180.0000001) );
 }
 
 TEST_CASE( "Extent shrink works correctly", "[extent]") {
