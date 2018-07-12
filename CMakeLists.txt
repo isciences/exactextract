@@ -23,6 +23,16 @@ if (NOT EXISTS ${CATCH_INCLUDE})
          SHOW_PROGRESS)
 endif()
 
+set(CLI11_INCLUDE_DIR ${CMAKE_BINARY_DIR}/CLI11)
+set(CLI11_INCLUDE ${CLI11_INCLUDE_DIR}/CLI11.hpp)
+
+if (NOT EXISTS ${CLI11_INCLUDE})
+    file(DOWNLOAD https://github.com/CLIUtils/CLI11/releases/download/v1.6.0/CLI11.hpp
+            ${CLI11_INCLUDE}
+            SHOW_PROGRESS)
+endif()
+
+
 set(PROJECT_SOURCES
         src/area.cpp
         src/area.h
@@ -93,6 +103,7 @@ if (GDAL_FOUND)
             PRIVATE
                 ${GDAL_INCLUDE_DIR}
                 ${GEOS_INCLUDE_DIR}
+                ${CLI11_INCLUDE_DIR}
                 ${CMAKE_SOURCE_DIR}/src
     )
 
