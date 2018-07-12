@@ -16,6 +16,8 @@
 #include <iomanip>
 #include <vector>
 
+#include "CLI11.hpp"
+
 #include <geos_c.h>
 
 #include "gdal.h"
@@ -28,7 +30,7 @@
 #include "raster_stats.h"
 #include "raster_cell_intersection.h"
 
-exactextract::Extent get_raster_extent(GDALDataset* rast) {
+static exactextract::Extent get_raster_extent(GDALDataset* rast) {
     double adfGeoTransform[6];
     if (rast->GetGeoTransform(adfGeoTransform) != CE_None) {
         throw std::runtime_error("Error reading transform");
@@ -53,20 +55,39 @@ exactextract::Extent get_raster_extent(GDALDataset* rast) {
 }
 
 int main(int argc, char** argv) {
-    const char* rast_filename = argc > 1 ? argv[1] : "/tmp/precip.tif";
-    const char* poly_filename = argc > 2 ? argv[2] : "/tmp/ne_50m_admin_0_countries.shp";
-    const char* field_name = argc > 3 ? argv[3] : "name";
-    const char* output_filename = argc > 5 ? argv[4] : "output.csv";
-    const char* filter = argc > 5 ? argv[5] : "";
+    CLI::App app{"Zonal statistics using exactextract"};
+
+    std::string poly_filename, rast_filename, field_name, output_filename, filter;
+    std::vector<std::string> stats;
+    app.add_option("-p", poly_filename, "polygon dataset")->required(true);
+    app.add_option("-r", rast_filename, "raster dataset")->required(true);
+    app.add_option("-f", field_name, "id from polygon dataset to retain in output")->required(true);
+    app.add_option("-o", output_filename, "output filename")->required(true);
+    app.add_option("-s", stats, "statistics")->required(true)->expected(-1);
+    app.add_option("--filter", filter, "only process specified value of id")->required(false);
+
+    CLI11_PARSE(app, argc, argv);
 
     initGEOS(nullptr, nullptr);
 
     GDALAllRegister();
     GEOSContextHandle_t geos_context = OGRGeometry::createGEOSContext();
 
-    GDALDataset* rast = (GDALDataset*) GDALOpen(rast_filename, GA_ReadOnly);
+    GDALDataset* rast = (GDALDataset*) GDALOpen(rast_filename.c_str(), GA_ReadOnly);
+
+    if (!rast) {
+        std::cerr << "Failed to open " << rast_filename << std::endl;
+        return 1;
+    }
+
+    GDALDataset* shp = (GDALDataset*) GDALOpenEx(poly_filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
+
+    if (!shp) {
+        std::cerr << "Failed to open " << poly_filename << std::endl;
+        return 1;
+    }
+
     GDALRasterBand* band = rast->GetRasterBand(1);
-    GDALDataset* shp = (GDALDataset*) GDALOpenEx(poly_filename, GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
     OGRLayer* polys = shp->GetLayer(0);
 
     int has_nodata;
@@ -81,16 +102,18 @@ int main(int argc, char** argv) {
     std::ofstream csvout;
     csvout.open(output_filename);
 
-    csvout << field_name << ",avg" << std::endl;;
+    csvout << field_name;
+    for (const auto& stat : stats) {
+        csvout << "," << stat;
+    }
+    csvout << std::endl;
 
     std::vector<std::string> failures;
 
     while ((feature = polys->GetNextFeature()) != nullptr) {
-        std::string name{feature->GetFieldAsString(field_name)};
+        std::string name{feature->GetFieldAsString(field_name.c_str())};
 
-        if (strlen(filter) == 0 || name == filter) {
-            std::cout << name << ": ";
-
+        if (filter.length() == 0 || name == filter) {
             exactextract::geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
 
             if (!GEOSContains(box.get(), geom.get())) {
@@ -104,13 +127,48 @@ int main(int argc, char** argv) {
 
                 GDALRasterIO(band, GF_Read, rci.min_col(), rci.min_row(), rci.cols(), rci.rows(), m.data(), rci.cols(), rci.rows(), GDT_Float64, 0, 0);
 
-                exactextract::RasterStats<decltype(m)> stats{rci, m, true, has_nodata ? &nodata : nullptr};
+                exactextract::RasterStats<decltype(m)> raster_stats{rci, m, true, has_nodata ? &nodata : nullptr};
 
-                double weighted_mean = stats.mean();
-
-                std::cout << weighted_mean << std::endl;
-
-                csvout << "\"" << name << "\"" << "," << weighted_mean << std::endl;
+                csvout << name;
+                for (const auto& stat : stats) {
+                    csvout << ",";
+                    if (stat == "mean") {
+                        csvout << raster_stats.mean();
+                    } else if (stat == "count") {
+                        csvout << raster_stats.count();
+                    } else if (stat == "sum") {
+                        csvout << raster_stats.sum();
+                    } else if (stat == "variety") {
+                        csvout << raster_stats.variety();
+                    } else if (stat == "min") {
+                        if (raster_stats.count() > 0) {
+                            csvout << raster_stats.min();
+                        } else {
+                            csvout << "NA";
+                        }
+                    } else if (stat == "max") {
+                        if (raster_stats.count() > 0) {
+                            csvout << raster_stats.max();
+                        } else {
+                            csvout << "NA";
+                        }
+                    } else if (stat == "mode") {
+                        if (raster_stats.count() > 0) {
+                            csvout << raster_stats.max();
+                        } else {
+                            csvout << "NA";
+                        }
+                    } else if (stat == "minority") {
+                        if (raster_stats.count() > 0) {
+                            csvout << raster_stats.max();
+                        } else {
+                            csvout << "NA";
+                        }
+                    } else {
+                        throw std::runtime_error("Unknown stat: " + stat);
+                    }
+                }
+                csvout << std::endl;
             } catch (...) {
                 failures.push_back(name);
                 std::cout << "failed." << std::endl;
@@ -128,4 +186,10 @@ int main(int argc, char** argv) {
 
     GDALClose(rast);
     GDALClose(shp);
+
+    if (failures.empty()) {
+        return 0;
+    }
+
+    return 1;
 }
