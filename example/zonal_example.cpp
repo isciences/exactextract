@@ -66,6 +66,10 @@ int main(int argc, char** argv) {
     app.add_option("-s", stats, "statistics")->required(true)->expected(-1);
     app.add_option("--filter", filter, "only process specified value of id")->required(false);
 
+    if (argc == 1) {
+        std::cout << app.help();
+        return 0;
+    }
     CLI11_PARSE(app, argc, argv);
 
     initGEOS(nullptr, nullptr);
