@@ -52,6 +52,7 @@ set(PROJECT_SOURCES
         src/matrix.h
         src/perimeter_distance.cpp
         src/perimeter_distance.h
+        src/raster.h
         src/raster_cell_intersection.cpp
         src/raster_cell_intersection.h
         src/raster_stats.h
@@ -70,6 +71,7 @@ set(TEST_SOURCES
         test/test_extent.cpp
         test/test_main.cpp
         test/test_perimeter_distance.cpp
+        test/test_raster.cpp
         test/test_raster_cell_intersection.cpp
         test/test_traversal_areas.cpp
         test/test_stats.cpp)

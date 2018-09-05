@@ -18,6 +18,7 @@
 #include <iterator>
 #include <memory>
 #include <cstring>
+#include <vector>
 
 #define CHECK_BOUNDS true
 
@@ -46,6 +47,13 @@ class Matrix {
             for (auto& row : data) {
                 lastpos = std::copy(row.begin(), row.end(), lastpos);
             }
+        }
+
+        Matrix(Matrix<T>&& m) :
+                m_rows{m.rows()},
+                m_cols{m.cols()}
+        {
+            m_data = std::move(m.m_data);
         }
 
         T& operator()(size_t row, size_t col) {
