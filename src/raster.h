@@ -14,6 +14,8 @@
 #ifndef EXACTEXTRACT_RASTER_H
 #define EXACTEXTRACT_RASTER_H
 
+#include <limits>
+
 #include "extent.h"
 #include "matrix.h"
 
@@ -125,7 +127,7 @@ namespace exactextract {
     public:
         // Construct a view of a raster r at an extent ex that is larger
         // and/or of finer resolution than r
-        RasterView(const Raster<T> & r, Extent ex) : AbstractRaster<T>(ex), m_raster{r} {
+        RasterView(const Raster<T> & r, Extent ex) : AbstractRaster<T>(ex), m_raster{r}, expanded{false} {
             double disaggregation_factor_x = r.xres() / ex.dx;
             double disaggregation_factor_y = r.yres() / ex.dy;
 
@@ -139,7 +141,8 @@ namespace exactextract {
             }
 
             if (ex.xmin < r.xmin() || ex.xmax > r.xmax() || ex.ymin < r.ymin() || ex.ymax > r.ymax()) {
-                throw std::runtime_error("Constructed view must be smaller or same extent as original.");
+                expanded = true;
+                //throw std::runtime_error("Constructed view must be smaller or same extent as original.");
 
             }
 
@@ -150,14 +153,33 @@ namespace exactextract {
         }
 
         T operator()(size_t row, size_t col) const override {
-            return m_raster( (row + m_y_off) / m_ry, (col + m_x_off) / m_rx );
+            if (expanded) {
+                if (row + m_y_off < 0) {
+                    return std::numeric_limits<T>::quiet_NaN();
+                }
+                if (col + m_x_off < 0) {
+                    return std::numeric_limits<T>::quiet_NaN();
+                }
+            }
+
+            size_t i0 = (row + m_y_off) / m_ry;
+            size_t j0 = (col + m_x_off) / m_rx;
+
+            if (expanded) {
+                if (i0 > m_raster.rows() - 1 || j0 > m_raster.cols() - 1) {
+                    return std::numeric_limits<T>::quiet_NaN();
+                }
+            }
+
+            return m_raster(i0, j0);
         }
 
     private:
         const Raster<T>& m_raster;
+        bool expanded;
 
-        size_t m_x_off;
-        size_t m_y_off;
+        int m_x_off;
+        int m_y_off;
         size_t m_rx;
         size_t m_ry;
     };

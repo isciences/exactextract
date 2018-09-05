@@ -1,3 +1,5 @@
+#include <limits>
+
 #include "catch.hpp"
 
 #include "extent.h"
@@ -12,6 +14,16 @@ void fill_with_squares(Raster<T> & r) {
         for (size_t j = 0; j < r.cols(); j++) {
             r(i, j) = i*j;
         }
+    }
+}
+
+template<typename T>
+static void print(const AbstractRaster<T> & r) {
+    for (size_t i = 0; i < r.rows(); i++) {
+        for (size_t j = 0; j < r.cols(); j++) {
+            std::cout << r(i, j) << '\t';
+        }
+        std::cout << std::endl;
     }
 }
 
@@ -130,4 +142,32 @@ TEST_CASE("Creating a scaled and shifted view") {
     Raster<float> expected{std::move(expected_values), 2.5, 3, 5, 8.5};
 
     CHECK (rv == expected);
+}
+
+TEST_CASE("Creating a scaled and shifted view (greater extent)") {
+    Raster<float> r{0, 0, 10, 10, 10, 10};
+    Extent ex{2.5, 8.5, 4, 11, 0.5, 0.5};
+
+    fill_with_squares(r);
+
+    RasterView<float> rv(r, ex);
+
+    CHECK ( rv.xmin() == 2.5 );
+    CHECK ( rv.ymin() == 8.5 );
+    CHECK ( rv.xmax() == 4.0 );
+    CHECK ( rv.ymax() == 11 );
+    CHECK ( rv.rows() == 5 );
+    CHECK ( rv.cols() == 3 );
+    CHECK ( rv.xres() == 0.5 );
+    CHECK ( rv.yres() == 0.5 );
+
+    float nan = std::numeric_limits<float>::quiet_NaN();
+
+    Matrix<float> expected_values{{
+          { nan, nan, nan },
+          { nan, nan, nan },
+          {   0,   0,   0 },
+          {   0,   0,   0 },
+          {   2,   3,   3 }
+    }};
 }
