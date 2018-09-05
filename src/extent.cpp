@@ -29,6 +29,10 @@ namespace exactextract {
         return lt(b, a);
     }
 
+    static inline bool is_integral(double d) {
+        return d == std::floor(d);
+    }
+
     Extent::Extent(double xmin, double ymin, double xmax, double ymax, double dx, double dy) :
             xmin{xmin},
             ymin{ymin},
@@ -146,6 +150,30 @@ namespace exactextract {
                 ymax - row * dy
 
         );
+    }
+
+    bool Extent::compatible_with(const exactextract::Extent &b) const {
+        // Check x-resolution compatibility
+        if (!is_integral(std::max(dx, b.dx) / std::min(dx, b.dx))) {
+            return false;
+        }
+
+        // Check y-resolution compatibility
+        if (!is_integral(std::max(dy, b.dy) / std::min(dy, b.dy))) {
+            return false;
+        }
+
+        // Check left-hand boundary compatibility
+        if (!is_integral(std::abs(b.xmin - xmin) / std::min(dx, b.dx))) {
+            return false;
+        }
+
+        // Check upper boundary compatibility
+        if (!is_integral(std::abs(b.ymin - ymin) / std::min(dy, b.dy))) {
+            return false;
+        }
+
+        return true;
     }
 
 }

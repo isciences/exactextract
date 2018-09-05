@@ -58,6 +58,8 @@ namespace exactextract {
 
         Extent shrink_to_fit(const Box &b) const;
 
+        bool compatible_with(const Extent & b) const;
+
     private:
         size_t m_first_row;
         size_t m_first_col;
