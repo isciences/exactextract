@@ -99,3 +99,20 @@ TEST_CASE("Shrink robustness (2)", "[extent]") {
     CHECK(y1 <= ex2.ymax);
 }
 
+TEST_CASE("Extent compatibility tests", "[extent") {
+    Extent half_degree_global{-180, -90, 180, 90, 0.5, 0.5};
+    Extent one_degree_global{-180, -90, 180, 90, 1, 1};
+    Extent quarter_degree_partial{-180, -60, 90, 83, 0.25, 0.25};
+    Extent nldas{-125.0, 0.25, -67, 53, 0.125, 0.125};
+    Extent tenth_degree_global{-180, -90, 180, 90, 0.1, 0.1};
+    Extent half_degree_offset{-180.25, -90, -100.25, 50, 0.5, 0.5};
+
+    CHECK( half_degree_global.compatible_with(one_degree_global) );
+    CHECK( quarter_degree_partial.compatible_with(one_degree_global) );
+    CHECK( one_degree_global.compatible_with(nldas) );
+    CHECK( half_degree_global.compatible_with(tenth_degree_global) );
+
+    CHECK( !quarter_degree_partial.compatible_with(tenth_degree_global) );
+    CHECK( !tenth_degree_global.compatible_with(nldas) );
+    CHECK( !half_degree_global.compatible_with(half_degree_offset) );
+}
