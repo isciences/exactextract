@@ -24,17 +24,17 @@ namespace exactextract {
 
         auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
-        RasterCellIntersection rci{ex, g.get()};
+        Raster<float> areas = raster_cell_intersection(ex, g.get());
 
-        Matrix<float> values ({
-                                      {1, 1,   1, 1, 1},
-                                      {1, 1,   2, 3, 1},
-                                      {1, 4,   5, 6, 1},
-                                      {1, 0, NAN, 7, 1},
-                                      {1, 1,   1, 1, 1}
-                              });
+        Raster<float> values{{{
+          {1, 1, 1, 1, 1},
+          {1, 1, 2, 3, 1},
+          {1, 4, 5, 6, 1},
+          {1, 0, NAN, 7, 1},
+          {1, 1, 1, 1, 1}
+        }}, -1, -1, 4, 4};
 
-        RasterStats<Matrix<float>> stats{rci, values, false};
+        RasterStats<float> stats{areas, values};
 
         CHECK( stats.count() ==
                (0.25 + 0.5 + 0.25) +
@@ -66,19 +66,19 @@ namespace exactextract {
 
         auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
-        RasterCellIntersection rci{ex, g.get()};
+        Raster<float> areas = raster_cell_intersection(ex, g.get());
 
         int NODATA = -999;
 
-        Matrix<int> values ({
-                                      {1, 1,      1, 1, 1},
-                                      {1, 1,      2, 3, 1},
-                                      {1, 4,      5, 6, 1},
-                                      {1, 0, NODATA, 7, 1},
-                                      {1, 1,      1, 1, 1}
-                              });
+        Raster<int> values{{{
+            {1, 1,      1, 1, 1},
+            {1, 1,      2, 3, 1},
+            {1, 4,      5, 6, 1},
+            {1, 0, NODATA, 7, 1},
+            {1, 1,      1, 1, 1}
+        }}, -1, -1, 4, 4};
 
-        RasterStats<Matrix<int>> stats{rci, values, false, &NODATA};
+        RasterStats<int> stats{areas, values, &NODATA};
 
         CHECK( stats.count() ==
                (0.25 + 0.5 + 0.25 ) +

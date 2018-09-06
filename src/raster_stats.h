@@ -22,42 +22,56 @@
 
 namespace exactextract {
 
-    template<typename Container>
+    template<typename T>
     class RasterStats {
-
-    using T= typename Container::value_type;
 
     public:
         /**
          * Compute raster statistics from the results of a RasterCellIntersection
          * and a set of raster values.
          *
-         * If rast_cropped is true, then 'rast' will be assumed to have been
-         * cropped to have the same dimensions as 'rci'. If rast_cropped is
-         * false, then 'rast' should have the same extent and resolution used
-         * to create 'rci'.
-         *
          * A NODATA value may optionally be provided in addition to NaN.
          */
-        RasterStats(const RasterCellIntersection & rci, const Container & rast, bool rast_cropped, const T* nodata = nullptr) :
+        RasterStats(const Raster<float> & intersection_percentages, const Raster<T> & rast, const T* nodata = nullptr) :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_weights{0},
                 m_weighted_vals{0},
-                m_rows{rci.rows()},
-                m_cols{rci.cols()},
                 m_nodata{nodata} {
 
-            if (rast_cropped) {
-                for (size_t i = 0; i < rci.rows(); i++) {
-                    for (size_t j = 0; j < rci.cols(); j++) {
-                        process(rast(i, j), rci.get_local(i, j));
+            RasterView<T> rv = RasterView<T>{rast, intersection_percentages.extent()};
+
+            for (size_t i = 0; i < rv.rows(); i++) {
+                for (size_t j = 0; j < rv.cols(); j++) {
+                    float w = intersection_percentages(i, j);
+                    T val = rv(i, j);
+
+                    if (w > 0 && !(std::is_floating_point<T>::value && std::isnan(val)) &&
+                        (m_nodata == nullptr || val != *m_nodata)) {
+                        process(val, w);
                     }
                 }
-            } else {
-                for (size_t i = rci.min_row(); i < rci.max_row(); i++) {
-                    for (size_t j = rci.min_col(); j < rci.max_col(); j++) {
-                        process(rast(i, j), rci.get(i ,j));
+            }
+        }
+
+        RasterStats(const Raster<float> & intersection_percentages, const Raster<T> & rast, const Raster<T> weights, const T* nodata = nullptr) :
+                m_min{std::numeric_limits<T>::max()},
+                m_max{std::numeric_limits<T>::lowest()},
+                m_weights{0},
+                m_weighted_vals{0},
+                m_nodata{nodata} {
+
+            RasterView<T> rv = RasterView<T>{rast, intersection_percentages.extent()};
+            RasterView<T> wv = RasterView<T>{rast, intersection_percentages.extent()};
+
+            for (size_t i = 0; i < rv.rows(); i++) {
+                for (size_t j = 0; j < rv.cols(); j++) {
+                    float w = intersection_percentages(i, j)*wv(i, j);
+                    T val = rv(i, j);
+
+                    if (w > 0 && !(std::is_floating_point<T>::value && std::isnan(val)) &&
+                        (m_nodata == nullptr || val != *m_nodata)) {
+                        process(val, w);
                     }
                 }
             }
@@ -147,28 +161,21 @@ namespace exactextract {
 
         std::unordered_map<T, float> m_freq;
 
-        size_t m_rows;
-        size_t m_cols;
-
         const T* m_nodata;
 
         void process(const T& val, float weight) {
-            if (weight > 0 &&
-                !(std::is_floating_point<T>::value && std::isnan(val)) &&
-                (m_nodata == nullptr || val != *m_nodata)) {
-                m_weights += weight;
-                m_weighted_vals += weight * val;
+            m_weights += weight;
+            m_weighted_vals += weight * val;
 
-                if (val < m_min) {
-                    m_min = val;
-                }
-
-                if (val > m_max) {
-                    m_max = val;
-                }
-
-                m_freq[val] += weight;
+            if (val < m_min) {
+                m_min = val;
             }
+
+            if (val > m_max) {
+                m_max = val;
+            }
+
+            m_freq[val] += weight;
         }
     };
 

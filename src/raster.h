@@ -23,7 +23,7 @@ namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
-        AbstractRaster(Extent ex) : m_extent{ex} {}
+        explicit AbstractRaster(Extent ex) : m_extent{ex} {}
 
         size_t rows() const {
             return m_extent.rows();
@@ -55,6 +55,10 @@ namespace exactextract {
 
         double ymax() const {
             return m_extent.ymax;
+        }
+
+        const Extent& extent() const {
+            return m_extent;
         }
 
         virtual T operator()(size_t row, size_t col) const = 0;

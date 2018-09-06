@@ -20,6 +20,7 @@
 
 #include "extent.h"
 #include "matrix.h"
+#include "raster.h"
 
 namespace exactextract {
 
@@ -46,13 +47,12 @@ namespace exactextract {
 
         const Matrix<float> &overlap_areas() const { return *m_overlap_areas; }
 
+        Extent m_geometry_extent;
     private:
         size_t m_min_row;
         size_t m_min_col;
         size_t m_max_row;
         size_t m_max_col;
-
-        Extent m_geometry_extent;
 
         void process(const GEOSGeometry *g);
 
@@ -63,6 +63,8 @@ namespace exactextract {
         std::unique_ptr<Matrix<float>> m_overlap_areas;
 
     };
+
+    Raster<float> raster_cell_intersection(const Extent & raster_extent, const GEOSGeometry* g);
 
 }
 

@@ -22,6 +22,16 @@
 
 namespace exactextract {
 
+    Raster<float> raster_cell_intersection(const Extent & raster_extent, const GEOSGeometry* g) {
+        RasterCellIntersection rci(raster_extent, g);
+
+        return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
+                 rci.m_geometry_extent.xmin,
+                 rci.m_geometry_extent.ymin,
+                 rci.m_geometry_extent.xmax,
+                 rci.m_geometry_extent.ymax };
+    }
+
     static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Extent &ex, size_t row, size_t col) {
         //std::cout << " getting cell " << row << ", " << col << std::endl;
 
