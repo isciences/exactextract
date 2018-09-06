@@ -23,7 +23,6 @@ namespace exactextract {
 
     class Extent {
     public:
-
         double xmin;
         double ymin;
         double xmax;
@@ -59,6 +58,10 @@ namespace exactextract {
         Extent shrink_to_fit(const Box &b) const;
 
         bool compatible_with(const Extent & b) const;
+
+        Extent common_extent(const Extent & b) const;
+
+        bool operator==(const Extent & b) const;
 
     private:
         size_t m_first_row;

@@ -176,4 +176,36 @@ namespace exactextract {
         return true;
     }
 
+    Extent Extent::common_extent(const Extent &b) const {
+        if (!compatible_with(b)) {
+            throw std::runtime_error("Incompatible extents.");
+        }
+
+        double dx = std::min(this->dx, b.dx);
+        double dy = std::min(this->dy, b.dy);
+
+        double xmin = std::min(this->xmin, b.xmin);
+        double ymax = std::max(this->ymax, b.ymax);
+
+        double xmax = std::max(this->xmax, b.xmax);
+        double ymin = std::min(this->ymin, b.ymin);
+
+        int nx = (int) std::round((xmax - xmin) / dx);
+        int ny = (int) std::round((ymax - ymin) / dy);
+
+        xmax = std::max(xmax, xmin + nx*dx);
+        ymin = std::min(ymin, ymax - ny*dy);
+
+        return { xmin, ymin, xmax, ymax, dx, dy };
+    }
+
+    bool Extent::operator==(const Extent &b) const {
+        return
+            xmin == b.xmin &&
+            ymin == b.ymin &&
+            xmax == b.xmax &&
+            ymax == b.ymax &&
+            dx == b.dx &&
+            dy == b.dy;
+    }
 }

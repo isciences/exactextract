@@ -116,3 +116,10 @@ TEST_CASE("Extent compatibility tests", "[extent") {
     CHECK( !tenth_degree_global.compatible_with(nldas) );
     CHECK( !half_degree_global.compatible_with(half_degree_offset) );
 }
+
+TEST_CASE("Common extent calculation", "[extent]") {
+    Extent half_degree_global{-180, -90, 180, 90, 0.5, 0.5};
+    Extent nldas{-125.0, 0.25, -67, 53, 0.125, 0.125};
+
+    CHECK ( nldas.common_extent(half_degree_global) == Extent{-180, -90, 180, 90, 0.125, 0.125} );
+}
