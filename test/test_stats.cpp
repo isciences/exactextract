@@ -17,6 +17,17 @@ namespace exactextract {
         }
     }
 
+    template<typename T>
+    void fill_by_row(Raster<T> & r, T start, T dt) {
+        T val = start;
+        for (size_t i = 0; i < r.rows(); i++) {
+            for (size_t j = 0; j < r.cols(); j++) {
+                r(i, j) = val;
+                val += dt;
+            }
+        }
+    }
+
     TEST_CASE("Basic float stats") {
         init_geos();
 
@@ -57,6 +68,27 @@ namespace exactextract {
         CHECK( stats.max() == 7 );
 
         CHECK( stats.variety() == 8 );
+    }
+
+    TEST_CASE("Weighted multiresolution float stats") {
+        init_geos();
+
+        Extent ex1{0, 0, 8, 6, 1, 1};
+        Extent ex2{0, 0, 8, 6, 2, 2};
+
+        auto g = GEOSGeom_read("POLYGON ((3.5 1.5, 6.5 1.5, 6.5 2.5, 3.5 2.5, 3.5 1.5))");
+
+        Raster<float> areas = raster_cell_intersection(ex1.common_extent(ex2), g.get());
+        Raster<float> values{0, 0, 8, 6, 6, 8};
+        Raster<float> weights{0, 0, 8, 6, 3, 4};
+
+        fill_by_row<float>(values, 1, 1);
+        fill_by_row<float>(weights, 5, 5);
+
+        RasterStats<float> stats{areas, values, weights};
+
+        CHECK( stats.sum() )
+
     }
 
     TEST_CASE("Basic integer stats") {

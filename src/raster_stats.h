@@ -54,7 +54,7 @@ namespace exactextract {
             }
         }
 
-        RasterStats(const Raster<float> & intersection_percentages, const Raster<T> & rast, const Raster<T> weights, const T* nodata = nullptr) :
+        RasterStats(const Raster<float> & intersection_percentages, const Raster<T> & rast, const Raster<T> & weights, const T* nodata = nullptr) :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_weights{0},
