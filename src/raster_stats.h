@@ -61,12 +61,16 @@ namespace exactextract {
                 m_weighted_vals{0},
                 m_nodata{nodata} {
 
-            RasterView<T> rv = RasterView<T>{rast, intersection_percentages.extent()};
-            RasterView<T> wv = RasterView<T>{rast, intersection_percentages.extent()};
+            Extent common = rast.extent().common_extent(weights.extent());
+            common = common.common_extent(intersection_percentages.extent());
+
+            RasterView<T> iv = RasterView<T>{intersection_percentages, common};
+            RasterView<T> rv = RasterView<T>{rast,    common};
+            RasterView<T> wv = RasterView<T>{weights, common};
 
             for (size_t i = 0; i < rv.rows(); i++) {
                 for (size_t j = 0; j < rv.cols(); j++) {
-                    float w = intersection_percentages(i, j)*wv(i, j);
+                    float w = iv(i, j)*wv(i, j);
                     T val = rv(i, j);
 
                     if (w > 0 && !(std::is_floating_point<T>::value && std::isnan(val)) &&

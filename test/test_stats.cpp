@@ -1,4 +1,5 @@
 #include <cmath>
+#include <valarray>
 
 #include "catch.hpp"
 
@@ -6,6 +7,8 @@
 #include "raster_cell_intersection.h"
 #include "raster_stats.h"
 #include "geos_utils.h"
+
+using Catch::Detail::Approx;
 
 namespace exactextract {
     static void init_geos() {
@@ -87,8 +90,11 @@ namespace exactextract {
 
         RasterStats<float> stats{areas, values, weights};
 
-        CHECK( stats.sum() )
+        std::valarray<double> cov_values  = {   28,  29,  30,   31,   36,  37,  38,   39 };
+        std::valarray<double> cov_weights = {   30,  35,  35,   40,   50,  55,  55,   60 };
+        std::valarray<double> cov_fracs   = { 0.25, 0.5, 0.5, 0.25, 0.25, 0.5, 0.5, 0.25 };
 
+        CHECK( stats.mean() == Approx( (cov_values * cov_weights * cov_fracs).sum() / (cov_weights * cov_fracs).sum() ));
     }
 
     TEST_CASE("Basic integer stats") {
