@@ -25,6 +25,8 @@ namespace exactextract {
     Raster<float> raster_cell_intersection(const Extent & raster_extent, const GEOSGeometry* g) {
         RasterCellIntersection rci(raster_extent, g);
 
+        // FIXME need to make sure row offset and column offset of m_geometry_extent is preserved
+
         return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
                  rci.m_geometry_extent.xmin,
                  rci.m_geometry_extent.ymin,

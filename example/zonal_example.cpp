@@ -27,6 +27,7 @@
 
 #include "extent.h"
 #include "geos_utils.h"
+#include "raster.h"
 #include "raster_stats.h"
 #include "raster_cell_intersection.h"
 
@@ -97,6 +98,8 @@ int main(int argc, char** argv) {
     int has_nodata;
     double nodata = GDALGetRasterNoDataValue(band, &has_nodata);
 
+    std::cout << "Using NODATA value of " << nodata << std::endl;
+
     exactextract::Extent raster_extent = get_raster_extent(rast);
     exactextract::geom_ptr box = exactextract::geos_make_box_polygon(raster_extent.xmin, raster_extent.ymin, raster_extent.xmax, raster_extent.ymax);
 
@@ -125,13 +128,32 @@ int main(int argc, char** argv) {
             }
 
             try {
-                exactextract::RasterCellIntersection rci(raster_extent, geom.get());
+                exactextract::Raster<float> coverage = raster_cell_intersection(raster_extent, geom.get());
 
-                exactextract::Matrix<double> m(rci.rows(), rci.cols());
+                exactextract::Raster<double> vals(coverage.extent());
+                GDALRasterIO(band,
+                        GF_Read,
+                        (int) coverage.extent().col_offset(),
+                        (int) coverage.extent().row_offset(),
+                        (int) vals.extent().cols(),
+                        (int) vals.extent().rows(),
+                        vals.data().data(),
+                        (int) vals.extent().cols(),
+                        (int) vals.extent().rows(),
+                        GDT_Float64,
+                        0,
+                        0);
 
-                GDALRasterIO(band, GF_Read, rci.min_col(), rci.min_row(), rci.cols(), rci.rows(), m.data(), rci.cols(), rci.rows(), GDT_Float64, 0, 0);
+                exactextract::RasterStats<double> raster_stats{coverage, vals, has_nodata ? &nodata : nullptr};
 
-                exactextract::RasterStats<decltype(m)> raster_stats{rci, m, true, has_nodata ? &nodata : nullptr};
+
+                //exactextract::RasterCellIntersection rci(raster_extent, geom.get());
+
+                //exactextract::Matrix<double> m(rci.rows(), rci.cols());
+
+                //GDALRasterIO(band, GF_Read, rci.min_col(), rci.min_row(), rci.cols(), rci.rows(), m.data(), rci.cols(), rci.rows(), GDT_Float64, 0, 0);
+
+                //exactextract::RasterStats<decltype(m)> raster_stats{coverage, m, true, has_nodata ? &nodata : nullptr};
 
                 csvout << name;
                 for (const auto& stat : stats) {

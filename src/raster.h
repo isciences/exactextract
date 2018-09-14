@@ -114,6 +114,15 @@ namespace exactextract {
                 m_values{nrow, ncol}
                 {}
 
+        explicit Raster(const Extent & ex) :
+            AbstractRaster<T>(ex),
+            m_values{ex.rows(), ex.cols()}
+            {}
+
+        Matrix<T>& data() {
+            return m_values;
+        }
+
         T& operator()(size_t row, size_t col) {
             return m_values(row, col);
         }
