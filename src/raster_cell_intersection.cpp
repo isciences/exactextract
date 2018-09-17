@@ -22,7 +22,7 @@
 
 namespace exactextract {
 
-    Raster<float> raster_cell_intersection(const Extent & raster_extent, const GEOSGeometry* g) {
+    Raster<float> raster_cell_intersection(const Grid & raster_extent, const GEOSGeometry* g) {
         RasterCellIntersection rci(raster_extent, g);
 
         return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
@@ -32,7 +32,7 @@ namespace exactextract {
                  rci.m_geometry_extent.ymax };
     }
 
-    static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Extent &ex, size_t row, size_t col) {
+    static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Grid &ex, size_t row, size_t col) {
         //std::cout << " getting cell " << row << ", " << col << std::endl;
 
         if (cells(row, col) == nullptr) {
@@ -42,7 +42,7 @@ namespace exactextract {
         return cells(row, col).get();
     }
 
-    RasterCellIntersection::RasterCellIntersection(const Extent &raster_extent, const GEOSGeometry *g) {
+    RasterCellIntersection::RasterCellIntersection(const Grid &raster_extent, const GEOSGeometry *g) {
         if (GEOSisEmpty(g)) {
             throw std::invalid_argument("Can't get statistics for empty geometry");
         }
@@ -85,7 +85,7 @@ namespace exactextract {
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq(ls);
         bool is_ccw = geos_is_ccw(seq);
 
-        Extent ring_extent;
+        Grid ring_extent;
 
         try {
             ring_extent = m_geometry_extent.shrink_to_fit(geos_get_box(ls));

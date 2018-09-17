@@ -25,13 +25,13 @@
 #include "cpl_conv.h"
 #include "ogrsf_frmts.h"
 
-#include "extent.h"
+#include "grid.h"
 #include "geos_utils.h"
 #include "raster.h"
 #include "raster_stats.h"
 #include "raster_cell_intersection.h"
 
-static exactextract::Extent get_raster_extent(GDALDataset* rast) {
+static exactextract::Grid get_raster_extent(GDALDataset* rast) {
     double adfGeoTransform[6];
     if (rast->GetGeoTransform(adfGeoTransform) != CE_None) {
         throw std::runtime_error("Error reading transform");
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
 
     std::cout << "Using NODATA value of " << nodata << std::endl;
 
-    exactextract::Extent raster_extent = get_raster_extent(rast);
+    exactextract::Grid raster_extent = get_raster_extent(rast);
     exactextract::geom_ptr box = exactextract::geos_make_box_polygon(raster_extent.xmin, raster_extent.ymin, raster_extent.xmax, raster_extent.ymax);
 
     OGRFeature* feature;

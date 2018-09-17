@@ -3,7 +3,7 @@
 
 #include "catch.hpp"
 
-#include "extent.h"
+#include "grid.h"
 #include "raster_cell_intersection.h"
 #include "raster_stats.h"
 #include "geos_utils.h"
@@ -34,7 +34,7 @@ namespace exactextract {
     TEST_CASE("Basic float stats") {
         init_geos();
 
-        Extent ex{-1, -1, 4, 4, 1, 1}; // 4x5 grid
+        Grid ex{-1, -1, 4, 4, 1, 1}; // 4x5 grid
 
         auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
@@ -76,8 +76,8 @@ namespace exactextract {
     TEST_CASE("Weighted multiresolution float stats") {
         init_geos();
 
-        Extent ex1{0, 0, 8, 6, 1, 1};
-        Extent ex2{0, 0, 8, 6, 2, 2};
+        Grid ex1{0, 0, 8, 6, 1, 1};
+        Grid ex2{0, 0, 8, 6, 2, 2};
 
         auto g = GEOSGeom_read("POLYGON ((3.5 1.5, 6.5 1.5, 6.5 2.5, 3.5 2.5, 3.5 1.5))");
 
@@ -100,7 +100,7 @@ namespace exactextract {
     TEST_CASE("Basic integer stats") {
         init_geos();
 
-        Extent ex{-1, -1, 4, 4, 1, 1}; // 4x5 grid
+        Grid ex{-1, -1, 4, 4, 1, 1}; // 4x5 grid
 
         auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 

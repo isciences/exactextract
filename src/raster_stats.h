@@ -61,7 +61,7 @@ namespace exactextract {
                 m_weighted_vals{0},
                 m_nodata{nodata} {
 
-            Extent common = rast.extent().common_extent(weights.extent());
+            Grid common = rast.extent().common_extent(weights.extent());
             common = common.common_extent(intersection_percentages.extent());
 
             RasterView<T> iv = RasterView<T>{intersection_percentages, common};

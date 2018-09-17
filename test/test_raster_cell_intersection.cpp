@@ -33,7 +33,7 @@ static void init_geos() {
 TEST_CASE("Basic", "[raster-cell-intersection]" ) {
     init_geos();
 
-    Extent ex{0, 0, 3, 3, 1, 1}; // 3x3 grid
+    Grid ex{0, 0, 3, 3, 1, 1}; // 3x3 grid
 
     auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
@@ -49,7 +49,7 @@ TEST_CASE("Basic", "[raster-cell-intersection]" ) {
 TEST_CASE("Diagonals", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 3, 3, 1, 1}; // 3x3 grid
+    Grid ex{0, 0, 3, 3, 1, 1}; // 3x3 grid
 
     auto g = GEOSGeom_read("POLYGON ((1.5 0.5, 2.5 1.5, 1.5 2.5, 0.5 1.5, 1.5 0.5))");
 
@@ -66,7 +66,7 @@ TEST_CASE("Starting on cell boundary", "[raster-cell-intersection]") {
     init_geos();
 
     // Situation found in Canada using 0.5-degree global grid
-    Extent ex{0, 0, 2, 2, 1, 1}; // 2x2 grid
+    Grid ex{0, 0, 2, 2, 1, 1}; // 2x2 grid
 
     auto g = GEOSGeom_read("POLYGON ((1 1.5, 1.5 1.5, 1.5 0.5, 0.5 0.5, 0.5 1.5, 1 1.5))");
 
@@ -82,7 +82,7 @@ TEST_CASE("Bouncing off boundary", "[raster-cell-intersection]") {
     init_geos();
 
     // Situation found in Trinidad and Tobago using 0.5-degree global grid
-    Extent ex{0, -1, 2, 2, 1, 1}; // 3x2 grid
+    Grid ex{0, -1, 2, 2, 1, 1}; // 3x2 grid
 
     auto g = GEOSGeom_read("POLYGON ((0.5 1.5, 0.5 0.5, 0.5 0, 1.5 0.5, 1.5 1.5, 0.5 1.5))");
 
@@ -98,7 +98,7 @@ TEST_CASE("Bouncing off boundary", "[raster-cell-intersection]") {
 TEST_CASE("Bouncing off boundary (2)", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 2, 2, 1, 1};
+    Grid ex{0, 0, 2, 2, 1, 1};
 
     auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 1.5 0.5, 1.5 1.5, 0.5 1.5, 1 1.2, 0.5 0.5))");
 
@@ -111,7 +111,7 @@ TEST_CASE("Follows grid boundary", "[raster-cell-intersection]") {
 
     // Occurs on the Libya-Egypt border, for example
 
-    Extent ex{0, 0, 3, 3, 1, 1};
+    Grid ex{0, 0, 3, 3, 1, 1};
 
     auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2 0.5, 2 1.5, 2 2.5, 0.5 2.5, 0.5 0.5))");
 
@@ -127,7 +127,7 @@ TEST_CASE("Follows grid boundary", "[raster-cell-intersection]") {
 TEST_CASE("Starts on vertical boundary, moving up", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 4, 3, 1, 1}; // 4x3 grid
+    Grid ex{0, 0, 4, 3, 1, 1}; // 4x3 grid
 
     auto g = GEOSGeom_read("POLYGON ((3 0.5, 3 2.5, 0.5 2.5, 0.5 0.5, 3 0.5))");
 
@@ -143,7 +143,7 @@ TEST_CASE("Starts on vertical boundary, moving up", "[raster-cell-intersection]"
 TEST_CASE("Starts on vertical boundary, moving down", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 4, 3, 1, 1}; // 4x3 grid
+    Grid ex{0, 0, 4, 3, 1, 1}; // 4x3 grid
 
     auto g = GEOSGeom_read("POLYGON ((0.5 2.5, 0.5 0.5, 3 0.5, 3 2.5, 0.5 2.5))");
 
@@ -159,7 +159,7 @@ TEST_CASE("Starts on vertical boundary, moving down", "[raster-cell-intersection
 TEST_CASE("Starts on vertical boundary, moving down at rightmost extent of grid", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 3, 3, 1, 1}; // 3x3 grid
+    Grid ex{0, 0, 3, 3, 1, 1}; // 3x3 grid
 
     auto g = GEOSGeom_read("POLYGON ((3 2.5, 3 0.5, 0.5 0.5, 0.5 2.5, 3 2.5))");
 
@@ -175,7 +175,7 @@ TEST_CASE("Starts on vertical boundary, moving down at rightmost extent of grid"
 TEST_CASE("Starts on horizontal boundary, moving right", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 3, 4, 1, 1}; // 3x4 grid
+    Grid ex{0, 0, 3, 4, 1, 1}; // 3x4 grid
 
     auto g = GEOSGeom_read("POLYGON ((0.5 1, 2.5 1, 2.5 3.5, 0.5 3.5, 0.5 1))");
 
@@ -192,7 +192,7 @@ TEST_CASE("Starts on horizontal boundary, moving right", "[raster-cell-intersect
 TEST_CASE("Starts on horizontal boundary, moving left", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 3, 4, 1, 1}; // 3x4 grid
+    Grid ex{0, 0, 3, 4, 1, 1}; // 3x4 grid
 
     auto g = GEOSGeom_read("POLYGON ((2.5 3, 0.5 3, 0.5 3.5, 0.25 3.5, 0.25 0.5, 2.5 0.5, 2.5 3))");
 
@@ -211,7 +211,7 @@ TEST_CASE("Regression test - Fiji", "[raster-cell-intersection]") {
 
     // Just make sure this polygon doesn't throw an exception. It caused some problems where the
     // rightmost edge was interpreted to be exactly on a cell wall.
-    Extent ex{-180.5, -90.5, 180.5, 90.5, 0.5, 0.5};
+    Grid ex{-180.5, -90.5, 180.5, 90.5, 0.5, 0.5};
 
     auto g = GEOSGeom_read("MULTIPOLYGON (((178.3736000000001 -17.33992000000002, 178.71806000000007 -17.62845999999996, 178.5527099999999 -18.150590000000008, 177.93266000000008 -18.287990000000036, 177.38145999999992 -18.164319999999975, 177.28504000000007 -17.72464999999997, 177.67087 -17.381139999999974, 178.12557000000007 -17.50480999999995, 178.3736000000001 -17.33992000000002)), ((179.36414266196417 -16.801354076946836, 178.7250593629972 -17.012041674368007, 178.5968385951172 -16.63915000000003, 179.0966093629972 -16.43398427754741, 179.4135093629972 -16.379054277547382, 180.00000000000003 -16.06713266364241, 180.00000000000003 -16.555216566639146, 179.36414266196417 -16.801354076946836)), ((-179.91736938476527 -16.501783135649347, -179.99999999999997 -16.555216566639146, -179.99999999999997 -16.06713266364241, -179.79332010904858 -16.020882256741217, -179.91736938476527 -16.501783135649347)))");
 
@@ -221,7 +221,7 @@ TEST_CASE("Regression test - Fiji", "[raster-cell-intersection]") {
 TEST_CASE("Small polygon", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 10, 10, 10, 10}; // Single cell
+    Grid ex{0, 0, 10, 10, 10, 10}; // Single cell
 
     auto g = GEOSGeom_read("POLYGON ((3 3, 4 3, 4 4, 3 4, 3 3))");
 
@@ -233,7 +233,7 @@ TEST_CASE("Small polygon", "[raster-cell-intersection]") {
 TEST_CASE("Fill handled correctly", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{0, 0, 3, 5, 1, 1}; // 3x5 grid
+    Grid ex{0, 0, 3, 5, 1, 1}; // 3x5 grid
 
     auto g = GEOSGeom_read("POLYGON ((0.5 0.2, 2.2 0.2, 2.2 0.4, 0.7 0.4, 0.7 2.2, 2.2 2.2, 2.2 0.6, 2.4 0.6, 2.4 4.8, 0.5 4.8, 0.5 0.2))");
 
@@ -251,7 +251,7 @@ TEST_CASE("Fill handled correctly", "[raster-cell-intersection]") {
 TEST_CASE("Result indexing is correct", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{-20, -15, 40, 30, 0.5, 1};
+    Grid ex{-20, -15, 40, 30, 0.5, 1};
 
     auto g = GEOSGeom_read("POLYGON ((0.25 0.20, 2.75 0.20, 2.75 4.5, 0.25 4.5, 0.25 0.20))");
 
@@ -291,7 +291,7 @@ TEST_CASE("Result indexing is correct", "[raster-cell-intersection]") {
 TEST_CASE("Sensible error when geometry extent is larger than raster", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{-180, -90, 180, 90, 0.5, 0.5};
+    Grid ex{-180, -90, 180, 90, 0.5, 0.5};
 
     auto g = GEOSGeom_read("POLYGON ((-179 0, 180.000000004 0, 180 1, -179 0))");
 
@@ -302,7 +302,7 @@ TEST_CASE("Sensible error when geometry extent is larger than raster", "[raster-
 TEST_CASE("Sensible error when hole is outside of shell", "[raster-cell-intersection]") {
     init_geos();
 
-    Extent ex{-180, -90, 180, 90, 0.5, 0.5};
+    Grid ex{-180, -90, 180, 90, 0.5, 0.5};
     auto g = GEOSGeom_read("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (9 9, 9 9.1, 10.6 9.1, 9 9))");
 
     CHECK_THROWS_WITH( RasterCellIntersection(ex, g.get()),
@@ -314,7 +314,7 @@ TEST_CASE("Robustness regression test #1", "[raster-cell-intersection]") {
     // ymin, but the grid resolution is such that ymin < (ymax - ny*dy)
     init_geos();
 
-    Extent ex{-180, -90, 180, 90, 1.0/6, 1.0/6};
+    Grid ex{-180, -90, 180, 90, 1.0/6, 1.0/6};
 
     auto g = GEOSGeom_read(
 #include "resources/antarctica.wkt"
@@ -328,7 +328,7 @@ TEST_CASE("Robustness regression test #2", "[raster-cell-intersection]") {
     // xmax, but the grid resolution is such that xmax < (xmin + nx*dx)
     init_geos();
 
-    Extent ex{-180, -90, 180, 90, 1.0/6, 1.0/6};
+    Grid ex{-180, -90, 180, 90, 1.0/6, 1.0/6};
 
     auto g = GEOSGeom_read(
 #include "resources/russia.wkt"

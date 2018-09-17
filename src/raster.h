@@ -16,14 +16,14 @@
 
 #include <limits>
 
-#include "extent.h"
+#include "grid.h"
 #include "matrix.h"
 
 namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
-        explicit AbstractRaster(Extent ex) : m_extent{ex} {}
+        explicit AbstractRaster(Grid ex) : m_extent{ex} {}
 
         size_t rows() const {
             return m_extent.rows();
@@ -57,7 +57,7 @@ namespace exactextract {
             return m_extent.ymax;
         }
 
-        const Extent& extent() const {
+        const Grid& extent() const {
             return m_extent;
         }
 
@@ -93,14 +93,14 @@ namespace exactextract {
             return true;
         }
     private:
-        Extent m_extent;
+        Grid m_extent;
     };
 
     template<typename T>
     class Raster : public AbstractRaster<T> {
     public:
         Raster(Matrix<T>&& values, double xmin, double ymin, double xmax, double ymax) : AbstractRaster<T>(
-                Extent(
+                Grid(
                         xmin,
                         ymin,
                         xmax,
@@ -110,11 +110,11 @@ namespace exactextract {
                 m_values{std::move(values)} {}
 
         Raster(double xmin, double ymin, double xmax, double ymax, size_t nrow, size_t ncol) :
-                AbstractRaster<T>(Extent(xmin, ymin, xmax, ymax, (xmax-xmin) / ncol, (ymax-ymin) / nrow)),
+                AbstractRaster<T>(Grid(xmin, ymin, xmax, ymax, (xmax-xmin) / ncol, (ymax-ymin) / nrow)),
                 m_values{nrow, ncol}
                 {}
 
-        explicit Raster(const Extent & ex) :
+        explicit Raster(const Grid & ex) :
             AbstractRaster<T>(ex),
             m_values{ex.rows(), ex.cols()}
             {}
@@ -140,7 +140,7 @@ namespace exactextract {
     public:
         // Construct a view of a raster r at an extent ex that is larger
         // and/or of finer resolution than r
-        RasterView(const Raster<T> & r, Extent ex) : AbstractRaster<T>(ex), m_raster{r}, expanded{false} {
+        RasterView(const Raster<T> & r, Grid ex) : AbstractRaster<T>(ex), m_raster{r}, expanded{false} {
             double disaggregation_factor_x = r.xres() / ex.dx;
             double disaggregation_factor_y = r.yres() / ex.dy;
 

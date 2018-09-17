@@ -18,7 +18,7 @@
 
 #include <geos_c.h>
 
-#include "extent.h"
+#include "grid.h"
 #include "geos_utils.h"
 #include "matrix.h"
 
@@ -38,13 +38,13 @@ namespace exactextract {
     class FloodFill {
 
     public:
-        FloodFill(const GEOSGeometry *g, const Extent &extent);
+        FloodFill(const GEOSGeometry *g, const Grid &extent);
 
         template<typename T>
         void flood(Matrix<T> &arr) const;
 
     private:
-        Extent m_extent;
+        Grid m_extent;
         geom_ptr m_g;
         prep_geom_ptr m_pg;
 

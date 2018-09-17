@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_EXTENT_H
-#define EXACTEXTRACT_EXTENT_H
+#ifndef EXACTEXTRACT_GRID_H
+#define EXACTEXTRACT_GRID_H
 
 #include <memory>
 
@@ -21,7 +21,7 @@
 
 namespace exactextract {
 
-    class Extent {
+    class Grid {
     public:
         double xmin;
         double ymin;
@@ -31,9 +31,9 @@ namespace exactextract {
         double dx;
         double dy;
 
-        Extent(double xmin, double ymin, double xmax, double ymax, double dx, double dy);
+        Grid(double xmin, double ymin, double xmax, double ymax, double dx, double dy);
 
-        Extent() : xmin{0}, ymin{0}, xmax{0}, ymax{0}, dx{0}, dy{0} {}
+        Grid() : xmin{0}, ymin{0}, xmax{0}, ymax{0}, dx{0}, dy{0}, m_num_rows{0}, m_num_cols{0} {}
 
         size_t get_column(double x) const;
 
@@ -43,9 +43,9 @@ namespace exactextract {
 
         size_t cols() const { return m_num_cols; }
 
-        size_t row_offset(const Extent & other) const { return (size_t) std::round((other.ymax - ymax) / dy); }
+        size_t row_offset(const Grid & other) const { return (size_t) std::round((other.ymax - ymax) / dy); }
 
-        size_t col_offset(const Extent & other) const { return (size_t) std::round((xmin - other.xmin) / dx); }
+        size_t col_offset(const Grid & other) const { return (size_t) std::round((xmin - other.xmin) / dx); }
 
         double x_for_col(size_t col) const { return xmin + (col + 0.5) * dx; }
 
@@ -53,15 +53,15 @@ namespace exactextract {
 
         std::unique_ptr<Cell> get_cell_ptr(size_t row, size_t col) const;
 
-        Extent shrink_to_fit(double x0, double y0, double x1, double y1) const;
+        Grid shrink_to_fit(double x0, double y0, double x1, double y1) const;
 
-        Extent shrink_to_fit(const Box &b) const;
+        Grid shrink_to_fit(const Box &b) const;
 
-        bool compatible_with(const Extent & b) const;
+        bool compatible_with(const Grid & b) const;
 
-        Extent common_extent(const Extent & b) const;
+        Grid common_extent(const Grid & b) const;
 
-        bool operator==(const Extent & b) const;
+        bool operator==(const Grid & b) const;
 
     private:
         size_t m_num_rows;

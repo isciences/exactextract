@@ -43,8 +43,8 @@ set(PROJECT_SOURCES
         src/coordinate.cpp
         src/coordinate.h
         src/crossing.h
-        src/extent.cpp
-        src/extent.h
+        src/grid.cpp
+        src/grid.h
         src/floodfill.cpp
         src/floodfill.h
         src/geos_utils.cpp
@@ -68,7 +68,7 @@ set(PROJECT_SOURCES
 set(TEST_SOURCES
         test/test_box.cpp
         test/test_cell.cpp
-        test/test_extent.cpp
+        test/test_grid.cpp
         test/test_main.cpp
         test/test_perimeter_distance.cpp
         test/test_raster.cpp

@@ -15,14 +15,14 @@
 
 #include <geos_c.h>
 
-#include "extent.h"
+#include "grid.h"
 #include "floodfill.h"
 #include "geos_utils.h"
 #include "matrix.h"
 
 namespace exactextract {
 
-    FloodFill::FloodFill(const GEOSGeometry *g, const Extent &extent) :
+    FloodFill::FloodFill(const GEOSGeometry *g, const Grid &extent) :
             m_extent{extent},
             m_g{nullptr, GEOSGeom_destroy},
             m_pg{nullptr, GEOSPreparedGeom_destroy} {

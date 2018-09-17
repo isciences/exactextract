@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "extent.h"
+#include "grid.h"
 
 #include <cmath>
 #include <memory>
@@ -33,7 +33,7 @@ namespace exactextract {
         return d == std::floor(d);
     }
 
-    Extent::Extent(double xmin, double ymin, double xmax, double ymax, double dx, double dy) :
+    Grid::Grid(double xmin, double ymin, double xmax, double ymax, double dx, double dy) :
             xmin{xmin},
             ymin{ymin},
             xmax{xmax},
@@ -53,7 +53,7 @@ namespace exactextract {
         m_num_rows = (size_t) std::round((ymax - ymin) / dy);
     }
 
-    size_t Extent::get_column(double x) const {
+    size_t Grid::get_column(double x) const {
         if (lt(x, xmin) || gt(x, xmax)) {
             throw std::out_of_range("x");
         }
@@ -67,7 +67,7 @@ namespace exactextract {
         return (size_t) std::floor((x - xmin) / dx);
     }
 
-    size_t Extent::get_row(double y) const {
+    size_t Grid::get_row(double y) const {
         if (lt(y, ymin) || gt(y,  ymax))
             throw std::out_of_range("y");
 
@@ -79,11 +79,11 @@ namespace exactextract {
         return (size_t) std::floor((ymax - y) / dy);
     }
 
-    Extent Extent::shrink_to_fit(const Box &b) const {
+    Grid Grid::shrink_to_fit(const Box &b) const {
         return shrink_to_fit(b.xmin, b.ymin, b.xmax, b.ymax);
     }
 
-    Extent Extent::shrink_to_fit(double x0, double y0, double x1, double y1) const {
+    Grid Grid::shrink_to_fit(double x0, double y0, double x1, double y1) const {
         if (lt(x0, xmin) || lt(y0, ymin) || gt(x1, xmax) || gt(y1, ymax)) {
             throw std::range_error("Cannot shrink extent to bounds larger than original.");
         }
@@ -117,7 +117,7 @@ namespace exactextract {
         // points. If this is not done, then floating point roundoff
         // error can cause progressive shrink() calls with the same
         // inputs to produce different results.
-        Extent reduced(
+        Grid reduced(
                 snapped_xmin,
                 std::min(snapped_ymax - numRows * dy, y0),
                 std::max(snapped_xmin + numCols * dx, x1),
@@ -132,7 +132,7 @@ namespace exactextract {
         return reduced;
     }
 
-    std::unique_ptr<Cell> Extent::get_cell_ptr(size_t row, size_t col) const {
+    std::unique_ptr<Cell> Grid::get_cell_ptr(size_t row, size_t col) const {
         // The ternary clauses below are used to make sure that the cells along
         // the right and bottom edges of our grid are slightly larger than dx,dy
         // if needed to make sure that we capture our whole extent. This is necessary
@@ -147,7 +147,7 @@ namespace exactextract {
         );
     }
 
-    bool Extent::compatible_with(const exactextract::Extent &b) const {
+    bool Grid::compatible_with(const exactextract::Grid &b) const {
         // Check x-resolution compatibility
         if (!is_integral(std::max(dx, b.dx) / std::min(dx, b.dx))) {
             return false;
@@ -171,7 +171,7 @@ namespace exactextract {
         return true;
     }
 
-    Extent Extent::common_extent(const Extent &b) const {
+    Grid Grid::common_extent(const Grid &b) const {
         if (!compatible_with(b)) {
             throw std::runtime_error("Incompatible extents.");
         }
@@ -194,7 +194,7 @@ namespace exactextract {
         return { xmin, ymin, xmax, ymax, dx, dy };
     }
 
-    bool Extent::operator==(const Extent &b) const {
+    bool Grid::operator==(const Grid &b) const {
         return
             xmin == b.xmin &&
             ymin == b.ymin &&

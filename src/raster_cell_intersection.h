@@ -18,7 +18,7 @@
 
 #include <geos_c.h>
 
-#include "extent.h"
+#include "grid.h"
 #include "matrix.h"
 #include "raster.h"
 
@@ -27,7 +27,7 @@ namespace exactextract {
     class RasterCellIntersection {
 
     public:
-        RasterCellIntersection(const Extent &raster_extent, const GEOSGeometry *g);
+        RasterCellIntersection(const Grid &raster_extent, const GEOSGeometry *g);
 
         size_t min_row() const { return m_min_row; }
 
@@ -47,7 +47,7 @@ namespace exactextract {
 
         const Matrix<float> &overlap_areas() const { return *m_overlap_areas; }
 
-        Extent m_geometry_extent;
+        Grid m_geometry_extent;
     private:
         size_t m_min_row;
         size_t m_min_col;
@@ -64,7 +64,7 @@ namespace exactextract {
 
     };
 
-    Raster<float> raster_cell_intersection(const Extent & raster_extent, const GEOSGeometry* g);
+    Raster<float> raster_cell_intersection(const Grid & raster_extent, const GEOSGeometry* g);
 
 }
 

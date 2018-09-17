@@ -2,7 +2,7 @@
 
 #include "catch.hpp"
 
-#include "extent.h"
+#include "grid.h"
 #include "matrix.h"
 #include "raster.h"
 
@@ -54,7 +54,7 @@ TEST_CASE("Constructing a Raster" ) {
 
 TEST_CASE("Creating a scaled view") {
     Raster<float> r{0, 0, 10, 10, 10, 10};
-    Extent ex{0, 0, 10, 10, 0.1, 0.1};
+    Grid ex{0, 0, 10, 10, 0.1, 0.1};
 
     fill_with_squares(r);
 
@@ -80,7 +80,7 @@ TEST_CASE("Creating a scaled view") {
 
 TEST_CASE("Creating a shifted view") {
     Raster<float> r{0, 0, 10, 10, 10, 10};
-    Extent ex{2, 3, 5, 8, 1, 1};
+    Grid ex{2, 3, 5, 8, 1, 1};
 
     fill_with_squares(r);
 
@@ -110,7 +110,7 @@ TEST_CASE("Creating a shifted view") {
 
 TEST_CASE("Creating a scaled and shifted view") {
     Raster<float> r{0, 0, 10, 10, 10, 10};
-    Extent ex{2.5, 3, 5, 8.5, 0.5, 0.5};
+    Grid ex{2.5, 3, 5, 8.5, 0.5, 0.5};
 
     fill_with_squares(r);
 
@@ -146,7 +146,7 @@ TEST_CASE("Creating a scaled and shifted view") {
 
 TEST_CASE("Creating a scaled and shifted view (greater extent)") {
     Raster<float> r{0, 0, 10, 10, 10, 10};
-    Extent ex{2.5, 8.5, 4, 11, 0.5, 0.5};
+    Grid ex{2.5, 8.5, 4, 11, 0.5, 0.5};
 
     fill_with_squares(r);
 
