@@ -38,7 +38,6 @@ using exactextract::Raster;
 using exactextract::RasterStats;
 using exactextract::RasterView;
 
-
 static Grid get_raster_extent(GDALDataset* rast) {
     double adfGeoTransform[6];
     if (rast->GetGeoTransform(adfGeoTransform) != CE_None) {
@@ -66,8 +65,6 @@ static Grid get_raster_extent(GDALDataset* rast) {
 static Raster<double> read_box(GDALRasterBand* band, const Grid & grid, const Box & box) {
     Grid cropped_grid = grid.shrink_to_fit(box);
     Raster<double> vals(cropped_grid);
-
-    // std::cout << "Reading " << cropped_grid.cols() << " cols x " << cropped_grid.rows() << " rows" << std::endl;
 
     // TODO check return value
     GDALRasterIO(band,
@@ -137,7 +134,7 @@ int main(int argc, char** argv) {
     std::vector<std::string> stats;
     app.add_option("-p", poly_filename, "polygon dataset")->required(true);
     app.add_option("-r", rast_filename, "raster values dataset")->required(true);
-    app.add_option("-w", weights_filename, "raster weights dataset")->required(false);
+    app.add_option("-w", weights_filename, "optional raster weights dataset")->required(false);
     app.add_option("-f", field_name, "id from polygon dataset to retain in output")->required(true);
     app.add_option("-o", output_filename, "output filename")->required(true);
     app.add_option("-s", stats, "statistics")->required(true)->expected(-1);
@@ -258,15 +255,6 @@ int main(int argc, char** argv) {
 
                     write_stats_to_csv(name, raster_stats, stats, csvout);
                 }
-
-
-                //exactextract::RasterCellIntersection rci(values_extent, geom.get());
-
-                //exactextract::Matrix<double> m(rci.rows(), rci.cols());
-
-                //GDALRasterIO(band, GF_Read, rci.min_col(), rci.min_row(), rci.cols(), rci.rows(), m.data(), rci.cols(), rci.rows(), GDT_Float64, 0, 0);
-
-                //exactextract::RasterStats<decltype(m)> raster_stats{coverage, m, true, has_nodata ? &nodata : nullptr};
 
             } catch (...) {
                 failures.push_back(name);

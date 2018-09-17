@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.7)
 project(exactextract)
 
 set(LIB_NAME exactextract)
+set(BIN_NAME exactextract_bin)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,6 +15,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 find_package(GEOS REQUIRED)
 find_package(GDAL)
 
+# Download Catch (header-only library)
 set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
 set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
 
@@ -23,6 +25,7 @@ if (NOT EXISTS ${CATCH_INCLUDE})
          SHOW_PROGRESS)
 endif()
 
+# Download CLI11 (header-only library)
 set(CLI11_INCLUDE_DIR ${CMAKE_BINARY_DIR}/CLI11)
 set(CLI11_INCLUDE ${CLI11_INCLUDE_DIR}/CLI11.hpp)
 
@@ -31,7 +34,6 @@ if (NOT EXISTS ${CLI11_INCLUDE})
             ${CLI11_INCLUDE}
             SHOW_PROGRESS)
 endif()
-
 
 set(PROJECT_SOURCES
         src/area.cpp
@@ -76,32 +78,37 @@ set(TEST_SOURCES
         test/test_traversal_areas.cpp
         test/test_stats.cpp)
 
-add_library(${LIB_NAME} SHARED ${PROJECT_SOURCES})
+# Make a shared and static version of the library
+foreach(LINKING SHARED STATIC)
+    add_library(${LIB_NAME}_${LINKING} ${LINKING} ${PROJECT_SOURCES})
 
-target_include_directories(
-        ${LIB_NAME}
-        PRIVATE
+    target_include_directories(
+            ${LIB_NAME}_${LINKING}
+            PRIVATE
             ${GEOS_INCLUDE_DIR}
-)
+    )
 
-add_executable(catch_tests ${TEST_SOURCES})
+    set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})
+endforeach(LINKING)
 
-
+# Create our main program, statically linked to our library
+# Unlike the library, this depends on GDAL
 if (GDAL_FOUND)
-    add_executable(zonal_example
-            example/zonal_example.cpp
+    add_executable(${BIN_NAME}
+            src/exactextract.cpp
             )
+    set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
 
     target_link_libraries(
-            zonal_example
+            ${BIN_NAME}
             PRIVATE
-                ${LIB_NAME}
+                ${LIB_NAME}_STATIC
                 ${GDAL_LIBRARY}
                 ${GEOS_LIBRARY}
     )
 
     target_include_directories(
-            zonal_example
+            ${BIN_NAME}
             PRIVATE
                 ${GDAL_INCLUDE_DIR}
                 ${GEOS_INCLUDE_DIR}
@@ -109,7 +116,13 @@ if (GDAL_FOUND)
                 ${CMAKE_SOURCE_DIR}/src
     )
 
+    install(TARGETS ${BIN_NAME}
+            RUNTIME
+            DESTINATION bin)
 endif(GDAL_FOUND)
+
+# Create an executable to run the unit tests
+add_executable(catch_tests ${TEST_SOURCES})
 
 target_include_directories(
         catch_tests
@@ -122,7 +135,6 @@ target_include_directories(
 target_link_libraries(
         catch_tests
         PRIVATE
-            ${LIB_NAME}
+            ${LIB_NAME}_SHARED
             ${GEOS_LIBRARY}
 )
-
