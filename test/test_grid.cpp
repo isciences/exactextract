@@ -121,5 +121,5 @@ TEST_CASE("Common extent calculation", "[extent]") {
     Grid half_degree_global{-180, -90, 180, 90, 0.5, 0.5};
     Grid nldas{-125.0, 0.25, -67, 53, 0.125, 0.125};
 
-    CHECK ( nldas.common_extent(half_degree_global) == Grid{-180, -90, 180, 90, 0.125, 0.125} );
+    CHECK (nldas.common_grid(half_degree_global) == Grid{-180, -90, 180, 90, 0.125, 0.125} );
 }

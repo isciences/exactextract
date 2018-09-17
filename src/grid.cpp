@@ -171,7 +171,7 @@ namespace exactextract {
         return true;
     }
 
-    Grid Grid::common_extent(const Grid &b) const {
+    Grid Grid::common_grid(const Grid &b) const {
         if (!compatible_with(b)) {
             throw std::runtime_error("Incompatible extents.");
         }

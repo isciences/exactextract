@@ -81,7 +81,7 @@ namespace exactextract {
 
         auto g = GEOSGeom_read("POLYGON ((3.5 1.5, 6.5 1.5, 6.5 2.5, 3.5 2.5, 3.5 1.5))");
 
-        Raster<float> areas = raster_cell_intersection(ex1.common_extent(ex2), g.get());
+        Raster<float> areas = raster_cell_intersection(ex1.common_grid(ex2), g.get());
         Raster<float> values{0, 0, 8, 6, 6, 8};
         Raster<float> weights{0, 0, 8, 6, 3, 4};
 

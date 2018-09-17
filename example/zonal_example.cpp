@@ -25,13 +25,21 @@
 #include "cpl_conv.h"
 #include "ogrsf_frmts.h"
 
+#include "box.h"
 #include "grid.h"
 #include "geos_utils.h"
 #include "raster.h"
 #include "raster_stats.h"
 #include "raster_cell_intersection.h"
 
-static exactextract::Grid get_raster_extent(GDALDataset* rast) {
+using exactextract::Box;
+using exactextract::Grid;
+using exactextract::Raster;
+using exactextract::RasterStats;
+using exactextract::RasterView;
+
+
+static Grid get_raster_extent(GDALDataset* rast) {
     double adfGeoTransform[6];
     if (rast->GetGeoTransform(adfGeoTransform) != CE_None) {
         throw std::runtime_error("Error reading transform");
@@ -55,13 +63,81 @@ static exactextract::Grid get_raster_extent(GDALDataset* rast) {
     };
 }
 
+static Raster<double> read_box(GDALRasterBand* band, const Grid & grid, const Box & box) {
+    Grid cropped_grid = grid.shrink_to_fit(box);
+    Raster<double> vals(cropped_grid);
+
+    // std::cout << "Reading " << cropped_grid.cols() << " cols x " << cropped_grid.rows() << " rows" << std::endl;
+
+    // TODO check return value
+    GDALRasterIO(band,
+                 GF_Read,
+                 (int) cropped_grid.col_offset(grid),
+                 (int) cropped_grid.row_offset(grid),
+                 (int) cropped_grid.cols(),
+                 (int) cropped_grid.rows(),
+                 vals.data().data(),
+                 (int) cropped_grid.cols(),
+                 (int) cropped_grid.rows(),
+                 GDT_Float64,
+                 0,
+                 0);
+
+    return vals;
+}
+
+static void write_stats_to_csv(const std::string & name, const RasterStats<double> & raster_stats, const std::vector<std::string> & stats, std::ostream & csvout) {
+    csvout << name;
+    for (const auto& stat : stats) {
+        csvout << ",";
+        if (stat == "mean") {
+            csvout << raster_stats.mean();
+        } else if (stat == "count") {
+            csvout << raster_stats.count();
+        } else if (stat == "sum") {
+            csvout << raster_stats.sum();
+        } else if (stat == "variety") {
+            csvout << raster_stats.variety();
+        } else if (stat == "min") {
+            if (raster_stats.count() > 0) {
+                csvout << raster_stats.min();
+            } else {
+                csvout << "NA";
+            }
+        } else if (stat == "max") {
+            if (raster_stats.count() > 0) {
+                csvout << raster_stats.max();
+            } else {
+                csvout << "NA";
+            }
+        } else if (stat == "mode") {
+            if (raster_stats.count() > 0) {
+                csvout << raster_stats.max();
+            } else {
+                csvout << "NA";
+            }
+        } else if (stat == "minority") {
+            if (raster_stats.count() > 0) {
+                csvout << raster_stats.max();
+            } else {
+                csvout << "NA";
+            }
+        } else {
+            throw std::runtime_error("Unknown stat: " + stat);
+        }
+    }
+    csvout << std::endl;
+
+}
+
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract"};
 
-    std::string poly_filename, rast_filename, field_name, output_filename, filter;
+    std::string poly_filename, rast_filename, weights_filename, field_name, output_filename, filter;
     std::vector<std::string> stats;
     app.add_option("-p", poly_filename, "polygon dataset")->required(true);
-    app.add_option("-r", rast_filename, "raster dataset")->required(true);
+    app.add_option("-r", rast_filename, "raster values dataset")->required(true);
+    app.add_option("-w", weights_filename, "raster weights dataset")->required(false);
     app.add_option("-f", field_name, "id from polygon dataset to retain in output")->required(true);
     app.add_option("-o", output_filename, "output filename")->required(true);
     app.add_option("-s", stats, "statistics")->required(true)->expected(-1);
@@ -72,6 +148,7 @@ int main(int argc, char** argv) {
         return 0;
     }
     CLI11_PARSE(app, argc, argv);
+    bool use_weights = !weights_filename.empty();
 
     initGEOS(nullptr, nullptr);
 
@@ -79,10 +156,21 @@ int main(int argc, char** argv) {
     GEOSContextHandle_t geos_context = OGRGeometry::createGEOSContext();
 
     GDALDataset* rast = (GDALDataset*) GDALOpen(rast_filename.c_str(), GA_ReadOnly);
-
     if (!rast) {
         std::cerr << "Failed to open " << rast_filename << std::endl;
         return 1;
+    }
+    GDALRasterBand* band = rast->GetRasterBand(1);
+
+    GDALDataset* weights = nullptr;
+    GDALRasterBand* weights_band = nullptr;
+    if (use_weights) {
+        weights = (GDALDataset*) GDALOpen(weights_filename.c_str(), GA_ReadOnly);
+        if (!weights) {
+            std::cerr << "Failed to open " << rast_filename << std::endl;
+            return 1;
+        }
+        weights_band = weights->GetRasterBand(1);
     }
 
     GDALDataset* shp = (GDALDataset*) GDALOpenEx(poly_filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
@@ -92,16 +180,21 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    GDALRasterBand* band = rast->GetRasterBand(1);
     OGRLayer* polys = shp->GetLayer(0);
 
+    // TODO handle nodata for weights
     int has_nodata;
     double nodata = GDALGetRasterNoDataValue(band, &has_nodata);
 
     std::cout << "Using NODATA value of " << nodata << std::endl;
 
-    exactextract::Grid raster_extent = get_raster_extent(rast);
-    exactextract::geom_ptr box = exactextract::geos_make_box_polygon(raster_extent.xmin, raster_extent.ymin, raster_extent.xmax, raster_extent.ymax);
+    // TODO figure out how to handle differing extents for weights and values (when it matters)
+    Grid values_extent = get_raster_extent(rast);
+    Grid weights_extent;
+    if (use_weights) {
+        weights_extent = get_raster_extent(weights);
+    }
+    exactextract::geom_ptr box = exactextract::geos_make_box_polygon(values_extent.xmin, values_extent.ymin, values_extent.xmax, values_extent.ymax);
 
     OGRFeature* feature;
     polys->ResetReading();
@@ -128,26 +221,46 @@ int main(int argc, char** argv) {
             }
 
             try {
-                exactextract::Raster<float> coverage = raster_cell_intersection(raster_extent, geom.get());
+                if (use_weights) {
+                    Box bbox = exactextract::geos_get_box(geom.get());
 
-                exactextract::Raster<double> vals(coverage.extent());
-                GDALRasterIO(band,
-                        GF_Read,
-                        (int) coverage.extent().col_offset(raster_extent),
-                        (int) coverage.extent().row_offset(raster_extent),
-                        (int) vals.extent().cols(),
-                        (int) vals.extent().rows(),
-                        vals.data().data(),
-                        (int) vals.extent().cols(),
-                        (int) vals.extent().rows(),
-                        GDT_Float64,
-                        0,
-                        0);
+                    Raster<double> values = read_box(band, values_extent, bbox);
+                    Raster<double> weights = read_box(weights_band, weights_extent, bbox);
 
-                exactextract::RasterStats<double> raster_stats{coverage, vals, has_nodata ? &nodata : nullptr};
+                    Grid common_grid = values.grid().common_grid(weights.grid());
+
+                    RasterView<double> values_view{values, common_grid};
+                    RasterView<double> weights_view{weights, common_grid};
+
+                    Raster<float> coverage = raster_cell_intersection(common_grid, geom.get());
+
+                    RasterStats<double> raster_stats{coverage, values_view, weights_view, has_nodata ? &nodata : nullptr};
+
+                    write_stats_to_csv(name, raster_stats, stats, csvout);
+                } else {
+                    Raster<float> coverage = raster_cell_intersection(values_extent, geom.get());
+
+                    Raster<double> vals(coverage.grid());
+                    GDALRasterIO(band,
+                                 GF_Read,
+                                 (int) coverage.grid().col_offset(values_extent),
+                                 (int) coverage.grid().row_offset(values_extent),
+                                 (int) vals.grid().cols(),
+                                 (int) vals.grid().rows(),
+                                 vals.data().data(),
+                                 (int) vals.grid().cols(),
+                                 (int) vals.grid().rows(),
+                                 GDT_Float64,
+                                 0,
+                                 0);
+
+                    RasterStats<double> raster_stats{coverage, vals, has_nodata ? &nodata : nullptr};
+
+                    write_stats_to_csv(name, raster_stats, stats, csvout);
+                }
 
 
-                //exactextract::RasterCellIntersection rci(raster_extent, geom.get());
+                //exactextract::RasterCellIntersection rci(values_extent, geom.get());
 
                 //exactextract::Matrix<double> m(rci.rows(), rci.cols());
 
@@ -155,46 +268,6 @@ int main(int argc, char** argv) {
 
                 //exactextract::RasterStats<decltype(m)> raster_stats{coverage, m, true, has_nodata ? &nodata : nullptr};
 
-                csvout << name;
-                for (const auto& stat : stats) {
-                    csvout << ",";
-                    if (stat == "mean") {
-                        csvout << raster_stats.mean();
-                    } else if (stat == "count") {
-                        csvout << raster_stats.count();
-                    } else if (stat == "sum") {
-                        csvout << raster_stats.sum();
-                    } else if (stat == "variety") {
-                        csvout << raster_stats.variety();
-                    } else if (stat == "min") {
-                        if (raster_stats.count() > 0) {
-                            csvout << raster_stats.min();
-                        } else {
-                            csvout << "NA";
-                        }
-                    } else if (stat == "max") {
-                        if (raster_stats.count() > 0) {
-                            csvout << raster_stats.max();
-                        } else {
-                            csvout << "NA";
-                        }
-                    } else if (stat == "mode") {
-                        if (raster_stats.count() > 0) {
-                            csvout << raster_stats.max();
-                        } else {
-                            csvout << "NA";
-                        }
-                    } else if (stat == "minority") {
-                        if (raster_stats.count() > 0) {
-                            csvout << raster_stats.max();
-                        } else {
-                            csvout << "NA";
-                        }
-                    } else {
-                        throw std::runtime_error("Unknown stat: " + stat);
-                    }
-                }
-                csvout << std::endl;
             } catch (...) {
                 failures.push_back(name);
                 std::cout << "failed." << std::endl;

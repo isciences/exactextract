@@ -32,14 +32,14 @@ namespace exactextract {
          *
          * A NODATA value may optionally be provided in addition to NaN.
          */
-        RasterStats(const Raster<float> & intersection_percentages, const Raster<T> & rast, const T* nodata = nullptr) :
+        RasterStats(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const T* nodata = nullptr) :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_weights{0},
                 m_weighted_vals{0},
                 m_nodata{nodata} {
 
-            RasterView<T> rv = RasterView<T>{rast, intersection_percentages.extent()};
+            RasterView<T> rv{rast, intersection_percentages.grid()};
 
             for (size_t i = 0; i < rv.rows(); i++) {
                 for (size_t j = 0; j < rv.cols(); j++) {
@@ -54,19 +54,19 @@ namespace exactextract {
             }
         }
 
-        RasterStats(const Raster<float> & intersection_percentages, const Raster<T> & rast, const Raster<T> & weights, const T* nodata = nullptr) :
+        RasterStats(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const AbstractRaster<T> & weights, const T* nodata = nullptr) :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_weights{0},
                 m_weighted_vals{0},
                 m_nodata{nodata} {
 
-            Grid common = rast.extent().common_extent(weights.extent());
-            common = common.common_extent(intersection_percentages.extent());
+            Grid common = rast.grid().common_grid(weights.grid());
+            common = common.common_grid(intersection_percentages.grid());
 
-            RasterView<T> iv = RasterView<T>{intersection_percentages, common};
-            RasterView<T> rv = RasterView<T>{rast,    common};
-            RasterView<T> wv = RasterView<T>{weights, common};
+            RasterView<float> iv{intersection_percentages, common};
+            RasterView<T> rv{rast,    common};
+            RasterView<T> wv{weights, common};
 
             for (size_t i = 0; i < rv.rows(); i++) {
                 for (size_t j = 0; j < rv.cols(); j++) {
@@ -85,7 +85,7 @@ namespace exactextract {
          * The mean value of cells covered by this polygon, weighted
          * by the percent of the cell that is covered.
          */
-        float mean() {
+        float mean() const {
             return sum() / count();
         }
 
@@ -95,7 +95,7 @@ namespace exactextract {
          * cover the same number of cells, the greatest value will
          * be returned.
          */
-        T mode() {
+        T mode() const {
             return std::max_element(m_freq.cbegin(),
                                     m_freq.cend(),
                                     [](const auto &a, const auto &b) {
@@ -107,7 +107,7 @@ namespace exactextract {
          * The minimum value in any raster cell wholly or partially covered
          * by the polygon.
          */
-        T min() {
+        T min() const {
             return m_min;
         }
 
@@ -115,14 +115,14 @@ namespace exactextract {
          * The maximum value in any raster cell wholly or partially covered
          * by the polygon.
          */
-        T max() {
+        T max() const {
             return m_max;
         }
 
         /**
          * The weighted sum of raster cells covered by the polygon.
          */
-        float sum() {
+        float sum() const {
             return (float) m_weighted_vals;
         }
 
@@ -130,7 +130,7 @@ namespace exactextract {
          * The number of raster cells with a defined value
          * covered by the polygon.
          */
-        float count() {
+        float count() const {
             return (float) m_weights;
         }
 
@@ -140,7 +140,7 @@ namespace exactextract {
          * cover the same number of cells, the lowest value will
          * be returned.
          */
-        T minority() {
+        T minority() const {
             return std::min_element(m_freq.cbegin(),
                                     m_freq.cend(),
                                     [](const auto &a, const auto &b) {
@@ -152,7 +152,7 @@ namespace exactextract {
          * The number of distinct defined raster values in cells wholly
          * or partially covered by the polygon.
          */
-        size_t variety() {
+        size_t variety() const {
             return m_freq.size();
         }
 

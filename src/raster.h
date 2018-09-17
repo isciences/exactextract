@@ -23,42 +23,42 @@ namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
-        explicit AbstractRaster(Grid ex) : m_extent{ex} {}
+        explicit AbstractRaster(Grid ex) : m_grid{ex} {}
 
         size_t rows() const {
-            return m_extent.rows();
+            return m_grid.rows();
         }
 
         size_t cols() const {
-            return m_extent.cols();
+            return m_grid.cols();
         }
 
         double xres() const {
-            return m_extent.dx;
+            return m_grid.dx;
         }
 
         double yres() const {
-            return m_extent.dy;
+            return m_grid.dy;
         }
 
         double xmin() const {
-            return m_extent.xmin;
+            return m_grid.xmin;
         }
 
         double ymin() const {
-            return m_extent.ymin;
+            return m_grid.ymin;
         }
 
         double xmax() const {
-            return m_extent.xmax;
+            return m_grid.xmax;
         }
 
         double ymax() const {
-            return m_extent.ymax;
+            return m_grid.ymax;
         }
 
-        const Grid& extent() const {
-            return m_extent;
+        const Grid& grid() const {
+            return m_grid;
         }
 
         virtual T operator()(size_t row, size_t col) const = 0;
@@ -93,7 +93,7 @@ namespace exactextract {
             return true;
         }
     private:
-        Grid m_extent;
+        Grid m_grid;
     };
 
     template<typename T>
@@ -140,7 +140,7 @@ namespace exactextract {
     public:
         // Construct a view of a raster r at an extent ex that is larger
         // and/or of finer resolution than r
-        RasterView(const Raster<T> & r, Grid ex) : AbstractRaster<T>(ex), m_raster{r}, expanded{false} {
+        RasterView(const AbstractRaster<T> & r, Grid ex) : AbstractRaster<T>(ex), m_raster{r}, expanded{false} {
             double disaggregation_factor_x = r.xres() / ex.dx;
             double disaggregation_factor_y = r.yres() / ex.dy;
 
@@ -188,7 +188,7 @@ namespace exactextract {
         }
 
     private:
-        const Raster<T>& m_raster;
+        const AbstractRaster<T>& m_raster;
         bool expanded;
 
         int m_x_off;

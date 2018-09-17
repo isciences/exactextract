@@ -59,7 +59,7 @@ namespace exactextract {
 
         bool compatible_with(const Grid & b) const;
 
-        Grid common_extent(const Grid & b) const;
+        Grid common_grid(const Grid &b) const;
 
         bool operator==(const Grid & b) const;
 
