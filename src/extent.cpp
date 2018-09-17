@@ -39,9 +39,7 @@ namespace exactextract {
             xmax{xmax},
             ymax{ymax},
             dx{dx},
-            dy{dy},
-            m_first_row{0},
-            m_first_col{0} {
+            dy{dy} {
         // Compute and store the number of rows and columns. Do this so that we can be sure
         // to get the correct number. Because we believe xmax and ymax are exact multiples
         // of dx, we can find the number of cells using round instead of floor.
@@ -130,9 +128,6 @@ namespace exactextract {
         if (lt(x0, reduced.xmin) || lt(y0, reduced.ymin) || gt(x1, reduced.xmax) || gt(y1, reduced.ymax)) {
             throw std::runtime_error("Shrink operation failed.");
         }
-
-        reduced.m_first_col = col0;
-        reduced.m_first_row = row1;
 
         return reduced;
     }

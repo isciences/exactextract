@@ -25,8 +25,6 @@ namespace exactextract {
     Raster<float> raster_cell_intersection(const Extent & raster_extent, const GEOSGeometry* g) {
         RasterCellIntersection rci(raster_extent, g);
 
-        // FIXME need to make sure row offset and column offset of m_geometry_extent is preserved
-
         return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
                  rci.m_geometry_extent.xmin,
                  rci.m_geometry_extent.ymin,
@@ -56,10 +54,10 @@ namespace exactextract {
                                      "Is the geometry extent larger than the raster?");
         }
 
-        m_min_row = m_geometry_extent.row_offset();
+        m_min_row = m_geometry_extent.row_offset(raster_extent);
         m_max_row = m_min_row + m_geometry_extent.rows();
 
-        m_min_col = m_geometry_extent.col_offset();
+        m_min_col = m_geometry_extent.col_offset(raster_extent);
         m_max_col = m_min_col + m_geometry_extent.cols();
 
         m_overlap_areas = std::make_unique<Matrix<float>>(m_max_row - m_min_row, m_max_col - m_min_col);
@@ -224,8 +222,8 @@ namespace exactextract {
         ff.flood(areas);
 
         // Transfer these areas to our global set
-        size_t i0 = ring_extent.row_offset();
-        size_t j0 = ring_extent.col_offset();
+        size_t i0 = ring_extent.row_offset(m_geometry_extent);
+        size_t j0 = ring_extent.col_offset(m_geometry_extent);
 
         add_ring_areas(i0, j0, areas, exterior_ring);
     }

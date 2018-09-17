@@ -133,8 +133,8 @@ int main(int argc, char** argv) {
                 exactextract::Raster<double> vals(coverage.extent());
                 GDALRasterIO(band,
                         GF_Read,
-                        (int) coverage.extent().col_offset(),
-                        (int) coverage.extent().row_offset(),
+                        (int) coverage.extent().col_offset(raster_extent),
+                        (int) coverage.extent().row_offset(raster_extent),
                         (int) vals.extent().cols(),
                         (int) vals.extent().rows(),
                         vals.data().data(),

@@ -43,9 +43,9 @@ namespace exactextract {
 
         size_t cols() const { return m_num_cols; }
 
-        size_t row_offset() const { return m_first_row; }
+        size_t row_offset(const Extent & other) const { return (size_t) std::round((other.ymax - ymax) / dy); }
 
-        size_t col_offset() const { return m_first_col; }
+        size_t col_offset(const Extent & other) const { return (size_t) std::round((xmin - other.xmin) / dx); }
 
         double x_for_col(size_t col) const { return xmin + (col + 0.5) * dx; }
 
@@ -64,9 +64,6 @@ namespace exactextract {
         bool operator==(const Extent & b) const;
 
     private:
-        size_t m_first_row;
-        size_t m_first_col;
-
         size_t m_num_rows;
         size_t m_num_cols;
     };
