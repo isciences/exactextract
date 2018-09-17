@@ -2,7 +2,7 @@
 
 [![Build Status](https://gitlab.com/isciences/exactextract/badges/master/build.svg)](https://gitlab.com/isciences/exactextract/pipelines)
 
-The `exactextract` library provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as **zonal statistics**. Unlike other zonal statistics implementations, it takes into account raster calls that are partially covered by the polygon.
+`exactextract` provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as **zonal statistics**. Unlike other zonal statistics implementations, it takes into account raster calls that are partially covered by the polygon.
 
 <img align="right" width="380" height="380" src="https://wsim.isciences.com/exactextract.svg" />
 
@@ -25,9 +25,47 @@ To achieve better performance, most zonal statistics implementations sacrifice a
 2. For each raster cell that was touched by a ring, the fraction of the cell covered by the polygon is computed. This is done by identifying all counter-clockwise-bounded areas within the cell.
 3. Any cell that was not touched by the ring is known to be either entirely inside or outside of the polygon (i.e., its covered fraction is either `0` or `1`). A point-in-polygon test is used to determine which, and the `0` or `1` value is then propagated outward using a flood fill algorithm. Depending on the structure of the polygon, a handful of point-in-polygon tests may be necessary.
 
+### Additional Features
+
+`exactextract` can compute statistics against two rasters simultaneously, with a second raster containing weighting values.
+The weighting raster does not need to have the same resolution and extent as the value raster, but the resolutions of the two rasters must be integer multiple of each other, and any difference between the grid origin points must be an integer multiple of the smallest cell size.
+
+### Compiling
+
+`exactextract` requires C++14 to build. It can be built as follows on Linux, using CMake 3.7 or greater:
+
+```bash
+git clone https://github.com/isciences/exactextract
+cd exactextract
+mkdir cmake-build-release
+cd cmake-build-release
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+sudo make install
+```
+
+No testing has yet been performed on Windows or OS X.
+Feedback concerning building on these platforms is welcome.
+
 ### Using `exactextract`
 
-The `example` folder provides an example application that uses GDAL to read a raster file and a shapefile and write zonal mean values to a CSV.
+`exactextract` provides a simple command-line executable that uses GDAL to read a raster file and a shapefile and write various zonal statistics to a CSV.
+Command line documentation can be accessed by `exactextract -h`.
 
-In addition to the C++ code provided in this repository, an R package ([`exactextractr`](https://github.com/isciences/exactextractr)) allows the functionality of `exactextract` to be used with `sf` and `raster` objects.
+An example usage is as follows:
 
+```bash
+exactextract \
+  -r temp.tif \
+  -w runoff.tif \
+  -f NAME \
+  -p ne_110m_admin_0_countries.shp \
+  -s mean \
+  -o runoff_weighted_mean_temperature.csv
+```
+
+In addition to the command-line executable, an R package ([`exactextractr`](https://github.com/isciences/exactextractr)) allows the functionality of `exactextract` to be used with `sf` and `raster` objects.
+
+### Limitations
+
+While `exactextract` does not need to load the entire raster into memory, it does need to load the portion of a raster that covers a given polygon. This limitation will be removed in the future.
