@@ -43,9 +43,9 @@ namespace exactextract {
 
         size_t cols() const { return m_num_cols; }
 
-        size_t row_offset(const Grid & other) const { return (size_t) std::round((other.ymax - ymax) / dy); }
+        size_t row_offset(const Grid & other) const { return static_cast<size_t>(std::round((other.ymax - ymax) / dy)); }
 
-        size_t col_offset(const Grid & other) const { return (size_t) std::round((xmin - other.xmin) / dx); }
+        size_t col_offset(const Grid & other) const { return static_cast<size_t>(std::round((xmin - other.xmin) / dx)); }
 
         double x_for_col(size_t col) const { return xmin + (col + 0.5) * dx; }
 

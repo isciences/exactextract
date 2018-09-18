@@ -159,10 +159,10 @@ namespace exactextract {
 
             }
 
-            m_x_off = (ex.xmin - r.xmin()) / ex.dx;
-            m_y_off = (r.ymax() - ex.ymax) / ex.dy;
-            m_rx = (size_t) disaggregation_factor_x;
-            m_ry = (size_t) disaggregation_factor_y;
+            m_x_off = static_cast<long>((ex.xmin - r.xmin()) / ex.dx);
+            m_y_off = static_cast<long>((r.ymax() - ex.ymax) / ex.dy);
+            m_rx = static_cast<size_t>(disaggregation_factor_x);
+            m_ry = static_cast<size_t>(disaggregation_factor_y);
         }
 
         T operator()(size_t row, size_t col) const override {
@@ -191,8 +191,8 @@ namespace exactextract {
         const AbstractRaster<T>& m_raster;
         bool expanded;
 
-        int m_x_off;
-        int m_y_off;
+        long m_x_off;
+        long m_y_off;
         size_t m_rx;
         size_t m_ry;
     };

@@ -49,8 +49,8 @@ namespace exactextract {
         // when the column numbers should clearly be different:
         // floor((16.2 - 8.5) / 0.1) --> 76
         // floor((16.1 - 8.5) / 0.1) --> 76
-        m_num_cols = (size_t) std::round((xmax - xmin) / dx);
-        m_num_rows = (size_t) std::round((ymax - ymin) / dy);
+        m_num_cols = static_cast<size_t>(std::round((xmax - xmin) / dx));
+        m_num_rows = static_cast<size_t>(std::round((ymax - ymin) / dy));
     }
 
     size_t Grid::get_column(double x) const {
@@ -64,7 +64,7 @@ namespace exactextract {
             return m_num_cols - 1;
         }
 
-        return (size_t) std::floor((x - xmin) / dx);
+        return static_cast<size_t>(std::floor((x - xmin) / dx));
     }
 
     size_t Grid::get_row(double y) const {
@@ -76,7 +76,7 @@ namespace exactextract {
         if (y - ymin <= tol)
             return m_num_rows - 1;
 
-        return (size_t) std::floor((ymax - y) / dy);
+        return static_cast<size_t>(std::floor((ymax - y) / dy));
     }
 
     Grid Grid::shrink_to_fit(const Box &b) const {
@@ -185,8 +185,8 @@ namespace exactextract {
         double xmax = std::max(this->xmax, b.xmax);
         double ymin = std::min(this->ymin, b.ymin);
 
-        int nx = (int) std::round((xmax - xmin) / dx);
-        int ny = (int) std::round((ymax - ymin) / dy);
+        long nx = static_cast<long>(std::round((xmax - xmin) / dx));
+        long ny = static_cast<long>(std::round((ymax - ymin) / dy));
 
         xmax = std::max(xmax, xmin + nx*dx);
         ymin = std::min(ymin, ymax - ny*dy);

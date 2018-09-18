@@ -124,12 +124,12 @@ namespace exactextract {
         }
 
         // find highest point
-        size_t hi_index = (size_t) std::distance(
+        size_t hi_index = static_cast<size_t>(std::distance(
                 coords.begin(),
                 std::max_element(coords.begin(), coords.end(), [](const auto& a, const auto&b) {
                     return a.y < b.y;
                 })
-        );
+        ));
 
         // find distinct point before highest point
         size_t i_prev = hi_index;
