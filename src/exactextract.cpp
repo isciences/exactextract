@@ -212,10 +212,6 @@ int main(int argc, char** argv) {
         if (filter.length() == 0 || name == filter) {
             exactextract::geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
 
-            if (!GEOSContains(box.get(), geom.get())) {
-                geom = { GEOSIntersection(box.get(), geom.get()), GEOSGeom_destroy };
-            }
-
             try {
                 if (use_weights) {
                     Box bbox = exactextract::geos_get_box(geom.get());
