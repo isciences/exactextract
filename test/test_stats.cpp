@@ -49,7 +49,8 @@ namespace exactextract {
           {1, 1, 1, 1, 1}
         }}, extent};
 
-        RasterStats<float> stats{areas, values};
+        RasterStats<float> stats;
+        stats.process(areas, values);
 
         CHECK( stats.count() ==
                (0.25 + 0.5 + 0.25) +
@@ -91,7 +92,8 @@ namespace exactextract {
         fill_by_row<float>(values, 1, 1);
         fill_by_row<float>(weights, 5, 5);
 
-        RasterStats<float> stats{areas, values, weights};
+        RasterStats<float> stats;
+        stats.process(areas, values, weights);
 
         std::valarray<double> cov_values  = {   28,  29,  30,   31,   36,  37,  38,   39 };
         std::valarray<double> cov_weights = {   30,  35,  35,   40,   50,  55,  55,   60 };
@@ -120,7 +122,8 @@ namespace exactextract {
             {1, 1,      1, 1, 1}
         }}, extent};
 
-        RasterStats<int> stats{areas, values, &NODATA};
+        RasterStats<int> stats;
+        stats.process(areas, values, &NODATA);
 
         CHECK( stats.count() ==
                (0.25 + 0.5 + 0.25 ) +

@@ -213,8 +213,11 @@ int main(int argc, char** argv) {
             exactextract::geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
 
             try {
+                Box bbox = exactextract::geos_get_box(geom.get());
+
+                std::cout << "Estimated number of cells to read: " << std::ceil(bbox.width() / values_extent.dx())*std::ceil(bbox.height() / values_extent.dy()) << std::endl;
+
                 if (use_weights) {
-                    Box bbox = exactextract::geos_get_box(geom.get());
 
                     Raster<double> values = read_box(band, values_extent, bbox);
                     Raster<double> weights = read_box(weights_band, weights_extent, bbox);
@@ -226,7 +229,8 @@ int main(int argc, char** argv) {
 
                     Raster<float> coverage = raster_cell_intersection(common_grid, geom.get());
 
-                    RasterStats<double> raster_stats{coverage, values_view, weights_view, has_nodata ? &nodata : nullptr};
+                    RasterStats<double> raster_stats;
+                    raster_stats.process(coverage, values_view, weights_view, has_nodata ? &nodata : nullptr);
 
                     write_stats_to_csv(name, raster_stats, stats, csvout);
                 } else {
@@ -246,7 +250,8 @@ int main(int argc, char** argv) {
                                  0,
                                  0);
 
-                    RasterStats<double> raster_stats{coverage, vals, has_nodata ? &nodata : nullptr};
+                    RasterStats<double> raster_stats;
+                    raster_stats.process(coverage, vals, has_nodata ? &nodata : nullptr);
 
                     write_stats_to_csv(name, raster_stats, stats, csvout);
                 }

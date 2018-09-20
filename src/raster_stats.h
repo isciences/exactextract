@@ -32,13 +32,13 @@ namespace exactextract {
          *
          * A NODATA value may optionally be provided in addition to NaN.
          */
-        RasterStats(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const T* nodata = nullptr) :
+        RasterStats() :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_weights{0},
-                m_weighted_vals{0},
-                m_nodata{nodata} {
+                m_weighted_vals{0} {}
 
+        void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const T* nodata = nullptr) {
             RasterView<T> rv{rast, intersection_percentages.grid()};
 
             for (size_t i = 0; i < rv.rows(); i++) {
@@ -47,20 +47,14 @@ namespace exactextract {
                     T val = rv(i, j);
 
                     if (w > 0 && !(std::is_floating_point<T>::value && std::isnan(val)) &&
-                        (m_nodata == nullptr || val != *m_nodata)) {
+                        (nodata == nullptr || val != *nodata)) {
                         process(val, w);
                     }
                 }
             }
         }
 
-        RasterStats(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const AbstractRaster<T> & weights, const T* nodata = nullptr) :
-                m_min{std::numeric_limits<T>::max()},
-                m_max{std::numeric_limits<T>::lowest()},
-                m_weights{0},
-                m_weighted_vals{0},
-                m_nodata{nodata} {
-
+        void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const AbstractRaster<T> & weights, const T* nodata = nullptr) {
             auto common = rast.grid().common_grid(weights.grid());
             common = common.common_grid(intersection_percentages.grid());
 
@@ -74,7 +68,7 @@ namespace exactextract {
                     T val = rv(i, j);
 
                     if (w > 0 && !(std::is_floating_point<T>::value && std::isnan(val)) &&
-                        (m_nodata == nullptr || val != *m_nodata)) {
+                        (nodata == nullptr || val != *nodata)) {
                         process(val, w);
                     }
                 }
@@ -164,8 +158,6 @@ namespace exactextract {
         double m_weighted_vals;
 
         std::unordered_map<T, float> m_freq;
-
-        const T* m_nodata;
 
         void process(const T& val, float weight) {
             m_weights += weight;
