@@ -68,6 +68,15 @@ namespace exactextract {
             };
         }
 
+        Box translate(double dx, double dy) const {
+            return {
+                xmin + dx,
+                ymin + dy,
+                xmax + dx,
+                ymax + dy
+            };
+        }
+
         Coordinate upper_left() const {
             return Coordinate{xmin, ymax};
         }

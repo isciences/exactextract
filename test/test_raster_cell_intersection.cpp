@@ -49,18 +49,58 @@ TEST_CASE("Basic", "[raster-cell-intersection]" ) {
 TEST_CASE("Geometry extent larger than raster", "[raster-cell-intersection]") {
     init_geos();
 
-    Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
+    // Process a geometry using four 3x3 tiles
 
-    auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 5.5 0.5, 5.5 5.5, 0.5 5.5, 0.5 0.5))");
+    // +-----+-----+
+    // |  1  |  2  |
+    // +-----+-----+
+    // |  3  |  4  |
+    // +-----+-----+
 
-    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
-    check_cell_intersections(rci, {
+    Box b3 {0, 0, 3, 3};
+    Box b2 = b3.translate(3, 3);
+    Box b1 = b3.translate(0, 3);
+    Box b4 = b3.translate(3, 0);
+
+    Grid<bounded_extent> g1 {b1, 1, 1};
+    Grid<bounded_extent> g2 {b2, 1, 1};
+    Grid<bounded_extent> g3 {b3, 1, 1};
+    Grid<bounded_extent> g4 {b4, 1, 1};
+
+    auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 4.5 0.5, 4.5 5.5, 0.5 5.5, 0.5 0.5))");
+
+    Raster<float> ll = raster_cell_intersection(g3, g.get());
+
+    check_cell_intersections(ll, {
             {0.50, 1.0, 1.0},
             {0.50, 1.0, 1.0},
             {0.25, 0.5, 0.5}
     });
 
+    Raster<float> lr = raster_cell_intersection(g4, g.get());
+
+    check_cell_intersections(lr, {
+            {1.00, 0.50},
+            {1.00, 0.50},
+            {0.50, 0.25}
+    });
+
+    Raster<float> ur = raster_cell_intersection(g2, g.get());
+
+    check_cell_intersections(ur, {
+            {0.50, 0.25},
+            {1.00, 0.50},
+            {1.00, 0.50}
+    });
+
+    Raster<float> ul = raster_cell_intersection(g1, g.get());
+
+    check_cell_intersections(ul, {
+            {0.25, 0.5, 0.5},
+            {0.50, 1.0, 1.0},
+            {0.50, 1.0, 1.0}
+    });
 }
 
 TEST_CASE("Diagonals", "[raster-cell-intersection]") {
