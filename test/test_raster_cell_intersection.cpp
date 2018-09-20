@@ -7,8 +7,8 @@
 
 using namespace exactextract;
 
-void check_cell_intersections(const RasterCellIntersection & rci, const std::vector<std::vector<float>> & v) {
-    const Matrix<float>& actual = rci.overlap_areas();
+void check_cell_intersections(Raster<float> & rci, const std::vector<std::vector<float>> & v) {
+    const Matrix<float>& actual = rci.data();
     Matrix<float> expected{v};
 
     REQUIRE( expected.rows() == actual.rows() );
@@ -37,13 +37,30 @@ TEST_CASE("Basic", "[raster-cell-intersection]" ) {
 
     auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.25, 0.5, 0.25},
             {0.50, 1.0, 0.50},
             {0.25, 0.5, 0.25}
     });
+}
+
+TEST_CASE("Geometry extent larger than raster", "[raster-cell-intersection]") {
+    init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
+
+    auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 5.5 0.5, 5.5 5.5, 0.5 5.5, 0.5 0.5))");
+
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
+
+    check_cell_intersections(rci, {
+            {0.50, 1.0, 1.0},
+            {0.50, 1.0, 1.0},
+            {0.25, 0.5, 0.5}
+    });
+
 }
 
 TEST_CASE("Diagonals", "[raster-cell-intersection]") {
@@ -53,7 +70,7 @@ TEST_CASE("Diagonals", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("POLYGON ((1.5 0.5, 2.5 1.5, 1.5 2.5, 0.5 1.5, 1.5 0.5))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.00, 0.25, 0.00},
@@ -70,7 +87,7 @@ TEST_CASE("Starting on cell boundary", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("POLYGON ((1 1.5, 1.5 1.5, 1.5 0.5, 0.5 0.5, 0.5 1.5, 1 1.5))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.25, 0.25},
@@ -86,7 +103,7 @@ TEST_CASE("Bouncing off boundary", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("POLYGON ((0.5 1.5, 0.5 0.5, 0.5 0, 1.5 0.5, 1.5 1.5, 0.5 1.5))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.25,   0.25},
@@ -115,7 +132,7 @@ TEST_CASE("Follows grid boundary", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2 0.5, 2 1.5, 2 2.5, 0.5 2.5, 0.5 0.5))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.25, 0.5, 0.0},
@@ -131,7 +148,7 @@ TEST_CASE("Starts on vertical boundary, moving up", "[raster-cell-intersection]"
 
     auto g = GEOSGeom_read("POLYGON ((3 0.5, 3 2.5, 0.5 2.5, 0.5 0.5, 3 0.5))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.25, 0.5, 0.5, 0.0},
@@ -147,7 +164,7 @@ TEST_CASE("Starts on vertical boundary, moving down", "[raster-cell-intersection
 
     auto g = GEOSGeom_read("POLYGON ((0.5 2.5, 0.5 0.5, 3 0.5, 3 2.5, 0.5 2.5))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.25, 0.5, 0.5, 0.0},
@@ -163,7 +180,7 @@ TEST_CASE("Starts on vertical boundary, moving down at rightmost extent of grid"
 
     auto g = GEOSGeom_read("POLYGON ((3 2.5, 3 0.5, 0.5 0.5, 0.5 2.5, 3 2.5))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.25, 0.5, 0.5},
@@ -179,7 +196,7 @@ TEST_CASE("Starts on horizontal boundary, moving right", "[raster-cell-intersect
 
     auto g = GEOSGeom_read("POLYGON ((0.5 1, 2.5 1, 2.5 3.5, 0.5 3.5, 0.5 1))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.25, 0.5, 0.25},
@@ -196,7 +213,7 @@ TEST_CASE("Starts on horizontal boundary, moving left", "[raster-cell-intersecti
 
     auto g = GEOSGeom_read("POLYGON ((2.5 3, 0.5 3, 0.5 3.5, 0.25 3.5, 0.25 0.5, 2.5 0.5, 2.5 3))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.125, 0.00, 0.00},
@@ -225,7 +242,7 @@ TEST_CASE("Small polygon", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("POLYGON ((3 3, 4 3, 4 4, 3 4, 3 3))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {{0.01}});
 }
@@ -237,7 +254,7 @@ TEST_CASE("Fill handled correctly", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("POLYGON ((0.5 0.2, 2.2 0.2, 2.2 0.4, 0.7 0.4, 0.7 2.2, 2.2 2.2, 2.2 0.6, 2.4 0.6, 2.4 4.8, 0.5 4.8, 0.5 0.2))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
             {0.40, 0.80, 0.32},
@@ -255,27 +272,16 @@ TEST_CASE("Result indexing is correct", "[raster-cell-intersection]") {
 
     auto g = GEOSGeom_read("POLYGON ((0.25 0.20, 2.75 0.20, 2.75 4.5, 0.25 4.5, 0.25 0.20))");
 
-    RasterCellIntersection rci{ex, g.get()};
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
 
-    size_t n_rows = rci.max_row() - rci.min_row();
-    size_t n_cols = rci.max_col() - rci.min_col();
+    size_t n_rows = rci.rows();
+    size_t n_cols = rci.cols();
 
     CHECK( n_rows == 5 );
     CHECK( n_cols == 6 );
 
-    CHECK( rci.min_col() == 40 );
-    CHECK( rci.max_col() == 46 );
-
-    CHECK( rci.min_row() == 25 );
-    CHECK( rci.max_row() == 30 );
-
-    Matrix<float> actual{n_rows, n_cols};
-
-    for (size_t i = rci.min_row(); i < rci.max_row(); i++) {
-        for (size_t j = rci.min_col(); j < rci.max_col(); j++) {
-            actual(i - rci.min_row(), j - rci.min_col()) = rci.get(i, j);
-        }
-    }
+    CHECK( rci.grid().col_offset(ex) == 40 );
+    CHECK( rci.grid().row_offset(ex) == 25 );
 
     Matrix<float> expected{{
            {0.25, 0.50, 0.50, 0.50, 0.50, 0.25},
@@ -285,28 +291,7 @@ TEST_CASE("Result indexing is correct", "[raster-cell-intersection]") {
            {0.40, 0.80, 0.80, 0.80, 0.80, 0.40}
     }};
 
-    CHECK( actual == expected );
-}
-
-TEST_CASE("Sensible error when geometry extent is larger than raster", "[raster-cell-intersection]") {
-    init_geos();
-
-    Grid<bounded_extent> ex{{-180, -90, 180, 90}, 0.5, 0.5};
-
-    auto g = GEOSGeom_read("POLYGON ((-179 0, 180.000000004 0, 180 1, -179 0))");
-
-    CHECK_THROWS_WITH( RasterCellIntersection(ex, g.get()),
-                       Catch::Matchers::Contains("geometry extent larger than the raster") );
-}
-
-TEST_CASE("Sensible error when hole is outside of shell", "[raster-cell-intersection]") {
-    init_geos();
-
-    Grid<bounded_extent> ex{{-180, -90, 180, 90}, 0.5, 0.5};
-    auto g = GEOSGeom_read("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (9 9, 9 9.1, 10.6 9.1, 9 9))");
-
-    CHECK_THROWS_WITH( RasterCellIntersection(ex, g.get()),
-                       Catch::Matchers::Contains("hole outside of its shell") );
+    CHECK( rci.data() == expected );
 }
 
 TEST_CASE("Robustness regression test #1", "[raster-cell-intersection]") {

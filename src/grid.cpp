@@ -58,4 +58,12 @@ namespace exactextract {
 
         return { xmin, ymin, xmax, ymax };
     }
+
+    Grid<infinite_extent> make_infinite(const Grid<bounded_extent> & grid) {
+        return { grid.extent(), grid.dx(), grid.dy() };
+    }
+
+    Grid<bounded_extent> make_finite(const Grid<infinite_extent> & grid) {
+        return { grid.extent(), grid.dx(), grid.dy() };
+    }
 }

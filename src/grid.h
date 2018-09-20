@@ -222,6 +222,9 @@ namespace exactextract {
 
     Box grid_cell(const Grid<bounded_extent> & grid, size_t row, size_t col);
     Box grid_cell(const Grid<infinite_extent> & grid, size_t row, size_t col);
+
+    Grid<infinite_extent> make_infinite(const Grid<bounded_extent> & grid);
+    Grid<bounded_extent> make_finite(const Grid<infinite_extent> & grid);
 }
 
 #endif //EXACTEXTRACT_INFINITEGRID_H

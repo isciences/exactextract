@@ -30,7 +30,7 @@ namespace exactextract {
                  rci.m_geometry_grid.extent() };
     }
 
-    static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Grid<bounded_extent> &ex, size_t row, size_t col) {
+    static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Grid<infinite_extent> &ex, size_t row, size_t col) {
         //std::cout << " getting cell " << row << ", " << col << std::endl;
 
         if (cells(row, col) == nullptr) {
@@ -41,27 +41,19 @@ namespace exactextract {
     }
 
 
-    static Grid<bounded_extent> get_geometry_grid(const Grid<bounded_extent> &raster_grid, const GEOSGeometry* g) {
+    static Grid<infinite_extent> get_geometry_grid(const Grid<bounded_extent> &raster_grid, const GEOSGeometry* g) {
         if (GEOSisEmpty(g)) {
             throw std::invalid_argument("Can't get statistics for empty geometry");
         }
 
-        try {
-            return raster_grid.shrink_to_fit(geos_get_box(g));
-        } catch (const std::range_error & e) {
-            throw std::runtime_error("Can't shrink raster extent to fit geometry. "
-                                     "Is the geometry extent larger than the raster?");
-        }
+        Box cropped_geometry_extent = raster_grid.extent().intersection(geos_get_box(g));
+        return make_infinite(raster_grid.shrink_to_fit(cropped_geometry_extent));
     }
 
 
     RasterCellIntersection::RasterCellIntersection(const Grid<bounded_extent> &raster_grid, const GEOSGeometry *g)
         : m_geometry_grid{get_geometry_grid(raster_grid, g)},
-          m_min_row{m_geometry_grid.row_offset(raster_grid)},
-          m_max_row{m_min_row + m_geometry_grid.rows()},
-          m_min_col{m_geometry_grid.col_offset(raster_grid)},
-          m_max_col{m_min_col + m_geometry_grid.cols()},
-          m_overlap_areas{std::make_unique<Matrix<float>>(m_max_row - m_min_row, m_max_col - m_min_col)}
+          m_overlap_areas{std::make_unique<Matrix<float>>(m_geometry_grid.rows() - 2, m_geometry_grid.cols() - 2)}
     {
         process(g);
     }
@@ -82,26 +74,20 @@ namespace exactextract {
         }
     }
 
-    static Grid<bounded_extent> get_ring_grid(const GEOSGeometry* ls,
-                                                      const Grid<bounded_extent> & geometry_grid) try {
-        return geometry_grid.shrink_to_fit(geos_get_box(ls));
-    } catch (const std::range_error & e) {
-        throw std::runtime_error("Error shrinking ring extent."
-                                 "Does the polygon have a hole outside of its shell?");
+    static Grid<infinite_extent> get_ring_grid(const GEOSGeometry* ls, const Grid<infinite_extent> & geometry_grid) {
+        Box cropped_ring_extent = geometry_grid.extent().intersection(geos_get_box(ls));
+        return geometry_grid.shrink_to_fit(cropped_ring_extent);
     }
 
     void RasterCellIntersection::process_ring(const GEOSGeometry *ls, bool exterior_ring) {
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq(ls);
         bool is_ccw = geos_is_ccw(seq);
 
-        // TODO change to infinite extent
-        Grid<bounded_extent> ring_grid = get_ring_grid(ls, m_geometry_grid);
+        Grid<infinite_extent> ring_grid = get_ring_grid(ls, m_geometry_grid);
 
         size_t rows = ring_grid.rows();
         size_t cols = ring_grid.cols();
 
-        // TODO avoid copying matrix when geometry has only one polygon, and polygon has only one ring
-        Matrix<float> areas(rows, cols);
         Matrix<std::unique_ptr<Cell>> cells(rows, cols);
 
         std::deque<Coordinate> stk;
@@ -212,15 +198,18 @@ namespace exactextract {
 
         // Compute the fraction covered for all cells and assign it to
         // the area matrix
-        for (size_t i = 0; i < cells.rows(); i++) {
-            for (size_t j = 0; j < cells.cols(); j++) {
+        // TODO avoid copying matrix when geometry has only one polygon, and polygon has only one ring
+        Matrix<float> areas(rows - 2, cols - 2);
+
+        for (size_t i = 1; i <= areas.rows(); i++) {
+            for (size_t j = 1; j <= areas.cols(); j++) {
                 if (cells(i, j) != nullptr) {
-                    areas(i, j) = (float) cells(i, j)->covered_fraction();
+                    areas(i-1, j-1) = (float) cells(i, j)->covered_fraction();
                 }
             }
         }
 
-        FloodFill ff(ls, ring_grid);
+        FloodFill ff(ls, make_finite(ring_grid));
         ff.flood(areas);
 
         // Transfer these areas to our global set

@@ -59,6 +59,15 @@ namespace exactextract {
             return 2 * width() + 2 * height();
         }
 
+        Box intersection(const Box & other) const {
+            return {
+                std::max(xmin, other.xmin),
+                std::max(ymin, other.ymin),
+                std::min(xmax, other.xmax),
+                std::min(ymax, other.ymax)
+            };
+        }
+
         Coordinate upper_left() const {
             return Coordinate{xmin, ymax};
         }
