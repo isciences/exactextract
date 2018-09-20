@@ -18,6 +18,8 @@
 #include "crossing.h"
 #include "side.h"
 
+#include <limits>
+
 namespace exactextract {
 
     struct Box {
@@ -31,6 +33,15 @@ namespace exactextract {
                 ymin{ymin},
                 xmax{xmax},
                 ymax{ymax} {}
+
+        static Box maximum_finite() {
+            return {
+                std::numeric_limits<double>::lowest(),
+                std::numeric_limits<double>::lowest(),
+                std::numeric_limits<double>::max(),
+                std::numeric_limits<double>::max()
+            };
+        }
 
         double width() const {
             return xmax - xmin;
@@ -71,6 +82,10 @@ namespace exactextract {
         bool contains(const Coordinate &c) const;
 
         bool strictly_contains(const Coordinate &c) const;
+
+        bool operator==(const Box& other) const {
+            return xmin == other.xmin && xmax == other.xmax && ymin == other.ymin && ymax == other.ymax;
+        }
 
     };
 

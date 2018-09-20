@@ -34,7 +34,8 @@ namespace exactextract {
     TEST_CASE("Basic float stats") {
         init_geos();
 
-        Grid ex{-1, -1, 4, 4, 1, 1}; // 4x5 grid
+        Box extent{-1, -1, 4, 4};
+        Grid<bounded_extent> ex{extent, 1, 1}; // 4x5 grid
 
         auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
@@ -46,7 +47,7 @@ namespace exactextract {
           {1, 4, 5, 6, 1},
           {1, 0, NAN, 7, 1},
           {1, 1, 1, 1, 1}
-        }}, -1, -1, 4, 4};
+        }}, extent};
 
         RasterStats<float> stats{areas, values};
 
@@ -76,14 +77,16 @@ namespace exactextract {
     TEST_CASE("Weighted multiresolution float stats") {
         init_geos();
 
-        Grid ex1{0, 0, 8, 6, 1, 1};
-        Grid ex2{0, 0, 8, 6, 2, 2};
+        Box extent { 0, 0, 8, 6 };
+
+        Grid<bounded_extent> ex1{extent, 1, 1};
+        Grid<bounded_extent> ex2{extent, 2, 2};
 
         auto g = GEOSGeom_read("POLYGON ((3.5 1.5, 6.5 1.5, 6.5 2.5, 3.5 2.5, 3.5 1.5))");
 
         Raster<float> areas = raster_cell_intersection(ex1.common_grid(ex2), g.get());
-        Raster<float> values{0, 0, 8, 6, 6, 8};
-        Raster<float> weights{0, 0, 8, 6, 3, 4};
+        Raster<float> values{extent, 6, 8};
+        Raster<float> weights{extent, 3, 4};
 
         fill_by_row<float>(values, 1, 1);
         fill_by_row<float>(weights, 5, 5);
@@ -100,7 +103,8 @@ namespace exactextract {
     TEST_CASE("Basic integer stats") {
         init_geos();
 
-        Grid ex{-1, -1, 4, 4, 1, 1}; // 4x5 grid
+        Box extent{-1, -1, 4, 4};
+        Grid<bounded_extent> ex{extent, 1, 1}; // 4x5 grid
 
         auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
@@ -114,7 +118,7 @@ namespace exactextract {
             {1, 4,      5, 6, 1},
             {1, 0, NODATA, 7, 1},
             {1, 1,      1, 1, 1}
-        }}, -1, -1, 4, 4};
+        }}, extent};
 
         RasterStats<int> stats{areas, values, &NODATA};
 

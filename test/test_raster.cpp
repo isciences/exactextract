@@ -28,7 +28,7 @@ static void print(const AbstractRaster<T> & r) {
 }
 
 TEST_CASE("Constructing a Raster" ) {
-    Raster<float> r{-180, -90, 180, 90, 180, 360};
+    Raster<float> r{{-180, -90, 180, 90}, 180, 360};
 
     fill_with_squares(r);
 
@@ -53,8 +53,8 @@ TEST_CASE("Constructing a Raster" ) {
 };
 
 TEST_CASE("Creating a scaled view") {
-    Raster<float> r{0, 0, 10, 10, 10, 10};
-    Grid ex{0, 0, 10, 10, 0.1, 0.1};
+    Raster<float> r{{0, 0, 10, 10}, 10, 10};
+    Grid<bounded_extent> ex{{0, 0, 10, 10}, 0.1, 0.1};
 
     fill_with_squares(r);
 
@@ -79,8 +79,9 @@ TEST_CASE("Creating a scaled view") {
 }
 
 TEST_CASE("Creating a shifted view") {
-    Raster<float> r{0, 0, 10, 10, 10, 10};
-    Grid ex{2, 3, 5, 8, 1, 1};
+    Raster<float> r{{0, 0, 10, 10}, 10, 10};
+    Box clipped = {2, 3, 5, 8};
+    Grid<bounded_extent> ex{clipped, 1, 1};
 
     fill_with_squares(r);
 
@@ -103,14 +104,15 @@ TEST_CASE("Creating a shifted view") {
             { 12, 18, 24}
     }};
 
-    Raster<float> expected{std::move(expected_values), 2, 3, 5, 8};
+    Raster<float> expected{std::move(expected_values), clipped};
 
     CHECK (rv == expected);
 }
 
 TEST_CASE("Creating a scaled and shifted view") {
-    Raster<float> r{0, 0, 10, 10, 10, 10};
-    Grid ex{2.5, 3, 5, 8.5, 0.5, 0.5};
+    Raster<float> r{{0, 0, 10, 10}, 10, 10};
+    Box clipped = {2.5, 3, 5, 8.5};
+    Grid<bounded_extent> ex{clipped, 0.5, 0.5};
 
     fill_with_squares(r);
 
@@ -139,14 +141,15 @@ TEST_CASE("Creating a scaled and shifted view") {
           { 12, 18, 18, 24, 24 }
   }};
 
-    Raster<float> expected{std::move(expected_values), 2.5, 3, 5, 8.5};
+    Raster<float> expected{std::move(expected_values), clipped};
 
     CHECK (rv == expected);
 }
 
 TEST_CASE("Creating a scaled and shifted view (greater extent)") {
-    Raster<float> r{0, 0, 10, 10, 10, 10};
-    Grid ex{2.5, 8.5, 4, 11, 0.5, 0.5};
+    Raster<float> r{{0, 0, 10, 10}, 10, 10};
+    Box expanded { 2.5, 8.5, 4, 11 };
+    Grid<bounded_extent> ex{expanded, 0.5, 0.5};
 
     fill_with_squares(r);
 
@@ -170,4 +173,8 @@ TEST_CASE("Creating a scaled and shifted view (greater extent)") {
           {   0,   0,   0 },
           {   2,   3,   3 }
     }};
+
+    Raster<float> expected{std::move(expected_values), expanded};
+
+    CHECK (rv == expected );
 }

@@ -27,7 +27,7 @@ namespace exactextract {
     class RasterCellIntersection {
 
     public:
-        RasterCellIntersection(const Grid &raster_extent, const GEOSGeometry *g);
+        RasterCellIntersection(const Grid<bounded_extent> &raster_grid, const GEOSGeometry *g);
 
         size_t min_row() const { return m_min_row; }
 
@@ -47,7 +47,7 @@ namespace exactextract {
 
         const Matrix<float> &overlap_areas() const { return *m_overlap_areas; }
 
-        Grid m_geometry_extent;
+        Grid<bounded_extent> m_geometry_grid;
     private:
         size_t m_min_row;
         size_t m_min_col;
@@ -64,7 +64,7 @@ namespace exactextract {
 
     };
 
-    Raster<float> raster_cell_intersection(const Grid & raster_extent, const GEOSGeometry* g);
+    Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, const GEOSGeometry* g);
 
 }
 

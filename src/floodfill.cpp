@@ -22,7 +22,7 @@
 
 namespace exactextract {
 
-    FloodFill::FloodFill(const GEOSGeometry *g, const Grid &extent) :
+    FloodFill::FloodFill(const GEOSGeometry *g, const Grid<bounded_extent> &extent) :
             m_extent{extent},
             m_g{nullptr, GEOSGeom_destroy},
             m_pg{nullptr, GEOSPreparedGeom_destroy} {

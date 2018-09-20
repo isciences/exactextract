@@ -4,108 +4,148 @@
 
 using namespace exactextract;
 
-TEST_CASE( "Grid dimensions calculated correctly", "[extent]") {
-    Grid ex{-180, -90, 180, 90, 0.5, 0.5};
+const Box global{-180, -90, 180, 90};
 
-    CHECK( ex.rows() == 360);
-    CHECK( ex.cols() == 720);
-    }
+TEST_CASE("Infinite grid dimensions calculated correctly", "[grid]") {
+    Grid<infinite_extent> grid{global, 0.5, 0.5};
 
-    TEST_CASE( "Grid dimension robustness", "[extent]") {
-    Grid ex{8.5, 1.6, 16.2, 13.1, 0.1, 0.1};
-
-    CHECK(ex.cols() == 77);
-    CHECK(ex.rows() == 115);
+    CHECK( grid.rows() == 2+360);
+    CHECK( grid.cols() == 2+720);
 }
 
-TEST_CASE( "Grid index lookups are correct", "[extent]") {
-    Grid ex{-180, -90, 180, 90, 1.0, 0.5};
+TEST_CASE("Infinite grid dimension robustness", "[grid]") {
+    Grid<infinite_extent> grid{{8.5, 1.6, 16.2, 13.1}, 0.1, 0.1};
 
-    CHECK( ex.get_row(90) == 0 );
-    CHECK( ex.get_row(-89.50000001) == 359 );
-    CHECK( ex.get_row(-89.5) == 359 );
-    CHECK( ex.get_row(-90) == 359 );
-
-    CHECK_THROWS( ex.get_row(-90.00000001) );
-    CHECK_THROWS( ex.get_row( 90.00000001) );
-
-    CHECK( ex.get_column(-180) == 0 );
-    CHECK( ex.get_column(-179.000001) == 0 );
-    CHECK( ex.get_column(-179) == 1 );
-    CHECK( ex.get_column(179) == 359 );
-    CHECK( ex.get_column(180) == 359 );
-
-    CHECK_THROWS( ex.get_column(-180.0000001) );
-    CHECK_THROWS( ex.get_column( 180.0000001) );
+    CHECK(grid.cols() == 2+77);
+    CHECK(grid.rows() == 2+115);
 }
 
-TEST_CASE( "Grid shrink works correctly", "[extent]") {
-    Grid ex{-180, -90, 180, 90, 1, 0.5};
+TEST_CASE("Bounded grid dimensions calculated correctly", "[grid]") {
+    Grid<bounded_extent> grid{global, 0.5, 0.5};
 
-    Grid ex2 = ex.shrink_to_fit(-44.3, -21.4, 18.3, 88.2);
-
-    CHECK( ex2.xmin == -45 );
-    CHECK( ex2.xmax == 19 );
-    CHECK( ex2.ymin == -21.5 );
-    CHECK( ex2.ymax == 88.5 );
-    CHECK( ex2.dx == ex.dx );
-    CHECK( ex2.dy == ex.dy );
+    CHECK( grid.rows() == 360);
+    CHECK( grid.cols() == 720);
 }
 
-TEST_CASE("Repeated shrink has no effect", "[extent]") {
-    Grid ex{-180.5, -90, 180, 90, 0.1, 0.1};
+TEST_CASE("Bounded grid dimension robustness", "[grid]") {
+    Grid<bounded_extent> grid{{8.5, 1.6, 16.2, 13.1}, 0.1, 0.1};
 
-    double x0 = 8.532812500000006,
-            y0 = 1.6762207031249972,
-            x1 = 16.183398437500017,
-            y1 = 13.078515624999994;
-
-    Grid ex2 = ex.shrink_to_fit(x0, y0, x1, y1);
-    Grid ex3 = ex2.shrink_to_fit(x0, y0, x1, y1);
-
-    CHECK( ex2.rows() == ex3.rows() );
-    CHECK( ex2.cols() == ex3.cols() );
+    CHECK(grid.cols() == 77);
+    CHECK(grid.rows() == 115);
 }
 
-TEST_CASE("Shrink robustness", "[extent]") {
-    Grid ex{-180.5, -90, 180, 90, 0.5, 0.5};
+TEST_CASE("Infinite grid index lookups are correct", "[grid]") {
+    Grid<infinite_extent> grid{global, 1.0, 0.5};
 
-    double x0 = -1.0000000000000142,
-            y0 = 8.141666666665664,
-            x1 = 0.08749999999993818,
-            y1 = 9.904166666665645;
+    CHECK( grid.get_row(90) == 1 );
+    CHECK( grid.get_row(-89.50000001) == 360 );
+    CHECK( grid.get_row(-89.5) == 360 );
+    CHECK( grid.get_row(-90) == 360 );
 
-    Grid ex2 = ex.shrink_to_fit(x0, y0, x1, y1);
+    CHECK( grid.get_row(-90.00000001) == 361 );
+    CHECK( grid.get_row( 90.00000001) == 0 );
 
-    CHECK(x0 >= ex2.xmin);
-    CHECK(x1 <= ex2.xmax);
-    CHECK(y0 >= ex2.ymin);
-    CHECK(y1 <= ex2.ymax);
+    CHECK( grid.get_column(-180) == 1 );
+    CHECK( grid.get_column(-179.000001) == 1 );
+    CHECK( grid.get_column(-179) == 2 );
+    CHECK( grid.get_column(179) == 360 );
+    CHECK( grid.get_column(180) == 360 );
+
+    CHECK( grid.get_column(-180.0000001) == 0 );
+    CHECK( grid.get_column( 180.0000001) == 361 );
 }
 
-TEST_CASE("Shrink robustness (2)", "[extent]") {
-    Grid ex{-180.5, -90.5, 180.5, 90.5, 0.25, 0.25};
+TEST_CASE("Bounded grid index lookups are correct", "[grid]") {
+    Grid<bounded_extent> grid{global, 1.0, 0.5};
 
-    double x0 = 129.75833333333242,
-            y0 = -1.2541666666666238,
-            x1 = 129.7624999999993,
-            y1 = -1.2499999999999964;
+    CHECK( grid.get_row(90) == 0 );
+    CHECK( grid.get_row(-89.50000001) == 359 );
+    CHECK( grid.get_row(-89.5) == 359 );
+    CHECK( grid.get_row(-90) == 359 );
 
-    Grid ex2 = ex.shrink_to_fit(x0, y0, x1, y1);
+    CHECK_THROWS( grid.get_row(-90.00000001) );
+    CHECK_THROWS( grid.get_row( 90.00000001) );
 
-    CHECK(x0 >= ex2.xmin);
-    CHECK(x1 <= ex2.xmax);
-    CHECK(y0 >= ex2.ymin);
-    CHECK(y1 <= ex2.ymax);
+    CHECK( grid.get_column(-180) == 0 );
+    CHECK( grid.get_column(-179.000001) == 0 );
+    CHECK( grid.get_column(-179) == 1 );
+    CHECK( grid.get_column(179) == 359 );
+    CHECK( grid.get_column(180) == 359 );
+
+    CHECK_THROWS( grid.get_column(-180.0000001) );
+    CHECK_THROWS( grid.get_column( 180.0000001) );
 }
 
-TEST_CASE("Grid compatibility tests", "[extent") {
-    Grid half_degree_global{-180, -90, 180, 90, 0.5, 0.5};
-    Grid one_degree_global{-180, -90, 180, 90, 1, 1};
-    Grid quarter_degree_partial{-180, -60, 90, 83, 0.25, 0.25};
-    Grid nldas{-125.0, 0.25, -67, 53, 0.125, 0.125};
-    Grid tenth_degree_global{-180, -90, 180, 90, 0.1, 0.1};
-    Grid half_degree_offset{-180.25, -90, -100.25, 50, 0.5, 0.5};
+TEST_CASE("Infinite grid shrink works correctly", "[grid]") {
+    Grid<infinite_extent> grid1{global, 1, 0.5};
+
+    Grid<infinite_extent> grid2 = grid1.shrink_to_fit({-44.3, -21.4, 18.3, 88.2});
+
+    CHECK( grid2.xmin() == -45 );
+    CHECK( grid2.xmax() == 19 );
+    CHECK( grid2.ymin() == -21.5 );
+    CHECK( grid2.ymax() == 88.5 );
+    CHECK( grid2.dx() == grid1.dx() );
+    CHECK( grid2.dy() == grid1.dy() );
+}
+
+TEST_CASE("Bounded grid shrink works correctly", "[grid]") {
+    Grid<bounded_extent> grid1{global, 1, 0.5};
+
+    Grid<bounded_extent> grid2 = grid1.shrink_to_fit({-44.3, -21.4, 18.3, 88.2});
+
+    CHECK( grid2.xmin() == -45 );
+    CHECK( grid2.xmax() == 19 );
+    CHECK( grid2.ymin() == -21.5 );
+    CHECK( grid2.ymax() == 88.5 );
+    CHECK( grid2.dx() == grid1.dx() );
+    CHECK( grid2.dy() == grid1.dy() );
+}
+
+TEST_CASE("Repeated shrink has no effect", "[grid]") {
+    Grid<bounded_extent> grid{{-180.5, -90, 180, 90}, 0.1, 0.1};
+
+    Box reduced{ 8.532812500000006, 1.6762207031249972, 16.183398437500017, 13.078515624999994 };
+
+    Grid<bounded_extent> grid2 = grid.shrink_to_fit(reduced);
+    Grid<bounded_extent> grid3 = grid2.shrink_to_fit(reduced);
+    CHECK( grid2.rows() == grid3.rows() );
+    CHECK( grid2.cols() == grid3.cols() );
+}
+
+TEST_CASE("Shrink robustness", "[grid]") {
+    Grid<bounded_extent> grid{{-180.5, -90, 180, 90}, 0.5, 0.5};
+
+    Box reduced{ -1.0000000000000142, 8.141666666665664,  0.08749999999993818,  9.904166666665645};
+
+    Grid<bounded_extent> grid2 = grid.shrink_to_fit(reduced);
+
+    CHECK(reduced.xmin >= grid2.xmin());
+    CHECK(reduced.xmax <= grid2.xmax());
+    CHECK(reduced.ymin >= grid2.ymin());
+    CHECK(reduced.ymax <= grid2.ymax());
+}
+
+TEST_CASE("Shrink robustness (2)", "[grid]") {
+    Grid<bounded_extent> grid{{-180.5, -90.5, 180.5, 90.5}, 0.25, 0.25};
+
+    Box reduced{ 129.75833333333242, -1.2541666666666238, 129.7624999999993, -1.2499999999999964 };
+
+    Grid<bounded_extent> grid2 = grid.shrink_to_fit(reduced);
+
+    CHECK(reduced.xmin >= grid2.xmin());
+    CHECK(reduced.xmax <= grid2.xmax());
+    CHECK(reduced.ymin >= grid2.ymin());
+    CHECK(reduced.ymax <= grid2.ymax());
+}
+
+TEST_CASE("Grid compatibility tests", "[grid]") {
+    Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
+    Grid<bounded_extent> one_degree_global{global, 1, 1};
+    Grid<bounded_extent> quarter_degree_partial{{-180, -60, 90, 83}, 0.25, 0.25};
+    Grid<bounded_extent> nldas{{-125.0, 0.25, -67, 53}, 0.125, 0.125};
+    Grid<bounded_extent> tenth_degree_global{global, 0.1, 0.1};
+    Grid<bounded_extent> half_degree_offset{{-180.25, -90, -100.25, 50}, 0.5, 0.5};
 
     CHECK( half_degree_global.compatible_with(one_degree_global) );
     CHECK( quarter_degree_partial.compatible_with(one_degree_global) );
@@ -117,9 +157,44 @@ TEST_CASE("Grid compatibility tests", "[extent") {
     CHECK( !half_degree_global.compatible_with(half_degree_offset) );
 }
 
-TEST_CASE("Common extent calculation", "[extent]") {
-    Grid half_degree_global{-180, -90, 180, 90, 0.5, 0.5};
-    Grid nldas{-125.0, 0.25, -67, 53, 0.125, 0.125};
+TEST_CASE("Common extent calculation", "[grid]") {
+    Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
+    Grid<bounded_extent> nldas{{-125.0, 0.25, -67, 53}, 0.125, 0.125};
 
-    CHECK (nldas.common_grid(half_degree_global) == Grid{-180, -90, 180, 90, 0.125, 0.125} );
+    CHECK (nldas.common_grid(half_degree_global) == Grid<bounded_extent>{global, 0.125, 0.125} );
+}
+
+TEST_CASE("Cell center calculations", "[grid]") {
+    Grid<bounded_extent> g1{global, 0.5, 0.25};
+    Grid<infinite_extent> g2{global, 0.5, 0.25};
+
+    CHECK ( g1.x_for_col(0) == -179.75 );
+    CHECK ( g2.x_for_col(1) == -179.75 );
+
+    CHECK ( g1.y_for_row(0) == 89.875 );
+    CHECK ( g2.y_for_row(1) == 89.875 );
+}
+
+TEST_CASE("Offset calculations", "[grid]") {
+    Grid<bounded_extent> g1{global, 0.5, 0.25};
+    Grid<bounded_extent> g2{{-170, -90, 180, 88.5}, 0.5, 0.25};
+
+    // Symmetrical; we're expected to already know which grid is positively offset from the other
+    CHECK( g1.row_offset(g2) == 6 );
+    CHECK( g2.row_offset(g1) == 6 );
+
+    CHECK ( g1.col_offset(g2) == 20 );
+    CHECK ( g2.col_offset(g1) == 20 );
+}
+
+TEST_CASE("Infinite grid offset calculations", "[grid]") {
+    Grid<infinite_extent> g1{global, 0.5, 0.25};
+    Grid<infinite_extent> g2{{-170, -90, 180, 88.5}, 0.5, 0.25};
+
+    // Symmetrical; we're expected to already know which grid is positively offset from the other
+    CHECK( g1.row_offset(g2) == 6 );
+    CHECK( g2.row_offset(g1) == 6 );
+
+    CHECK ( g1.col_offset(g2) == 20 );
+    CHECK ( g2.col_offset(g1) == 20 );
 }

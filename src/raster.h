@@ -23,7 +23,7 @@ namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
-        explicit AbstractRaster(Grid ex) : m_grid{ex} {}
+        explicit AbstractRaster(const Grid<bounded_extent> & ex) : m_grid{ex} {}
 
         size_t rows() const {
             return m_grid.rows();
@@ -34,30 +34,30 @@ namespace exactextract {
         }
 
         double xres() const {
-            return m_grid.dx;
+            return m_grid.dx();
         }
 
         double yres() const {
-            return m_grid.dy;
+            return m_grid.dy();
         }
 
         double xmin() const {
-            return m_grid.xmin;
+            return m_grid.xmin();
         }
 
         double ymin() const {
-            return m_grid.ymin;
+            return m_grid.ymin();
         }
 
         double xmax() const {
-            return m_grid.xmax;
+            return m_grid.xmax();
         }
 
         double ymax() const {
-            return m_grid.ymax;
+            return m_grid.ymax();
         }
 
-        const Grid& grid() const {
+        const Grid<bounded_extent>& grid() const {
             return m_grid;
         }
 
@@ -85,7 +85,9 @@ namespace exactextract {
             for (size_t i = 0; i < rows(); i++) {
                 for (size_t j = 0; j < cols(); j++) {
                     if(operator()(i, j) != other(i, j)) {
-                        return false;
+                        if (!std::isnan(operator()(i, j)) || !std::isnan(other(i, j))) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -93,28 +95,25 @@ namespace exactextract {
             return true;
         }
     private:
-        Grid m_grid;
+        Grid<bounded_extent> m_grid;
     };
 
     template<typename T>
     class Raster : public AbstractRaster<T> {
     public:
-        Raster(Matrix<T>&& values, double xmin, double ymin, double xmax, double ymax) : AbstractRaster<T>(
-                Grid(
-                        xmin,
-                        ymin,
-                        xmax,
-                        ymax,
-                        (xmax - xmin) / values.cols(),
-                        (ymax - ymin) / values.rows())),
+        Raster(Matrix<T>&& values, const Box & box) : AbstractRaster<T>(
+                Grid<bounded_extent>(
+                        box,
+                        (box.xmax - box.xmin) / values.cols(),
+                        (box.ymax - box.ymin) / values.rows())),
                 m_values{std::move(values)} {}
 
-        Raster(double xmin, double ymin, double xmax, double ymax, size_t nrow, size_t ncol) :
-                AbstractRaster<T>(Grid(xmin, ymin, xmax, ymax, (xmax-xmin) / ncol, (ymax-ymin) / nrow)),
+        Raster(const Box & box, size_t nrow, size_t ncol) :
+                AbstractRaster<T>(Grid<bounded_extent>(box, std::round((box.xmax-box.xmin) / ncol), std::round((box.ymax-box.ymin) / nrow))),
                 m_values{nrow, ncol}
                 {}
 
-        explicit Raster(const Grid & ex) :
+        explicit Raster(const Grid<bounded_extent> & ex) :
             AbstractRaster<T>(ex),
             m_values{ex.rows(), ex.cols()}
             {}
@@ -140,9 +139,9 @@ namespace exactextract {
     public:
         // Construct a view of a raster r at an extent ex that is larger
         // and/or of finer resolution than r
-        RasterView(const AbstractRaster<T> & r, Grid ex) : AbstractRaster<T>(ex), m_raster{r}, expanded{false} {
-            double disaggregation_factor_x = r.xres() / ex.dx;
-            double disaggregation_factor_y = r.yres() / ex.dy;
+        RasterView(const AbstractRaster<T> & r, Grid<bounded_extent> ex) : AbstractRaster<T>(ex), m_raster{r}, expanded{false} {
+            double disaggregation_factor_x = r.xres() / ex.dx();
+            double disaggregation_factor_y = r.yres() / ex.dy();
 
             if (disaggregation_factor_x != std::floor(disaggregation_factor_x) ||
                 disaggregation_factor_y != std::floor(disaggregation_factor_y)) {
@@ -153,14 +152,14 @@ namespace exactextract {
                 throw std::runtime_error("Must construct view at equal or higher resolution than original.");
             }
 
-            if (ex.xmin < r.xmin() || ex.xmax > r.xmax() || ex.ymin < r.ymin() || ex.ymax > r.ymax()) {
+            if (ex.xmin() < r.xmin() || ex.xmax() > r.xmax() || ex.ymin() < r.ymin() || ex.ymax() > r.ymax()) {
                 expanded = true;
                 //throw std::runtime_error("Constructed view must be smaller or same extent as original.");
 
             }
 
-            m_x_off = static_cast<long>((ex.xmin - r.xmin()) / ex.dx);
-            m_y_off = static_cast<long>((r.ymax() - ex.ymax) / ex.dy);
+            m_x_off = static_cast<long>((ex.xmin() - r.xmin()) / ex.dx());
+            m_y_off = static_cast<long>((r.ymax() - ex.ymax()) / ex.dy());
             m_rx = static_cast<size_t>(disaggregation_factor_x);
             m_ry = static_cast<size_t>(disaggregation_factor_y);
         }

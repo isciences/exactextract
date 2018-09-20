@@ -34,11 +34,12 @@
 
 using exactextract::Box;
 using exactextract::Grid;
+using exactextract::bounded_extent;
 using exactextract::Raster;
 using exactextract::RasterStats;
 using exactextract::RasterView;
 
-static Grid get_raster_extent(GDALDataset* rast) {
+static Grid<bounded_extent> get_raster_extent(GDALDataset* rast) {
     double adfGeoTransform[6];
     if (rast->GetGeoTransform(adfGeoTransform) != CE_None) {
         throw std::runtime_error("Error reading transform");
@@ -52,18 +53,18 @@ static Grid get_raster_extent(GDALDataset* rast) {
     int nx = rast->GetRasterXSize();
     int ny = rast->GetRasterYSize();
 
-    return {
+    return {{
         ulx,
         uly - ny*dy,
         ulx + nx*dx,
-        uly,
+        uly},
         dx, 
         dy
     };
 }
 
-static Raster<double> read_box(GDALRasterBand* band, const Grid & grid, const Box & box) {
-    Grid cropped_grid = grid.shrink_to_fit(box);
+static Raster<double> read_box(GDALRasterBand* band, const Grid<bounded_extent> & grid, const Box & box) {
+    Grid<bounded_extent> cropped_grid = grid.shrink_to_fit(box);
     Raster<double> vals(cropped_grid);
 
     // TODO check return value
@@ -186,12 +187,10 @@ int main(int argc, char** argv) {
     std::cout << "Using NODATA value of " << nodata << std::endl;
 
     // TODO figure out how to handle differing extents for weights and values (when it matters)
-    Grid values_extent = get_raster_extent(rast);
-    Grid weights_extent;
-    if (use_weights) {
-        weights_extent = get_raster_extent(weights);
-    }
-    exactextract::geom_ptr box = exactextract::geos_make_box_polygon(values_extent.xmin, values_extent.ymin, values_extent.xmax, values_extent.ymax);
+    auto values_extent = get_raster_extent(rast);
+    auto weights_extent = use_weights ? get_raster_extent(weights) : values_extent;
+
+    exactextract::geom_ptr box = exactextract::geos_make_box_polygon(values_extent.xmin(), values_extent.ymin(), values_extent.xmax(), values_extent.ymax());
 
     OGRFeature* feature;
     polys->ResetReading();
@@ -224,7 +223,7 @@ int main(int argc, char** argv) {
                     Raster<double> values = read_box(band, values_extent, bbox);
                     Raster<double> weights = read_box(weights_band, weights_extent, bbox);
 
-                    Grid common_grid = values.grid().common_grid(weights.grid());
+                    Grid<bounded_extent> common_grid = values.grid().common_grid(weights.grid());
 
                     RasterView<double> values_view{values, common_grid};
                     RasterView<double> weights_view{weights, common_grid};
@@ -273,6 +272,7 @@ int main(int argc, char** argv) {
 
     GDALClose(rast);
     GDALClose(shp);
+    finishGEOS();
 
     if (failures.empty()) {
         return 0;

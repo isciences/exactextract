@@ -15,6 +15,7 @@
 
 #include <geos_c.h>
 
+#include "cell.h"
 #include "floodfill.h"
 #include "geos_utils.h"
 #include "raster_cell_intersection.h"
@@ -22,46 +23,46 @@
 
 namespace exactextract {
 
-    Raster<float> raster_cell_intersection(const Grid & raster_extent, const GEOSGeometry* g) {
-        RasterCellIntersection rci(raster_extent, g);
+    Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, const GEOSGeometry* g) {
+        RasterCellIntersection rci(raster_grid, g);
 
         return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
-                 rci.m_geometry_extent.xmin,
-                 rci.m_geometry_extent.ymin,
-                 rci.m_geometry_extent.xmax,
-                 rci.m_geometry_extent.ymax };
+                 rci.m_geometry_grid.extent() };
     }
 
-    static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Grid &ex, size_t row, size_t col) {
+    static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Grid<bounded_extent> &ex, size_t row, size_t col) {
         //std::cout << " getting cell " << row << ", " << col << std::endl;
 
         if (cells(row, col) == nullptr) {
-            cells(row, col) = ex.get_cell_ptr(row, col);
+            cells(row, col) = std::make_unique<Cell>(grid_cell(ex, row, col));
         }
 
         return cells(row, col).get();
     }
 
-    RasterCellIntersection::RasterCellIntersection(const Grid &raster_extent, const GEOSGeometry *g) {
+
+    static Grid<bounded_extent> get_geometry_grid(const Grid<bounded_extent> &raster_grid, const GEOSGeometry* g) {
         if (GEOSisEmpty(g)) {
             throw std::invalid_argument("Can't get statistics for empty geometry");
         }
 
         try {
-            m_geometry_extent = raster_extent.shrink_to_fit(geos_get_box(g));
+            return raster_grid.shrink_to_fit(geos_get_box(g));
         } catch (const std::range_error & e) {
             throw std::runtime_error("Can't shrink raster extent to fit geometry. "
                                      "Is the geometry extent larger than the raster?");
         }
+    }
 
-        m_min_row = m_geometry_extent.row_offset(raster_extent);
-        m_max_row = m_min_row + m_geometry_extent.rows();
 
-        m_min_col = m_geometry_extent.col_offset(raster_extent);
-        m_max_col = m_min_col + m_geometry_extent.cols();
-
-        m_overlap_areas = std::make_unique<Matrix<float>>(m_max_row - m_min_row, m_max_col - m_min_col);
-
+    RasterCellIntersection::RasterCellIntersection(const Grid<bounded_extent> &raster_grid, const GEOSGeometry *g)
+        : m_geometry_grid{get_geometry_grid(raster_grid, g)},
+          m_min_row{m_geometry_grid.row_offset(raster_grid)},
+          m_max_row{m_min_row + m_geometry_grid.rows()},
+          m_min_col{m_geometry_grid.col_offset(raster_grid)},
+          m_max_col{m_min_col + m_geometry_grid.cols()},
+          m_overlap_areas{std::make_unique<Matrix<float>>(m_max_row - m_min_row, m_max_col - m_min_col)}
+    {
         process(g);
     }
 
@@ -81,21 +82,23 @@ namespace exactextract {
         }
     }
 
+    static Grid<bounded_extent> get_ring_grid(const GEOSGeometry* ls,
+                                                      const Grid<bounded_extent> & geometry_grid) try {
+        return geometry_grid.shrink_to_fit(geos_get_box(ls));
+    } catch (const std::range_error & e) {
+        throw std::runtime_error("Error shrinking ring extent."
+                                 "Does the polygon have a hole outside of its shell?");
+    }
+
     void RasterCellIntersection::process_ring(const GEOSGeometry *ls, bool exterior_ring) {
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq(ls);
         bool is_ccw = geos_is_ccw(seq);
 
-        Grid ring_extent;
+        // TODO change to infinite extent
+        Grid<bounded_extent> ring_grid = get_ring_grid(ls, m_geometry_grid);
 
-        try {
-            ring_extent = m_geometry_extent.shrink_to_fit(geos_get_box(ls));
-        } catch (const std::range_error & e) {
-            throw std::runtime_error("Error shrinking ring extent."
-                                     "Does the polygon have a hole outside of its shell?");
-        }
-
-        size_t rows = ring_extent.rows();
-        size_t cols = ring_extent.cols();
+        size_t rows = ring_grid.rows();
+        size_t cols = ring_grid.cols();
 
         // TODO avoid copying matrix when geometry has only one polygon, and polygon has only one ring
         Matrix<float> areas(rows, cols);
@@ -119,8 +122,8 @@ namespace exactextract {
             }
         }
 
-        size_t row = ring_extent.get_row(stk.front().y);
-        size_t col = ring_extent.get_column(stk.front().x);
+        size_t row = ring_grid.get_row(stk.front().y);
+        size_t col = ring_grid.get_column(stk.front().x);
 
         // A point lying exactly on a cell boundary could be considered to be
         // within either of the adjoining cells. This is fine unless the initial
@@ -134,8 +137,7 @@ namespace exactextract {
         // possibility of a flood fill penetrating from this direction.
         SegmentOrientation iso = initial_segment_orientation(seq);
         if (iso != SegmentOrientation::ANGLED) {
-            auto cell = ring_extent.get_cell_ptr(row, col);
-            Box b{cell->box()};
+            Box b = grid_cell(ring_grid, row, col);
 
             if (iso == SegmentOrientation::HORIZONTAL_RIGHT && stk.front().y == b.ymax && row > 0) {
                 // Move up
@@ -156,7 +158,7 @@ namespace exactextract {
         }
 
         while (!stk.empty()) {
-            Cell &cell = *get_cell(cells, ring_extent, row, col);
+            Cell &cell = *get_cell(cells, ring_grid, row, col);
 
             while (!stk.empty()) {
                 cell.take(stk.front());
@@ -218,12 +220,12 @@ namespace exactextract {
             }
         }
 
-        FloodFill ff(ls, ring_extent);
+        FloodFill ff(ls, ring_grid);
         ff.flood(areas);
 
         // Transfer these areas to our global set
-        size_t i0 = ring_extent.row_offset(m_geometry_extent);
-        size_t j0 = ring_extent.col_offset(m_geometry_extent);
+        size_t i0 = ring_grid.row_offset(m_geometry_grid);
+        size_t j0 = ring_grid.col_offset(m_geometry_grid);
 
         add_ring_areas(i0, j0, areas, exterior_ring);
     }

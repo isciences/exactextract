@@ -45,12 +45,12 @@ set(PROJECT_SOURCES
         src/coordinate.cpp
         src/coordinate.h
         src/crossing.h
-        src/grid.cpp
-        src/grid.h
         src/floodfill.cpp
         src/floodfill.h
         src/geos_utils.cpp
         src/geos_utils.h
+        src/grid.h
+        src/grid.cpp
         src/matrix.h
         src/perimeter_distance.cpp
         src/perimeter_distance.h

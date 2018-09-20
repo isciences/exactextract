@@ -38,13 +38,13 @@ namespace exactextract {
     class FloodFill {
 
     public:
-        FloodFill(const GEOSGeometry *g, const Grid &extent);
+        FloodFill(const GEOSGeometry *g, const Grid<bounded_extent> &extent);
 
         template<typename T>
         void flood(Matrix<T> &arr) const;
 
     private:
-        Grid m_extent;
+        Grid<bounded_extent> m_extent;
         geom_ptr m_g;
         prep_geom_ptr m_pg;
 
