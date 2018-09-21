@@ -2,6 +2,8 @@
 
 #include "grid.h"
 
+#include <numeric>
+
 using namespace exactextract;
 
 const Box global{-180, -90, 180, 90};
@@ -197,4 +199,39 @@ TEST_CASE("Infinite grid offset calculations", "[grid]") {
 
     CHECK ( g1.col_offset(g2) == 20 );
     CHECK ( g2.col_offset(g1) == 20 );
+}
+
+template<typename T>
+static size_t total_subgrid_size(const T& grids) {
+    return std::accumulate(
+            grids.begin(),
+            grids.end(),
+            static_cast<size_t>(0),
+            [](size_t sum, const Grid<bounded_extent> & g) { return sum + g.size(); });
+}
+
+TEST_CASE("Grid subdivision", "[grid]") {
+    Grid<bounded_extent> g{{-180, -89.75, 180, 90}, 0.25, 0.25};
+
+    // A row in a global 0.25-degree grid has 1440 cells.
+    // With a maximum of 1000 cells per subgrid, we need two subgrids to cover each row.
+    auto grids = subdivide(g, 1000);
+
+    CHECK(grids.size() == 2*g.rows());
+
+    // The first subgrid is the maximum size, and the second subgrid gets the leftovers.
+    // Technically, you could combine the leftovers from two rows into a subgrid of size 880,
+    // and have three subgrids per two rows, but we're not that clever.
+    CHECK(grids[0].size() == 1000);
+    CHECK(grids[1].size() == 440);
+    CHECK(total_subgrid_size(grids) == g.size());
+
+    // If we up the maximum to 3000 cells per subgrid, we can cover two rows per subgrid
+    grids = subdivide(g, 3000);
+
+    CHECK(grids.size() == std::ceil(0.5*g.rows()));
+    CHECK(grids[0].size() == 2880);
+    CHECK(grids[1].size() == 2880);
+    CHECK(grids[grids.size()-1].size() == 1440); // leftover single row at the end
+    CHECK(total_subgrid_size(grids) == g.size());
 }

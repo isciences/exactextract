@@ -66,4 +66,27 @@ namespace exactextract {
     Grid<bounded_extent> make_finite(const Grid<infinite_extent> & grid) {
         return { grid.extent(), grid.dx(), grid.dy() };
     }
+
+    std::vector<Grid<bounded_extent>> subdivide(const Grid<bounded_extent> & grid, size_t max_size) {
+        size_t cols_per_block = std::min(max_size, grid.cols());
+        size_t rows_per_block = max_size / cols_per_block;
+
+        size_t col_blocks = (grid.cols() - 1) / cols_per_block + 1;
+        size_t row_blocks = (grid.rows() - 1) / rows_per_block + 1;
+
+        std::vector<Grid<bounded_extent>> subgrids;
+        for (size_t i = 0; i < row_blocks; i++) {
+            for (size_t j = 0; j < col_blocks; j++) {
+                double xmin = grid.xmin() + grid.dx()*cols_per_block*j;
+                double xmax = j == (col_blocks - 1) ? grid.xmax() : (grid.xmin() + grid.dx()*cols_per_block*(j+1));
+                double ymax = grid.ymax() - grid.dy()*rows_per_block*i;
+                double ymin = i == (row_blocks - 1) ? grid.ymin() : (grid.ymax() - grid.dy()*rows_per_block*(i+1));
+
+                Box reduced = {xmin, ymin, xmax, ymax};
+                subgrids.emplace_back(reduced, grid.dx(), grid.dy());
+            }
+        }
+
+        return subgrids;
+    }
 }

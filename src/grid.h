@@ -16,6 +16,8 @@
 
 #include "box.h"
 
+#include <vector>
+
 namespace exactextract {
     struct infinite_extent {
         static const size_t padding = 1;
@@ -82,6 +84,8 @@ namespace exactextract {
         size_t rows() const { return m_num_rows; }
 
         size_t cols() const { return m_num_cols; }
+
+        size_t size() const { return rows()*cols(); }
 
         double xmin() const { return m_extent.xmin; }
 
@@ -225,6 +229,8 @@ namespace exactextract {
 
     Grid<infinite_extent> make_infinite(const Grid<bounded_extent> & grid);
     Grid<bounded_extent> make_finite(const Grid<infinite_extent> & grid);
+
+    std::vector<Grid<bounded_extent>> subdivide(const Grid<bounded_extent> & grid, size_t max_size);
 }
 
 #endif //EXACTEXTRACT_INFINITEGRID_H
