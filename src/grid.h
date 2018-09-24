@@ -39,9 +39,13 @@ namespace exactextract {
             m_extent{extent},
             m_dx{dx},
             m_dy{dy},
-            m_num_cols{2*extent_tag::padding + static_cast<size_t>(std::round((extent.xmax - extent.xmin) / dx))},
-            m_num_rows{2*extent_tag::padding + static_cast<size_t>(std::round((extent.ymax - extent.ymin) / dy))}
+            m_num_cols{2*extent_tag::padding + (extent.xmax > extent.xmin ? static_cast<size_t>(std::round((extent.xmax - extent.xmin) / dx)) : 0)},
+            m_num_rows{2*extent_tag::padding + (extent.ymax > extent.ymin ? static_cast<size_t>(std::round((extent.ymax - extent.ymin) / dy)) : 0)}
         {}
+
+        static Grid make_empty() {
+            return Grid({0, 0, 0, 0}, 0, 0);
+        }
 
         size_t get_column(double x) const {
             if (extent_tag::padding) {
@@ -80,6 +84,8 @@ namespace exactextract {
 
             return extent_tag::padding + static_cast<size_t>(std::floor((m_extent.ymax - y) / m_dy));
         }
+
+        bool empty() const { return m_num_rows <= 2*extent_tag::padding && m_num_cols <= 2*extent_tag::padding; }
 
         size_t rows() const { return m_num_rows; }
 

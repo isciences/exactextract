@@ -103,6 +103,32 @@ TEST_CASE("Geometry extent larger than raster", "[raster-cell-intersection]") {
     });
 }
 
+TEST_CASE("Geometry entirely outside raster", "[raster-cell-intersection]") {
+    init_geos();
+
+    Grid<bounded_extent> ex{{-3, -3, 0, 0}, 1, 1}; // 3x3 grid
+
+    auto g = GEOSGeom_read("POLYGON ((1.5 0.5, 2.5 1.5, 1.5 2.5, 0.5 1.5, 1.5 0.5))");
+
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
+
+    CHECK ( rci.rows() == 0 );
+    CHECK ( rci.cols() == 0 );
+}
+
+TEST_CASE("Invalid geometry with detached inner ring outside raster", "[raster-cell-intersection]") {
+    init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
+
+    auto g = GEOSGeom_read("POLYGON ((1.5 0.5, 2.5 1.5, 1.5 2.5, 0.5 1.5, 1.5 0.5), (100 100, 100 101, 101 101, 100 100))");
+
+    Raster<float> rci = raster_cell_intersection(ex, g.get());
+
+    CHECK ( rci.rows() == 3 );
+    CHECK ( rci.cols() == 3 );
+}
+
 TEST_CASE("Diagonals", "[raster-cell-intersection]") {
     init_geos();
 

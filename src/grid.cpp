@@ -68,6 +68,10 @@ namespace exactextract {
     }
 
     std::vector<Grid<bounded_extent>> subdivide(const Grid<bounded_extent> & grid, size_t max_size) {
+        if (grid.size() < max_size) {
+            return { grid };
+        }
+
         size_t cols_per_block = std::min(max_size, grid.cols());
         size_t rows_per_block = max_size / cols_per_block;
 

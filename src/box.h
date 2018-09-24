@@ -59,6 +59,19 @@ namespace exactextract {
             return 2 * width() + 2 * height();
         }
 
+        bool intersects(const Box & other) const {
+            if (other.ymin > ymax)
+                return false;
+            if (other.ymax < ymin)
+                return false;
+            if (other.xmin > xmax)
+                return false;
+            if (other.xmax < xmin)
+                return false;
+
+            return true;
+        }
+
         Box intersection(const Box & other) const {
             return {
                 std::max(xmin, other.xmin),

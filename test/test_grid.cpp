@@ -235,3 +235,9 @@ TEST_CASE("Grid subdivision", "[grid]") {
     CHECK(grids[grids.size()-1].size() == 1440); // leftover single row at the end
     CHECK(total_subgrid_size(grids) == g.size());
 }
+
+TEST_CASE("Empty grid subdivision", "[grid]") {
+    auto g = Grid<bounded_extent>::make_empty();
+
+    auto grids = subdivide(g, 100);
+}

@@ -27,7 +27,7 @@ namespace exactextract {
         RasterCellIntersection rci(raster_grid, g);
 
         return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
-                 rci.m_geometry_grid.extent() };
+                 make_finite(rci.m_geometry_grid) };
     }
 
     static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Grid<infinite_extent> &ex, size_t row, size_t col) {
@@ -47,7 +47,12 @@ namespace exactextract {
         }
 
         Box cropped_geometry_extent = raster_grid.extent().intersection(geos_get_box(g));
-        return make_infinite(raster_grid.shrink_to_fit(cropped_geometry_extent));
+
+        if (cropped_geometry_extent.intersects(raster_grid.extent())) {
+            return make_infinite(raster_grid.shrink_to_fit(cropped_geometry_extent));
+        } else {
+            return Grid<infinite_extent>::make_empty();
+        }
     }
 
 
@@ -55,7 +60,8 @@ namespace exactextract {
         : m_geometry_grid{get_geometry_grid(raster_grid, g)},
           m_overlap_areas{std::make_unique<Matrix<float>>(m_geometry_grid.rows() - 2, m_geometry_grid.cols() - 2)}
     {
-        process(g);
+        if (!m_geometry_grid.empty())
+            process(g);
     }
 
     void RasterCellIntersection::process(const GEOSGeometry *g) {

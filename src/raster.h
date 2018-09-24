@@ -108,6 +108,10 @@ namespace exactextract {
                         (box.ymax - box.ymin) / values.rows())),
                 m_values{std::move(values)} {}
 
+        Raster(Matrix<T>&& values, const Grid<bounded_extent> & g) :
+            AbstractRaster<T>(g),
+            m_values{std::move(values)} {}
+
         Raster(const Box & box, size_t nrow, size_t ncol) :
                 AbstractRaster<T>(Grid<bounded_extent>(box, std::round((box.xmax-box.xmin) / ncol), std::round((box.ymax-box.ymin) / nrow))),
                 m_values{nrow, ncol}
