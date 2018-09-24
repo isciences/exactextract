@@ -35,11 +35,12 @@
 using exactextract::Box;
 using exactextract::Grid;
 using exactextract::bounded_extent;
+using exactextract::subdivide;
 using exactextract::Raster;
 using exactextract::RasterStats;
 using exactextract::RasterView;
 
-static Grid<bounded_extent> get_raster_extent(GDALDataset* rast) {
+static Grid<bounded_extent> get_raster_grid(GDALDataset *rast) {
     double adfGeoTransform[6];
     if (rast->GetGeoTransform(adfGeoTransform) != CE_None) {
         throw std::runtime_error("Error reading transform");
@@ -64,7 +65,7 @@ static Grid<bounded_extent> get_raster_extent(GDALDataset* rast) {
 }
 
 static Raster<double> read_box(GDALRasterBand* band, const Grid<bounded_extent> & grid, const Box & box) {
-    Grid<bounded_extent> cropped_grid = grid.shrink_to_fit(box);
+    auto cropped_grid = grid.shrink_to_fit(box);
     Raster<double> vals(cropped_grid);
 
     // TODO check return value
@@ -133,6 +134,7 @@ int main(int argc, char** argv) {
 
     std::string poly_filename, rast_filename, weights_filename, field_name, output_filename, filter;
     std::vector<std::string> stats;
+    size_t max_cells_in_memory = 30;
     app.add_option("-p", poly_filename, "polygon dataset")->required(true);
     app.add_option("-r", rast_filename, "raster values dataset")->required(true);
     app.add_option("-w", weights_filename, "optional raster weights dataset")->required(false);
@@ -140,6 +142,7 @@ int main(int argc, char** argv) {
     app.add_option("-o", output_filename, "output filename")->required(true);
     app.add_option("-s", stats, "statistics")->required(true)->expected(-1);
     app.add_option("--filter", filter, "only process specified value of id")->required(false);
+    app.add_option("--max-cells", max_cells_in_memory, "maximum number of raster cells to read in memory at once, in millions")->required(false)->default_val("30");
 
     if (argc == 1) {
         std::cout << app.help();
@@ -147,6 +150,7 @@ int main(int argc, char** argv) {
     }
     CLI11_PARSE(app, argc, argv);
     bool use_weights = !weights_filename.empty();
+    max_cells_in_memory *= 1000000;
 
     initGEOS(nullptr, nullptr);
 
@@ -160,15 +164,15 @@ int main(int argc, char** argv) {
     }
     GDALRasterBand* band = rast->GetRasterBand(1);
 
-    GDALDataset* weights = nullptr;
+    GDALDataset* weights_rast = nullptr;
     GDALRasterBand* weights_band = nullptr;
     if (use_weights) {
-        weights = (GDALDataset*) GDALOpen(weights_filename.c_str(), GA_ReadOnly);
-        if (!weights) {
+        weights_rast = (GDALDataset*) GDALOpen(weights_filename.c_str(), GA_ReadOnly);
+        if (!weights_rast) {
             std::cerr << "Failed to open " << rast_filename << std::endl;
             return 1;
         }
-        weights_band = weights->GetRasterBand(1);
+        weights_band = weights_rast->GetRasterBand(1);
     }
 
     GDALDataset* shp = (GDALDataset*) GDALOpenEx(poly_filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
@@ -187,10 +191,10 @@ int main(int argc, char** argv) {
     std::cout << "Using NODATA value of " << nodata << std::endl;
 
     // TODO figure out how to handle differing extents for weights and values (when it matters)
-    auto values_extent = get_raster_extent(rast);
-    auto weights_extent = use_weights ? get_raster_extent(weights) : values_extent;
+    auto values_grid = get_raster_grid(rast);
+    auto weights_grid = use_weights ? get_raster_grid(weights_rast) : values_grid;
 
-    exactextract::geom_ptr box = exactextract::geos_make_box_polygon(values_extent.xmin(), values_extent.ymin(), values_extent.xmax(), values_extent.ymax());
+    exactextract::geom_ptr box = exactextract::geos_make_box_polygon(values_grid.xmin(), values_grid.ymin(), values_grid.xmax(), values_grid.ymax());
 
     OGRFeature* feature;
     polys->ResetReading();
@@ -211,63 +215,52 @@ int main(int argc, char** argv) {
 
         if (filter.length() == 0 || name == filter) {
             exactextract::geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
+            std::cout << "Processing " << name << std::endl;
 
             try {
                 Box bbox = exactextract::geos_get_box(geom.get());
+                RasterStats<double> raster_stats;
 
-                std::cout << "Estimated number of cells to read: " << std::ceil(bbox.width() / values_extent.dx())*std::ceil(bbox.height() / values_extent.dy()) << std::endl;
+                if (bbox.intersects(values_grid.extent())) {
+                    auto cropped_values_grid = values_grid.shrink_to_fit(bbox.intersection(values_grid.extent()));
 
-                if (use_weights) {
+                    if (use_weights) {
+                        auto cropped_weights_grid = values_grid.shrink_to_fit(bbox.intersection(values_grid.extent()));
 
-                    Raster<double> values = read_box(band, values_extent, bbox);
-                    Raster<double> weights = read_box(weights_band, weights_extent, bbox);
+                        auto cropped_common_grid = cropped_values_grid.common_grid(cropped_weights_grid);
 
-                    Grid<bounded_extent> common_grid = values.grid().common_grid(weights.grid());
+                        for (const auto& subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
+                            Raster<double> values = read_box(band, values_grid, subgrid.extent());
+                            Raster<double> weights = read_box(weights_band, weights_grid, subgrid.extent());
 
-                    RasterView<double> values_view{values, common_grid};
-                    RasterView<double> weights_view{weights, common_grid};
+                            Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
 
-                    Raster<float> coverage = raster_cell_intersection(common_grid, geom.get());
+                            raster_stats.process(coverage, values, weights, has_nodata ? &nodata : nullptr);
+                        }
+                    } else {
+                        for (const auto &subgrid : subdivide(cropped_values_grid, max_cells_in_memory)) {
+                            Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
+                            Raster<double> vals_subgrid = read_box(band, values_grid, subgrid.extent());
 
-                    RasterStats<double> raster_stats;
-                    raster_stats.process(coverage, values_view, weights_view, has_nodata ? &nodata : nullptr);
-
-                    write_stats_to_csv(name, raster_stats, stats, csvout);
-                } else {
-                    Raster<float> coverage = raster_cell_intersection(values_extent, geom.get());
-
-                    Raster<double> vals(coverage.grid());
-                    GDALRasterIO(band,
-                                 GF_Read,
-                                 (int) coverage.grid().col_offset(values_extent),
-                                 (int) coverage.grid().row_offset(values_extent),
-                                 (int) vals.grid().cols(),
-                                 (int) vals.grid().rows(),
-                                 vals.data().data(),
-                                 (int) vals.grid().cols(),
-                                 (int) vals.grid().rows(),
-                                 GDT_Float64,
-                                 0,
-                                 0);
-
-                    RasterStats<double> raster_stats;
-                    raster_stats.process(coverage, vals, has_nodata ? &nodata : nullptr);
+                            raster_stats.process(coverage, vals_subgrid, has_nodata ? &nodata : nullptr);
+                        }
+                    }
 
                     write_stats_to_csv(name, raster_stats, stats, csvout);
                 }
 
             } catch (...) {
+                std::cout << "failed";
                 failures.push_back(name);
-                std::cout << "failed." << std::endl;
             }
         }
         OGRFeature::DestroyFeature(feature);
+    }
 
-        if (!failures.empty()) {
-            std::cerr << "Failures:" << std::endl;
-            for (const auto& name : failures) {
-                std::cerr << name << std::endl;
-            }
+    if (!failures.empty()) {
+        std::cerr << "Failures:" << std::endl;
+        for (const auto& name : failures) {
+            std::cerr << name << std::endl;
         }
     }
 
