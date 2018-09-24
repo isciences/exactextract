@@ -34,7 +34,9 @@ class Matrix {
             m_rows{rows},
             m_cols{cols}
         {
-            m_data = std::unique_ptr<T[]>(new T[m_rows*m_cols]());
+            if (m_rows > 0 && m_cols > 0) {
+                m_data = std::unique_ptr<T[]>(new T[m_rows * m_cols]());
+            }
         }
 
         Matrix(const std::vector<std::vector<T>> & data) :
