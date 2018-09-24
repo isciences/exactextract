@@ -121,9 +121,10 @@ namespace exactextract {
             {1, 0, NODATA, 7, 1},
             {1, 1,      1, 1, 1}
         }}, extent};
+        values.set_nodata(NODATA);
 
         RasterStats<int> stats;
-        stats.process(areas, values, &NODATA);
+        stats.process(areas, values);
 
         CHECK( stats.count() ==
                (0.25 + 0.5 + 0.25 ) +

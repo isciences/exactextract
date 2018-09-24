@@ -23,7 +23,8 @@ namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
-        explicit AbstractRaster(const Grid<bounded_extent> & ex) : m_grid{ex} {}
+        explicit AbstractRaster(const Grid<bounded_extent> & ex) : m_grid{ex}, m_has_nodata{false} {}
+        AbstractRaster(const Grid<bounded_extent> & ex, const T& nodata_val) : m_grid{ex}, m_has_nodata{true}, m_nodata{nodata_val} {}
 
         size_t rows() const {
             return m_grid.rows();
@@ -63,6 +64,28 @@ namespace exactextract {
 
         virtual T operator()(size_t row, size_t col) const = 0;
 
+        bool has_nodata() const { return m_has_nodata; }
+
+        T nodata() const { return m_nodata; }
+
+        bool get(size_t row, size_t col, T & val) {
+            val = operator()(row, col);
+
+            if (m_has_nodata && val == m_nodata) {
+                return false;
+            }
+            if (std::is_floating_point<T>::value && std::isnan(val)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        void set_nodata(const T & val) {
+            m_has_nodata = true;
+            m_nodata = val;
+        }
+
         bool operator==(const AbstractRaster<T> & other) const {
             if (rows() != other.rows())
                 return false;
@@ -96,6 +119,8 @@ namespace exactextract {
         }
     private:
         Grid<bounded_extent> m_grid;
+        bool m_has_nodata;
+        T m_nodata;
     };
 
     template<typename T>
@@ -166,6 +191,10 @@ namespace exactextract {
             m_y_off = static_cast<long>((r.ymax() - ex.ymax()) / ex.dy());
             m_rx = static_cast<size_t>(disaggregation_factor_x);
             m_ry = static_cast<size_t>(disaggregation_factor_y);
+
+            if (r.has_nodata()) {
+                this->set_nodata(r.nodata());
+            }
         }
 
         T operator()(size_t row, size_t col) const override {

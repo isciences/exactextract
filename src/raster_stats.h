@@ -38,23 +38,21 @@ namespace exactextract {
                 m_weights{0},
                 m_weighted_vals{0} {}
 
-        void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const T* nodata = nullptr) {
+        void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast) {
             RasterView<T> rv{rast, intersection_percentages.grid()};
 
             for (size_t i = 0; i < rv.rows(); i++) {
                 for (size_t j = 0; j < rv.cols(); j++) {
-                    float w = intersection_percentages(i, j);
-                    T val = rv(i, j);
-
-                    if (w > 0 && !(std::is_floating_point<T>::value && std::isnan(val)) &&
-                        (nodata == nullptr || val != *nodata)) {
-                        process(val, w);
+                    float pct_cov = intersection_percentages(i, j);
+                    T val;
+                    if (pct_cov > 0 && rv.get(i, j, val)) {
+                        process(val, pct_cov);
                     }
                 }
             }
         }
 
-        void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const AbstractRaster<T> & weights, const T* nodata = nullptr) {
+        void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const AbstractRaster<T> & weights) {
             auto common = rast.grid().common_grid(weights.grid());
             common = common.common_grid(intersection_percentages.grid());
 
@@ -64,12 +62,12 @@ namespace exactextract {
 
             for (size_t i = 0; i < rv.rows(); i++) {
                 for (size_t j = 0; j < rv.cols(); j++) {
-                    float w = iv(i, j)*wv(i, j);
-                    T val = rv(i, j);
+                    float pct_cov = iv(i, j);
+                    T weight;
+                    T val;
 
-                    if (w > 0 && !(std::is_floating_point<T>::value && std::isnan(val)) &&
-                        (nodata == nullptr || val != *nodata)) {
-                        process(val, w);
+                    if (pct_cov > 0 && wv.get(i, j, weight) && rv.get(i, j, val)) {
+                        process(val, pct_cov * weight);
                     }
                 }
             }

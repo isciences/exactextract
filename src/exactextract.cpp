@@ -64,9 +64,12 @@ static Grid<bounded_extent> get_raster_grid(GDALDataset *rast) {
     };
 }
 
-static Raster<double> read_box(GDALRasterBand* band, const Grid<bounded_extent> & grid, const Box & box) {
+static Raster<double> read_box(GDALRasterBand* band, const Grid<bounded_extent> & grid, const Box & box, double* nodata) {
     auto cropped_grid = grid.shrink_to_fit(box);
     Raster<double> vals(cropped_grid);
+    if (nodata != nullptr) {
+        vals.set_nodata(*nodata);
+    }
 
     // TODO check return value
     GDALRasterIO(band,
@@ -129,6 +132,14 @@ static void write_stats_to_csv(const std::string & name, const RasterStats<doubl
 
 }
 
+static void write_csv_header(const std::string & field_name, const std::vector<std::string> & stats, std::ostream & csvout) {
+    csvout << field_name;
+    for (const auto& stat : stats) {
+        csvout << "," << stat;
+    }
+    csvout << std::endl;
+}
+
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract"};
 
@@ -157,15 +168,21 @@ int main(int argc, char** argv) {
     GDALAllRegister();
     GEOSContextHandle_t geos_context = OGRGeometry::createGEOSContext();
 
+
+    // Open GDAL datasets for out inputs
+    int values_nodata;
     GDALDataset* rast = (GDALDataset*) GDALOpen(rast_filename.c_str(), GA_ReadOnly);
     if (!rast) {
         std::cerr << "Failed to open " << rast_filename << std::endl;
         return 1;
     }
     GDALRasterBand* band = rast->GetRasterBand(1);
+    double values_nodata_value = GDALGetRasterNoDataValue(band, &values_nodata);
 
     GDALDataset* weights_rast = nullptr;
     GDALRasterBand* weights_band = nullptr;
+    int weights_nodata = false;
+    double weights_nodata_value;
     if (use_weights) {
         weights_rast = (GDALDataset*) GDALOpen(weights_filename.c_str(), GA_ReadOnly);
         if (!weights_rast) {
@@ -173,6 +190,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         weights_band = weights_rast->GetRasterBand(1);
+        weights_nodata_value = GDALGetRasterNoDataValue(weights_band, &weights_nodata);
     }
 
     GDALDataset* shp = (GDALDataset*) GDALOpenEx(poly_filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
@@ -183,39 +201,24 @@ int main(int argc, char** argv) {
     }
 
     OGRLayer* polys = shp->GetLayer(0);
+    polys->ResetReading();
 
-    // TODO handle nodata for weights
-    int has_nodata;
-    double nodata = GDALGetRasterNoDataValue(band, &has_nodata);
-
-    std::cout << "Using NODATA value of " << nodata << std::endl;
-
-    // TODO figure out how to handle differing extents for weights and values (when it matters)
     auto values_grid = get_raster_grid(rast);
     auto weights_grid = use_weights ? get_raster_grid(weights_rast) : values_grid;
 
-    exactextract::geom_ptr box = exactextract::geos_make_box_polygon(values_grid.xmin(), values_grid.ymin(), values_grid.xmax(), values_grid.ymax());
-
     OGRFeature* feature;
-    polys->ResetReading();
 
     std::ofstream csvout;
     csvout.open(output_filename);
-
-    csvout << field_name;
-    for (const auto& stat : stats) {
-        csvout << "," << stat;
-    }
-    csvout << std::endl;
+    write_csv_header(field_name, stats, csvout);
 
     std::vector<std::string> failures;
-
     while ((feature = polys->GetNextFeature()) != nullptr) {
         std::string name{feature->GetFieldAsString(field_name.c_str())};
 
         if (filter.length() == 0 || name == filter) {
             exactextract::geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
-            std::cout << "Processing " << name << std::endl;
+            std::cout << "Processing " << name;
 
             try {
                 Box bbox = exactextract::geos_get_box(geom.get());
@@ -226,23 +229,24 @@ int main(int argc, char** argv) {
 
                     if (use_weights) {
                         auto cropped_weights_grid = values_grid.shrink_to_fit(bbox.intersection(values_grid.extent()));
-
                         auto cropped_common_grid = cropped_values_grid.common_grid(cropped_weights_grid);
 
                         for (const auto& subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
-                            Raster<double> values = read_box(band, values_grid, subgrid.extent());
-                            Raster<double> weights = read_box(weights_band, weights_grid, subgrid.extent());
-
+                            std::cout << ".";
                             Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
 
-                            raster_stats.process(coverage, values, weights, has_nodata ? &nodata : nullptr);
+                            Raster<double> values = read_box(band, values_grid, subgrid.extent(), values_nodata ? &values_nodata_value : nullptr);
+                            Raster<double> weights = read_box(weights_band, weights_grid, subgrid.extent(), weights_nodata ? &weights_nodata_value :nullptr);
+
+                            raster_stats.process(coverage, values, weights);
                         }
                     } else {
                         for (const auto &subgrid : subdivide(cropped_values_grid, max_cells_in_memory)) {
+                            std::cout << ".";
                             Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
-                            Raster<double> vals_subgrid = read_box(band, values_grid, subgrid.extent());
+                            Raster<double> values = read_box(band, values_grid, subgrid.extent(), values_nodata ? &values_nodata_value : nullptr);
 
-                            raster_stats.process(coverage, vals_subgrid, has_nodata ? &nodata : nullptr);
+                            raster_stats.process(coverage, values);
                         }
                     }
 
@@ -250,9 +254,10 @@ int main(int argc, char** argv) {
                 }
 
             } catch (...) {
-                std::cout << "failed";
+                std::cout << "failed.";
                 failures.push_back(name);
             }
+            std::cout << std::endl;
         }
         OGRFeature::DestroyFeature(feature);
     }

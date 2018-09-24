@@ -178,3 +178,21 @@ TEST_CASE("Creating a scaled and shifted view (greater extent)") {
 
     CHECK (rv == expected );
 }
+
+TEST_CASE("Get method accesses value and tells us if it was defiend") {
+    float nan = std::numeric_limits<float>::quiet_NaN();
+
+    Raster<float> r{
+        {{{ 1, -999},
+          {nan, 7  }}},
+      {0, 0, 2, 2}};
+    r.set_nodata(-999);
+
+    float f{0};
+    CHECK (r.get(0, 0, f));
+    CHECK (f == 1);
+    CHECK (!r.get(0, 1, f));
+    CHECK (!r.get(1, 0, f));
+    CHECK (r.get(1, 1, f));
+    CHECK (f == 7);
+}
