@@ -270,6 +270,9 @@ int main(int argc, char** argv) {
     }
 
     GDALClose(rast);
+    if (use_weights) {
+        GDALClose(weights_rast);
+    }
     GDALClose(shp);
     finishGEOS();
 
