@@ -149,6 +149,7 @@ int main(int argc, char** argv) {
     std::string poly_filename, rast_filename, weights_filename, field_name, output_filename, filter;
     std::vector<std::string> stats;
     size_t max_cells_in_memory = 30;
+    bool progress;
     app.add_option("-p", poly_filename, "polygon dataset")->required(true);
     app.add_option("-r", rast_filename, "raster values dataset")->required(true);
     app.add_option("-w", weights_filename, "optional raster weights dataset")->required(false);
@@ -157,6 +158,7 @@ int main(int argc, char** argv) {
     app.add_option("-s", stats, "statistics")->required(true)->expected(-1);
     app.add_option("--filter", filter, "only process specified value of id")->required(false);
     app.add_option("--max-cells", max_cells_in_memory, "maximum number of raster cells to read in memory at once, in millions")->required(false)->default_val("30");
+    app.add_flag("--progress", progress);
 
     if (argc == 1) {
         std::cout << app.help();
@@ -221,7 +223,7 @@ int main(int argc, char** argv) {
 
         if (filter.length() == 0 || name == filter) {
             exactextract::geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
-            std::cout << "Processing " << name;
+            if (progress) std::cout << "Processing " << name;
 
             try {
                 Box bbox = exactextract::geos_get_box(geom.get());
@@ -235,7 +237,7 @@ int main(int argc, char** argv) {
                         auto cropped_common_grid = cropped_values_grid.common_grid(cropped_weights_grid);
 
                         for (const auto& subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
-                            std::cout << ".";
+                            if (progress) std::cout << ".";
                             Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
 
                             Raster<double> values = read_box(band, values_grid, subgrid.extent(), values_nodata ? &values_nodata_value : nullptr);
@@ -245,7 +247,7 @@ int main(int argc, char** argv) {
                         }
                     } else {
                         for (const auto &subgrid : subdivide(cropped_values_grid, max_cells_in_memory)) {
-                            std::cout << ".";
+                            if (progress) std::cout << ".";
                             Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
                             Raster<double> values = read_box(band, values_grid, subgrid.extent(), values_nodata ? &values_nodata_value : nullptr);
 
@@ -257,10 +259,10 @@ int main(int argc, char** argv) {
                 }
 
             } catch (...) {
-                std::cout << "failed.";
+                if (progress) std::cout << "failed.";
                 failures.push_back(name);
             }
-            std::cout << std::endl;
+            if (progress) std::cout << std::endl;
         }
         OGRFeature::DestroyFeature(feature);
     }
