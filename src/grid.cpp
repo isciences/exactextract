@@ -34,7 +34,9 @@ namespace exactextract {
 
         if (col == 0) {
             xmin = std::numeric_limits<double>::lowest();
-        } else {
+        } else if (col == grid.cols() - 1) {
+            xmin = grid.xmax(); // because rightmost col of regular grid may have different width from others
+        } else  {
             xmin = grid.xmin() + (col - 1) * grid.dx();
         }
 
@@ -46,6 +48,8 @@ namespace exactextract {
 
         if (row == 0) {
             ymax = std::numeric_limits<double>::max();
+        } else if (row == grid.rows() - 1) {
+            ymax = grid.ymin(); // because bottom row of regular grid may have different height from others
         } else {
             ymax = grid.ymax() - (row - 1) * grid.dy();
         }

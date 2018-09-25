@@ -387,3 +387,14 @@ TEST_CASE("Robustness regression test #2", "[raster-cell-intersection]") {
 
     CHECK_NOTHROW( RasterCellIntersection(ex, g.get()) );
 }
+
+TEST_CASE("Robustness regression test #3", "[raster-cell-intersection]") {
+    // The situation in this case was causing some kind of infinite loop, ultimately exhausting memory
+    init_geos();
+
+    Grid<bounded_extent> ex{{179.96666666664618, -16.541666666669137, 179.99999999997954,-16.475000000002474}, 0.0083333333333328596, 0.0083333333333328596};
+
+    auto g = GEOSGeom_read("POLYGON ((179.9715827094184135 -16.5409617106119526,  180.0000000000000000 -16.5326999999999984, 179.9872884114583655 -16.5342697143554425,  179.9715827094184135 -16.5409617106119526))");
+
+    CHECK_NOTHROW( raster_cell_intersection(ex, g.get()) );
+}
