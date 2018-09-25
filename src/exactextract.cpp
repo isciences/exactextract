@@ -71,19 +71,22 @@ static Raster<double> read_box(GDALRasterBand* band, const Grid<bounded_extent> 
         vals.set_nodata(*nodata);
     }
 
-    // TODO check return value
-    GDALRasterIO(band,
-                 GF_Read,
-                 (int) cropped_grid.col_offset(grid),
-                 (int) cropped_grid.row_offset(grid),
-                 (int) cropped_grid.cols(),
-                 (int) cropped_grid.rows(),
-                 vals.data().data(),
-                 (int) cropped_grid.cols(),
-                 (int) cropped_grid.rows(),
-                 GDT_Float64,
-                 0,
-                 0);
+    auto error = GDALRasterIO(band,
+                              GF_Read,
+                              (int) cropped_grid.col_offset(grid),
+                              (int) cropped_grid.row_offset(grid),
+                              (int) cropped_grid.cols(),
+                              (int) cropped_grid.rows(),
+                              vals.data().data(),
+                              (int) cropped_grid.cols(),
+                              (int) cropped_grid.rows(),
+                              GDT_Float64,
+                              0,
+                              0);
+
+    if (error) {
+        throw std::runtime_error("Error reading from raster.");
+    }
 
     return vals;
 }
