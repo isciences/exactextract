@@ -117,13 +117,13 @@ static void write_stats_to_csv(const std::string & name, const RasterStats<doubl
             }
         } else if (stat == "mode") {
             if (raster_stats.count() > 0) {
-                csvout << raster_stats.max();
+                csvout << raster_stats.mode();
             } else {
                 csvout << "NA";
             }
         } else if (stat == "minority") {
             if (raster_stats.count() > 0) {
-                csvout << raster_stats.max();
+                csvout << raster_stats.minority();
             } else {
                 csvout << "NA";
             }
