@@ -91,6 +91,14 @@ static Raster<double> read_box(GDALRasterBand* band, const Grid<bounded_extent> 
     return vals;
 }
 
+static bool stored_values_needed(const std::vector<std::string> & stats) {
+    for (const auto& stat : stats) {
+        if (stat == "mode" || stat == "majority" || stat == "minority" || stat == "variety")
+            return true;
+    }
+    return false;
+}
+
 static void write_stats_to_csv(const std::string & name, const RasterStats<double> & raster_stats, const std::vector<std::string> & stats, std::ostream & csvout) {
     csvout << name;
     for (const auto& stat : stats) {
@@ -217,6 +225,7 @@ int main(int argc, char** argv) {
     csvout.open(output_filename);
     write_csv_header(field_name, stats, csvout);
 
+    bool store_values = stored_values_needed(stats);
     std::vector<std::string> failures;
     while ((feature = polys->GetNextFeature()) != nullptr) {
         std::string name{feature->GetFieldAsString(field_name.c_str())};
@@ -227,7 +236,7 @@ int main(int argc, char** argv) {
 
             try {
                 Box bbox = exactextract::geos_get_box(geom.get());
-                RasterStats<double> raster_stats;
+                RasterStats<double> raster_stats{store_values};
 
                 if (bbox.intersects(values_grid.extent())) {
                     auto cropped_values_grid = values_grid.shrink_to_fit(bbox.intersection(values_grid.extent()));

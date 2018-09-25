@@ -32,7 +32,8 @@ namespace exactextract {
          *
          * A NODATA value may optionally be provided in addition to NaN.
          */
-        RasterStats() :
+        RasterStats(bool store_values = true) :
+                m_store_values{store_values},
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_weights{0},
@@ -157,6 +158,8 @@ namespace exactextract {
 
         std::unordered_map<T, float> m_freq;
 
+        bool m_store_values;
+
         void process(const T& val, float weight) {
             m_weights += weight;
             m_weighted_vals += weight * val;
@@ -169,7 +172,8 @@ namespace exactextract {
                 m_max = val;
             }
 
-            m_freq[val] += weight;
+            if (m_store_values)
+                m_freq[val] += weight;
         }
     };
 
