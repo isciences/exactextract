@@ -167,7 +167,7 @@ namespace exactextract {
         os << c.m_box.xmax << " " << c.m_box.ymin << ", ";
         os << c.m_box.xmax << " " << c.m_box.ymax << ", ";
         os << c.m_box.xmin << " " << c.m_box.ymax << ", ";
-        os << c.m_box.xmin << " " << c.m_box.ymin << ")";
+        os << c.m_box.xmin << " " << c.m_box.ymin << "))";
         return os;
     }
 
