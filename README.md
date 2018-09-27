@@ -2,7 +2,7 @@
 
 [![Build Status](https://gitlab.com/isciences/exactextract/badges/master/build.svg)](https://gitlab.com/isciences/exactextract/pipelines)
 
-`exactextract` provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as **zonal statistics**. Unlike other zonal statistics implementations, it takes into account raster calls that are partially covered by the polygon.
+`exactextract` provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as **zonal statistics**. Unlike other zonal statistics implementations, it takes into account raster cells that are partially covered by the polygon.
 
 <img align="right" width="380" height="380" src="https://wsim.isciences.com/exactextract.svg" />
 
@@ -65,7 +65,3 @@ exactextract \
 ```
 
 In addition to the command-line executable, an R package ([`exactextractr`](https://github.com/isciences/exactextractr)) allows the functionality of `exactextract` to be used with `sf` and `raster` objects.
-
-### Limitations
-
-While `exactextract` does not need to load the entire raster into memory, it does need to load the portion of a raster that covers a given polygon. This limitation will be removed in the future.
