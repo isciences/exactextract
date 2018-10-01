@@ -118,7 +118,10 @@ namespace exactextract {
             return xmin == other.xmin && xmax == other.xmax && ymin == other.ymin && ymax == other.ymax;
         }
 
+        friend std::ostream &operator<<(std::ostream &os, const Box &c);
     };
+
+    std::ostream &operator<<(std::ostream &os, const Box &c);
 
 }
 

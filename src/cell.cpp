@@ -87,14 +87,14 @@ namespace exactextract {
         Traversal &t = traversal_in_progress();
 
         if (t.empty()) {
-            //std::cout << "Entering " << *this << " from " << side(c) << " at " << c << std::endl;
+            //std::cout << "Entering " << m_box << " from " << side(c) << " at " << c << std::endl;
 
             t.enter(c, side(c));
             return true;
         }
 
         if (location(c) != Cell::Location::OUTSIDE) {
-            //std::cout << "Still in " << *this << " with " << c << std::endl;
+            //std::cout << "Still in " << m_box << " with " << c << std::endl;
 
             t.add(c);
             return true;
@@ -103,7 +103,7 @@ namespace exactextract {
         Crossing x = m_box.crossing(t.last_coordinate(), c);
         t.exit(x.coord(), x.side());
 
-        //std::cout << "Leaving " << *this << " from " << x.side() << " at " << x.coord();
+        //std::cout << "Leaving " << m_box << " from " << x.side() << " at " << x.coord();
         //std::cout << " on the way to " << c << std::endl;
 
         return false;
@@ -161,14 +161,5 @@ namespace exactextract {
     }
 #endif
 
-    std::ostream &operator<<(std::ostream &os, const Cell &c) {
-        os << "POLYGON ((";
-        os << c.m_box.xmin << " " << c.m_box.ymin << ", ";
-        os << c.m_box.xmax << " " << c.m_box.ymin << ", ";
-        os << c.m_box.xmax << " " << c.m_box.ymax << ", ";
-        os << c.m_box.xmin << " " << c.m_box.ymax << ", ";
-        os << c.m_box.xmin << " " << c.m_box.ymin << "))";
-        return os;
-    }
 
 }

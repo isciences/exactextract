@@ -398,3 +398,15 @@ TEST_CASE("Robustness regression test #3", "[raster-cell-intersection]") {
 
     CHECK_NOTHROW( raster_cell_intersection(ex, g.get()) );
 }
+
+TEST_CASE("Robustness regression test #4", "[raster-cell-intersection]") {
+    init_geos();
+
+    Grid<bounded_extent> ex{{-166.84166666666667, 66.991666666666674, -152.625, 71.358333333333334}, 0.0083333333333333332, 0.0083333333333333332};
+
+    auto g = GEOSGeom_read(
+#include "resources/regression4.wkt"
+    );
+
+    CHECK_NOTHROW( raster_cell_intersection(ex, g.get()) );
+}

@@ -18,6 +18,10 @@
 
 namespace exactextract {
 
+    static inline double clamp(double x, double low, double high) {
+        return std::min(std::max(x, low), high);
+    }
+
     Side Box::side(const Coordinate &c) const {
         if (c.x == xmin) {
             return Side::LEFT;
@@ -66,20 +70,20 @@ namespace exactextract {
                 double y2 = c1.y + m * (xmax - c1.x);
 
                 if (y2 < ymax) {
-                    return Crossing{Side::RIGHT, xmax, y2};
+                    return Crossing{Side::RIGHT, xmax, clamp(y2, ymin, ymax)};
                 } else {
                     double x2 = c1.x + (ymax - c1.y) / m;
-                    return Crossing{Side::TOP, x2, ymax};
+                    return Crossing{Side::TOP, clamp(x2, xmin, xmax), ymax};
                 }
             } else {
                 // 2nd quadrant
                 double y2 = c1.y + m * (c1.x - xmin);
 
                 if (y2 < ymax) {
-                    return Crossing{Side::LEFT, xmin, y2};
+                    return Crossing{Side::LEFT, xmin, clamp(y2, ymin, ymax)};
                 } else {
                     double x2 = c1.x - (ymax - c1.y) / m;
-                    return Crossing{Side::TOP, x2, ymax};
+                    return Crossing{Side::TOP, clamp(x2, xmin, xmax), ymax};
                 }
             }
         } else {
@@ -88,20 +92,20 @@ namespace exactextract {
                 double y2 = c1.y - m * (xmax - c1.x);
 
                 if (y2 > ymin) {
-                    return Crossing{Side::RIGHT, xmax, y2};
+                    return Crossing{Side::RIGHT, xmax, clamp(y2, ymin, ymax)};
                 } else {
                     double x2 = c1.x + (c1.y - ymin) / m;
-                    return Crossing{Side::BOTTOM, x2, ymin};
+                    return Crossing{Side::BOTTOM, clamp(x2, xmin, xmax), ymin};
                 }
             } else {
                 // 3rd quadrant
                 double y2 = c1.y - m * (c1.x - xmin);
 
                 if (y2 > ymin) {
-                    return Crossing{Side::LEFT, xmin, y2};
+                    return Crossing{Side::LEFT, xmin, clamp(y2, ymin, ymax)};
                 } else {
                     double x2 = c1.x - (c1.y - ymin) / m;
-                    return Crossing{Side::BOTTOM, x2, ymin};
+                    return Crossing{Side::BOTTOM, clamp(x2, xmin, xmax), ymin};
                 }
             }
         }
@@ -114,6 +118,16 @@ namespace exactextract {
 
     bool Box::strictly_contains(const Coordinate &c) const {
         return c.x > xmin && c.x < xmax && c.y > ymin && c.y < ymax;
+    }
+
+    std::ostream &operator<<(std::ostream &os, const Box &b) {
+        os << "POLYGON ((";
+        os << b.xmin << " " << b.ymin << ", ";
+        os << b.xmax << " " << b.ymin << ", ";
+        os << b.xmax << " " << b.ymax << ", ";
+        os << b.xmin << " " << b.ymax << ", ";
+        os << b.xmin << " " << b.ymin << "))";
+        return os;
     }
 
 }

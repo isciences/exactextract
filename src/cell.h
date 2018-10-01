@@ -63,12 +63,7 @@ namespace exactextract {
         Location location(const Coordinate &c) const;
 
         Traversal &traversal_in_progress();
-
-        friend std::ostream &operator<<(std::ostream &os, const Cell &c);
     };
-
-    std::ostream &operator<<(std::ostream &os, const Cell &c);
-
 
 }
 
