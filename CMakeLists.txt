@@ -91,36 +91,6 @@ foreach(LINKING SHARED STATIC)
     set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})
 endforeach(LINKING)
 
-# Create our main program, statically linked to our library
-# Unlike the library, this depends on GDAL
-if (GDAL_FOUND)
-    add_executable(${BIN_NAME}
-            src/exactextract.cpp
-            )
-    set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
-
-    target_link_libraries(
-            ${BIN_NAME}
-            PRIVATE
-                ${LIB_NAME}_STATIC
-                ${GDAL_LIBRARY}
-                ${GEOS_LIBRARY}
-    )
-
-    target_include_directories(
-            ${BIN_NAME}
-            PRIVATE
-                ${GDAL_INCLUDE_DIR}
-                ${GEOS_INCLUDE_DIR}
-                ${CLI11_INCLUDE_DIR}
-                ${CMAKE_SOURCE_DIR}/src
-    )
-
-    install(TARGETS ${BIN_NAME}
-            RUNTIME
-            DESTINATION bin)
-endif(GDAL_FOUND)
-
 # Create an executable to run the unit tests
 add_executable(catch_tests ${TEST_SOURCES})
 
@@ -138,3 +108,38 @@ target_link_libraries(
             ${LIB_NAME}_SHARED
             ${GEOS_LIBRARY}
 )
+
+# Create our main program, statically linked to our library
+# Unlike the library, this depends on GDAL
+if (GDAL_FOUND)
+    add_executable(${BIN_NAME}
+            src/exactextract.cpp
+            )
+    set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
+
+    target_link_libraries(
+            ${BIN_NAME}
+            PRIVATE
+            ${LIB_NAME}_STATIC
+            ${GDAL_LIBRARY}
+            ${GEOS_LIBRARY}
+    )
+
+    target_include_directories(
+            ${BIN_NAME}
+            PRIVATE
+            ${GDAL_INCLUDE_DIR}
+            ${GEOS_INCLUDE_DIR}
+            ${CLI11_INCLUDE_DIR}
+            ${CMAKE_SOURCE_DIR}/src
+    )
+
+    install(TARGETS ${BIN_NAME}
+            RUNTIME
+            DESTINATION bin)
+else(GDAL_FOUND)
+    message(WARNING
+            "GDAL was not found. It is still possible to build and test libexactextract, but the "
+            "exactextract executable cannot be built or installed.")
+endif(GDAL_FOUND)
+
