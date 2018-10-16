@@ -189,7 +189,6 @@ int main(int argc, char** argv) {
     GDALAllRegister();
     GEOSContextHandle_t geos_context = OGRGeometry::createGEOSContext();
 
-
     // Open GDAL datasets for out inputs
     int values_nodata;
     GDALDataset* rast = (GDALDataset*) GDALOpen(rast_filename.c_str(), GA_ReadOnly);
@@ -249,7 +248,7 @@ int main(int argc, char** argv) {
 
         if (filter.length() == 0 || name == filter) {
             exactextract::geom_ptr geom { feature->GetGeometryRef()->exportToGEOS(geos_context), GEOSGeom_destroy };
-            if (progress) std::cout << "Processing " << name;
+            if (progress) std::cout << "Processing " << name << std::flush;
 
             try {
                 Box bbox = exactextract::geos_get_box(geom.get());
@@ -263,7 +262,7 @@ int main(int argc, char** argv) {
                         auto cropped_common_grid = cropped_values_grid.common_grid(cropped_weights_grid);
 
                         for (const auto& subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
-                            if (progress) std::cout << ".";
+                            if (progress) std::cout << "." << std::flush;
                             Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
 
                             Raster<double> values = read_box(band, values_grid, subgrid.extent(), values_nodata ? &values_nodata_value : nullptr);
@@ -273,7 +272,7 @@ int main(int argc, char** argv) {
                         }
                     } else {
                         for (const auto &subgrid : subdivide(cropped_values_grid, max_cells_in_memory)) {
-                            if (progress) std::cout << ".";
+                            if (progress) std::cout << "." << std::flush;
                             Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
                             Raster<double> values = read_box(band, values_grid, subgrid.extent(), values_nodata ? &values_nodata_value : nullptr);
 
