@@ -99,7 +99,10 @@ namespace exactextract {
         std::valarray<double> cov_weights = {   30,  35,  35,   40,   50,  55,  55,   60 };
         std::valarray<double> cov_fracs   = { 0.25, 0.5, 0.5, 0.25, 0.25, 0.5, 0.5, 0.25 };
 
-        CHECK( stats.mean() == Approx( (cov_values * cov_weights * cov_fracs).sum() / (cov_weights * cov_fracs).sum() ));
+        CHECK( stats.weighted_mean() == Approx( (cov_values * cov_weights * cov_fracs).sum() / (cov_weights * cov_fracs).sum() ));
+        CHECK( stats.mean() == Approx( (cov_values *  cov_fracs).sum() / cov_fracs.sum() ));
+
+        CHECK( stats.weighted_fraction() == Approx( (cov_values*cov_weights*cov_fracs).sum() / (cov_values*cov_fracs).sum() ));
     }
 
     TEST_CASE("Basic integer stats") {

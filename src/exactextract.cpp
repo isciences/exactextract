@@ -111,6 +111,14 @@ static void write_stats_to_csv(const std::string & name, const RasterStats<doubl
             csvout << raster_stats.sum();
         } else if (stat == "variety") {
             csvout << raster_stats.variety();
+        } else if (stat == "weighted mean") {
+            csvout << raster_stats.weighted_mean();
+        } else if (stat == "weighted count") {
+            csvout << raster_stats.weighted_count();
+        } else if (stat == "weighted sum") {
+            csvout << raster_stats.weighted_sum();
+        } else if (stat == "weighted fraction") {
+            csvout << raster_stats.weighted_fraction();
         } else if (stat == "min") {
             if (raster_stats.count() > 0) {
                 csvout << raster_stats.min();

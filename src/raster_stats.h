@@ -27,17 +27,18 @@ namespace exactextract {
 
     public:
         /**
-         * Compute raster statistics from the results of a RasterCellIntersection
+         * Compute raster statistics from the a Raster representing intersection percentages,
+         * a Raster representing data values, and (optionally) a Raster representing weights.
          * and a set of raster values.
-         *
-         * A NODATA value may optionally be provided in addition to NaN.
          */
-        RasterStats(bool store_values = true) :
+        explicit RasterStats(bool store_values = true) :
                 m_store_values{store_values},
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
-                m_weights{0},
-                m_weighted_vals{0} {}
+                m_sum_ciwi{0},
+                m_sum_ci{0},
+                m_sum_xici{0},
+                m_sum_xiciwi{0} {}
 
         void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast) {
             RasterView<T> rv{rast, intersection_percentages.grid()};
@@ -47,15 +48,15 @@ namespace exactextract {
                     float pct_cov = intersection_percentages(i, j);
                     T val;
                     if (pct_cov > 0 && rv.get(i, j, val)) {
-                        process(val, pct_cov);
+                        process_value(val, pct_cov, 1.0);
                     }
                 }
             }
         }
 
         void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const AbstractRaster<T> & weights) {
-            auto common = rast.grid().common_grid(weights.grid());
-            common = common.common_grid(intersection_percentages.grid());
+            auto common = rast.grid().overlapping_grid(weights.grid());
+            common = common.overlapping_grid(intersection_percentages.grid());
 
             RasterView<float> iv{intersection_percentages, common};
             RasterView<T> rv{rast,    common};
@@ -68,7 +69,7 @@ namespace exactextract {
                     T val;
 
                     if (pct_cov > 0 && wv.get(i, j, weight) && rv.get(i, j, val)) {
-                        process(val, pct_cov * weight);
+                        process_value(val, pct_cov, weight);
                     }
                 }
             }
@@ -83,10 +84,27 @@ namespace exactextract {
         }
 
         /**
+         * The mean value of cells covered by this polygon, weighted
+         * by the percent of the cell that is covered and a secondary
+         * weighting raster.
+         */
+         float weighted_mean() const {
+             return weighted_sum() / weighted_count();
+         }
+
+         /** The fraction of weighted cells to unweighted cells.
+          *  Meaningful only when the values of the weighting
+          *  raster are between 0 and 1.
+          */
+         float weighted_fraction() const {
+             return weighted_sum() / sum();
+         }
+
+        /**
          * The raster value occupying the greatest number of cells
          * or partial cells within the polygon. When multiple values
          * cover the same number of cells, the greatest value will
-         * be returned.
+         * be returned. Weights are not taken into account.
          */
         T mode() const {
             return std::max_element(m_freq.cbegin(),
@@ -98,7 +116,7 @@ namespace exactextract {
 
         /**
          * The minimum value in any raster cell wholly or partially covered
-         * by the polygon.
+         * by the polygon. Weights are not taken into account.
          */
         T min() const {
             return m_min;
@@ -106,25 +124,43 @@ namespace exactextract {
 
         /**
          * The maximum value in any raster cell wholly or partially covered
-         * by the polygon.
+         * by the polygon. Weights are not taken into account.
          */
         T max() const {
             return m_max;
         }
 
         /**
-         * The weighted sum of raster cells covered by the polygon.
+         * The sum of raster cells covered by the polygon, with each raster
+         * value weighted by its coverage fraction.
          */
         float sum() const {
-            return (float) m_weighted_vals;
+            return (float) m_sum_xici;
+        }
+
+        /**
+         * The sum of raster cells covered by the polygon, with each raster
+         * value weighted by its coverage fraction and weighting raster value.
+         */
+        float weighted_sum() const {
+            return (float) m_sum_xiciwi;
         }
 
         /**
          * The number of raster cells with a defined value
-         * covered by the polygon.
+         * covered by the polygon. Weights are not taken
+         * into account.
          */
         float count() const {
-            return (float) m_weights;
+            return (float) m_sum_ci;
+        }
+
+        /** The sum of weights for each cell covered by the
+         *  polygon, with each weight multiplied by the coverage
+         *  coverage fraction of each cell.
+         */
+        float weighted_count() const {
+            return (float) m_sum_ciwi;
         }
 
         /**
@@ -132,6 +168,8 @@ namespace exactextract {
          * or partial cells within the polygon. When multiple values
          * cover the same number of cells, the lowest value will
          * be returned.
+         *
+         * Cell weights are not taken into account.
          */
         T minority() const {
             return std::min_element(m_freq.cbegin(),
@@ -153,16 +191,25 @@ namespace exactextract {
         T m_min;
         T m_max;
 
-        double m_weights;
-        double m_weighted_vals;
+        // ci: coverage fraction of pixel i
+        // wi: weight of pixel i
+        // xi: value of pixel i
+        double m_sum_ciwi;
+        double m_sum_ci;
+        double m_sum_xici;
+        double m_sum_xiciwi;
 
         std::unordered_map<T, float> m_freq;
 
         bool m_store_values;
 
-        void process(const T& val, float weight) {
-            m_weights += weight;
-            m_weighted_vals += weight * val;
+        void process_value(const T& val, double coverage, double weight) {
+            double ciwi = coverage*weight;
+
+            m_sum_ci += coverage;
+            m_sum_ciwi += ciwi;
+            m_sum_xici += val*coverage;
+            m_sum_xiciwi += val*ciwi;
 
             if (val < m_min) {
                 m_min = val;
@@ -172,8 +219,9 @@ namespace exactextract {
                 m_max = val;
             }
 
+            // TODO should weights factor in here?
             if (m_store_values)
-                m_freq[val] += weight;
+                m_freq[val] += coverage;
         }
     };
 
