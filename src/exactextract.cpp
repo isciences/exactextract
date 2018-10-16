@@ -227,6 +227,15 @@ int main(int argc, char** argv) {
     auto values_grid = get_raster_grid(rast);
     auto weights_grid = use_weights ? get_raster_grid(weights_rast) : values_grid;
 
+    if (!values_grid.compatible_with(weights_grid)) {
+        std::cerr << "Value and weighting rasters do not have compatible grids." << std::endl;
+        std::cerr << "Value grid origin: (" << values_grid.xmin() << "," << values_grid.ymin() << ") resolution: (";
+        std::cerr << values_grid.dx() << "," << values_grid.dy() << ")" << std::endl;
+        std::cerr << "Weighting grid origin: (" << weights_grid.xmin() << "," << weights_grid.ymin() << ") resolution: (";
+        std::cerr << weights_grid.dx() << "," << weights_grid.dy() << ")" << std::endl;
+        return 1;
+    }
+
     OGRFeature* feature;
 
     std::ofstream csvout;
