@@ -159,6 +159,14 @@ TEST_CASE("Grid compatibility tests", "[grid]") {
     CHECK( !half_degree_global.compatible_with(half_degree_offset) );
 }
 
+TEST_CASE("Grid compatibility, with tolerance", "[grid]") {
+    Grid<bounded_extent> a{{60.525000000000006, 29.308333333333334, 75.166666666666671, 38.491666666666667}, 0.0083333333333333332, 0.0083333333333333332};
+    Grid<bounded_extent> b{{60.5, 29, 75.5, 38.5}, 0.5, 0.5};
+
+    CHECK ( a.compatible_with(b) );
+    CHECK ( b.compatible_with(a) );
+}
+
 TEST_CASE("Common extent calculation", "[grid]") {
     Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
     Grid<bounded_extent> nldas{{-125.0, 0.25, -67, 53}, 0.125, 0.125};
