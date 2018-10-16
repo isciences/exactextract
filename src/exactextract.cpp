@@ -284,8 +284,11 @@ int main(int argc, char** argv) {
                     write_stats_to_csv(name, raster_stats, stats, csvout);
                 }
 
-            } catch (...) {
-                if (progress) std::cout << "failed.";
+            } catch (const std::exception & e) {
+                std::cerr << e.what();
+                if (progress) {
+                    std::cout << "failed.";
+                }
                 failures.push_back(name);
             }
             if (progress) std::cout << std::endl;
