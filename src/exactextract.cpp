@@ -64,7 +64,11 @@ static void write_stat_to_csv(const RasterStats<double> & raster_stats, const st
     } else if (stat == "weighted sum") {
         csvout << raster_stats.weighted_sum();
     } else if (stat == "weighted fraction") {
-        csvout << raster_stats.weighted_fraction();
+        if (raster_stats.sum() > 0) {
+            csvout << raster_stats.weighted_fraction();
+        } else {
+            csvout << "NA";
+        }
     } else if (stat == "min") {
         if (raster_stats.count() > 0) {
             csvout << raster_stats.min();
@@ -121,7 +125,7 @@ static void write_csv_header(const std::string & field_name, const std::vector<s
             std::replace(stat.begin(), stat.end(), ' ', '_');
             csvout << "," << stat;
 
-            if (num_weights > 0) {
+            if (num_weights > 1) {
                 csvout << "_" << i;
             }
         }
