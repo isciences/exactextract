@@ -86,9 +86,13 @@ set(BIN_SOURCES
         src/gdal_dataset_wrapper.cpp)
 
 # Handle differences between debug and release builds
-if (CMAKE_BUILD_TYPE EQUAL "Debug")
-    set_source_files_properties(src/matrix.h PROPERTIES COMPILE_DEFINITIONS - MATRIX_CHECK_BOUNDS)
-endif (CMAKE_BUILD_TYPE EQUAL "Debug")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set_source_files_properties(src/matrix.h PROPERTIES COMPILE_DEFINITIONS MATRIX_CHECK_BOUNDS)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    # Nothing yet
+else()
+    message(FATAL_ERROR "Unknown build type: " ${CMAKE_BUILD_TYPE})
+endif()
 
 # Make a shared and static version of the library
 foreach(LINKING SHARED STATIC)
