@@ -65,7 +65,7 @@ set(PROJECT_SOURCES
         src/traversal.h
         src/traversal_areas.cpp
         src/traversal_areas.h
-)
+        )
 
 set(TEST_SOURCES
         test/test_box.cpp
@@ -77,6 +77,13 @@ set(TEST_SOURCES
         test/test_raster_cell_intersection.cpp
         test/test_traversal_areas.cpp
         test/test_stats.cpp)
+
+set(BIN_SOURCES
+        src/exactextract.cpp
+        src/gdal_raster_wrapper.h
+        src/gdal_raster_wrapper.cpp
+        src/gdal_dataset_wrapper.h
+        src/gdal_dataset_wrapper.cpp)
 
 # Make a shared and static version of the library
 foreach(LINKING SHARED STATIC)
@@ -112,9 +119,7 @@ target_link_libraries(
 # Create our main program, statically linked to our library
 # Unlike the library, this depends on GDAL
 if (GDAL_FOUND)
-    add_executable(${BIN_NAME}
-            src/exactextract.cpp
-            )
+    add_executable(${BIN_NAME} ${BIN_SOURCES})
     set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
 
     target_link_libraries(

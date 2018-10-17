@@ -23,6 +23,8 @@
 
 #include "box.h"
 #include "grid.h"
+#include "gdal_dataset_wrapper.h"
+#include "gdal_raster_wrapper.h"
 #include "geos_utils.h"
 #include "raster.h"
 #include "raster_stats.h"
@@ -32,6 +34,8 @@ using exactextract::Box;
 using exactextract::Grid;
 using exactextract::bounded_extent;
 using exactextract::subdivide;
+using exactextract::GDALRasterWrapper;
+using exactextract::GDALDatasetWrapper;
 using exactextract::Raster;
 using exactextract::RasterStats;
 using exactextract::RasterView;
@@ -110,147 +114,6 @@ static void write_csv_header(const std::string & field_name, const std::vector<s
     csvout << std::endl;
 }
 
-class GDALRasterInfo {
-
-public:
-    GDALRasterInfo(const std::string & filename, int bandnum) : m_grid{Grid<bounded_extent>::make_empty()}{
-        auto rast = GDALOpen(filename.c_str(), GA_ReadOnly);
-        if (!rast) {
-            throw std::runtime_error("Failed to open " + filename);
-        }
-
-        int has_nodata;
-        auto band = GDALGetRasterBand(rast, bandnum);
-        double nodata_value = GDALGetRasterNoDataValue(band, &has_nodata);
-
-        m_rast = rast;
-        m_band = band;
-        m_nodata_value = nodata_value;
-        m_has_nodata = static_cast<bool>(has_nodata);
-        compute_raster_grid();
-    }
-
-    const Grid<bounded_extent>& grid() const {
-        return m_grid;
-    }
-
-    Raster<double> read_box(const Box & box) {
-        auto cropped_grid = m_grid.shrink_to_fit(box);
-        Raster<double> vals(cropped_grid);
-        if (m_has_nodata) {
-            vals.set_nodata(m_nodata_value);
-        }
-
-        auto error = GDALRasterIO(m_band,
-                                  GF_Read,
-                                  (int) cropped_grid.col_offset(m_grid),
-                                  (int) cropped_grid.row_offset(m_grid),
-                                  (int) cropped_grid.cols(),
-                                  (int) cropped_grid.rows(),
-                                  vals.data().data(),
-                                  (int) cropped_grid.cols(),
-                                  (int) cropped_grid.rows(),
-                                  GDT_Float64,
-                                  0,
-                                  0);
-
-        if (error) {
-            throw std::runtime_error("Error reading from raster.");
-        }
-
-        return vals;
-    }
-
-    ~GDALRasterInfo() {
-        GDALClose(m_rast);
-    }
-
-    GDALRasterInfo(const GDALRasterInfo&) = delete;
-    GDALRasterInfo(GDALRasterInfo&&) = default;
-
-
-private:
-    GDALDatasetH m_rast;
-    GDALRasterBandH m_band;
-    double m_nodata_value;
-    bool m_has_nodata;
-    Grid<bounded_extent> m_grid;
-
-    Grid<bounded_extent> compute_raster_grid() {
-        double adfGeoTransform[6];
-        if (GDALGetGeoTransform(m_rast, adfGeoTransform) != CE_None) {
-            throw std::runtime_error("Error reading transform");
-        }
-
-        double dx = std::abs(adfGeoTransform[1]);
-        double dy = std::abs(adfGeoTransform[5]);
-        double ulx = adfGeoTransform[0];
-        double uly = adfGeoTransform[3];
-
-        int nx = GDALGetRasterXSize(m_rast);
-        int ny = GDALGetRasterYSize(m_rast);
-
-        Box box{ulx,
-                uly - ny*dy,
-                ulx + nx*dx,
-                uly};
-
-        m_grid = {box, dx, dy};
-    }
-
-};
-
-class GDALDatasetInfo {
-public:
-    GDALDatasetInfo(const std::string & filename, int layer) {
-        m_dataset = GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
-        if (m_dataset == nullptr) {
-            throw std::runtime_error("Failed to open " + filename);
-        }
-
-        m_layer = GDALDatasetGetLayer(m_dataset, layer);
-        OGR_L_ResetReading(m_layer);
-        m_feature = NULL;
-    }
-
-    bool next() {
-        if (m_feature != NULL) {
-            OGR_F_Destroy(m_feature);
-        }
-        m_feature = OGR_L_GetNextFeature(m_layer);
-        return m_feature != NULL;
-    }
-
-    GEOSGeometry* feature_geometry(const GEOSContextHandle_t & geos_context) {
-        OGRGeometryH geom = OGR_F_GetGeometryRef(m_feature);
-
-        int sz = OGR_G_WkbSize(geom);
-        auto buff = std::make_unique<unsigned char[]>(sz);
-        OGR_G_ExportToWkb(geom, wkbXDR, buff.get());
-
-        return GEOSGeomFromWKB_buf(buff.get(), sz);
-    }
-
-    std::string feature_field(const std::string & field_name) {
-        int index = OGR_F_GetFieldIndex(m_feature, field_name.c_str());
-        // TODO check handling of invalid field name
-        return OGR_F_GetFieldAsString(m_feature, index);
-    }
-
-    ~GDALDatasetInfo() {
-        GDALClose(m_dataset);
-
-        if (m_feature != NULL) {
-            OGR_F_Destroy(m_feature);
-        }
-    }
-
-private:
-    GDALDatasetH m_dataset;
-    OGRFeatureH m_feature;
-    OGRLayerH m_layer;
-};
-
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract"};
 
@@ -283,15 +146,15 @@ int main(int argc, char** argv) {
     GEOSContextHandle_t geos_context = initGEOS_r(nullptr, nullptr);
 
     // Open GDAL datasets for out inputs
-    GDALRasterInfo values{rast_filename, 1};
+    GDALRasterWrapper values{rast_filename, 1};
 
-    std::vector<GDALRasterInfo> weights;
+    std::vector<GDALRasterWrapper> weights;
 
     for (const auto& filename : weights_filenames) {
         weights.emplace_back(filename, 1);
     }
 
-    GDALDatasetInfo shp{poly_filename, 0};
+    GDALDatasetWrapper shp{poly_filename, 0};
 
     // Check grid compatibility
     for (const auto& w : weights) {
