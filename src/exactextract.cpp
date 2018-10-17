@@ -227,9 +227,13 @@ int main(int argc, char** argv) {
                         auto cropped_common_grid = cropped_values_grid.common_grid(cropped_weights_grid);
 
                         for (const auto &subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
-                            Raster<double> values_cropped = values.read_box(subgrid.extent());
                             Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
 
+                            if (coverage.grid().empty()) {
+                                continue;
+                            }
+
+                            Raster<double> values_cropped = values.read_box(subgrid.extent());
                             for (size_t i = 0; i < weights.size(); i++) {
                                 Raster<double> weights_cropped = weights[i].read_box(subgrid.extent());
                                 raster_stats[i].process(coverage, values_cropped, weights_cropped);

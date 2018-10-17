@@ -58,6 +58,9 @@ namespace exactextract {
             auto common = rast.grid().overlapping_grid(weights.grid());
             common = common.overlapping_grid(intersection_percentages.grid());
 
+            if (common.empty())
+                return;
+
             RasterView<float> iv{intersection_percentages, common};
             RasterView<T> rv{rast,    common};
             RasterView<T> wv{weights, common};

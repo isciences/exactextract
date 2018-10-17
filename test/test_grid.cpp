@@ -167,11 +167,28 @@ TEST_CASE("Grid compatibility, with tolerance", "[grid]") {
     CHECK ( b.compatible_with(a) );
 }
 
+TEST_CASE("Grid compatibility (empty grid)", "[grid]") {
+    Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
+
+    CHECK( half_degree_global.compatible_with(Grid<bounded_extent>::make_empty()) );
+    CHECK( Grid<bounded_extent>::make_empty().compatible_with(half_degree_global) );
+    CHECK( Grid<bounded_extent>::make_empty().compatible_with(Grid<bounded_extent>::make_empty()) );
+}
+
 TEST_CASE("Common extent calculation", "[grid]") {
     Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
     Grid<bounded_extent> nldas{{-125.0, 0.25, -67, 53}, 0.125, 0.125};
 
-    CHECK (nldas.common_grid(half_degree_global) == Grid<bounded_extent>{global, 0.125, 0.125} );
+    CHECK( nldas.common_grid(half_degree_global) == Grid<bounded_extent>{global, 0.125, 0.125} );
+    CHECK( nldas.overlapping_grid(half_degree_global) == nldas );
+}
+
+TEST_CASE("Common extent calculation (empty grid)", "[grid]") {
+    Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
+    Grid<bounded_extent> empty = Grid<bounded_extent>::make_empty();
+
+    CHECK( half_degree_global.common_grid(empty) == half_degree_global );
+    CHECK( half_degree_global.overlapping_grid(empty) == empty );
 }
 
 TEST_CASE("Cell center calculations", "[grid]") {

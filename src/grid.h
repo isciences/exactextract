@@ -174,6 +174,10 @@ namespace exactextract {
             // std::numeric_limits<double>::epsilon(), but I wasn't able to make that work.
             constexpr double compatability_tol = 1e-6;
 
+            if (empty() || b.empty()) {
+                return true;
+            }
+
             // Check x-resolution compatibility
             if (!is_integral(std::max(m_dx, b.m_dx) / std::min(m_dx, b.m_dx), std::min(m_dx, b.m_dx)*compatability_tol)) {
                 return false;
@@ -203,6 +207,10 @@ namespace exactextract {
                 throw std::runtime_error("Incompatible extents.");
             }
 
+            if (b.empty()) {
+                return *this;
+            }
+
             const double common_dx = std::min(m_dx, b.m_dx);
             const double common_dy = std::min(m_dy, b.m_dy);
 
@@ -225,6 +233,10 @@ namespace exactextract {
         Grid<extent_tag> overlapping_grid(const Grid<extent_tag2> &b) const {
             if (!compatible_with(b)) {
                 throw std::runtime_error("Incompatible extents.");
+            }
+
+            if (empty() || b.empty()) {
+                return make_empty();
             }
 
             const double common_dx = std::min(m_dx, b.m_dx);
