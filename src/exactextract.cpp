@@ -157,14 +157,21 @@ int main(int argc, char** argv) {
     GDALDatasetWrapper shp{poly_filename, 0};
 
     // Check grid compatibility
-    for (const auto& w : weights) {
-        if (!values.grid().compatible_with(w.grid())) {
+    if (!weights.empty()) {
+        if (!values.grid().compatible_with(weights[0].grid())) {
             std::cerr << "Value and weighting rasters do not have compatible grids." << std::endl;
             std::cerr << "Value grid origin: (" << values.grid().xmin() << "," << values.grid().ymin() << ") resolution: (";
             std::cerr << values.grid().dx() << "," << values.grid().dy() << ")" << std::endl;
-            std::cerr << "Weighting grid origin: (" << w.grid().xmin() << "," << w.grid().ymin() << ") resolution: (";
-            std::cerr << w.grid().dx() << "," << w.grid().dy() << ")" << std::endl;
+            std::cerr << "Weighting grid origin: (" << weights[0].grid().xmin() << "," << weights[0].grid().ymin() << ") resolution: (";
+            std::cerr << weights[0].grid().dx() << "," << weights[0].grid().dy() << ")" << std::endl;
             return 1;
+        }
+
+        for (size_t i = 1; i < weights.size(); i++) {
+            if (weights[i].grid() != weights[0].grid()) {
+                std::cerr << "All weighting rasters must have the same resolution and extent.";
+                return 1;
+            }
         }
     }
 
@@ -196,23 +203,22 @@ int main(int argc, char** argv) {
                             raster_stats.emplace_back(store_values);
                         }
 
-                        for (size_t i = 0; i < weights.size(); i++) {
-                            auto& w = weights[i];
-                            auto cropped_weights_grid = values.grid().shrink_to_fit(bbox.intersection(values.grid().extent()));
-                            auto cropped_common_grid = cropped_values_grid.common_grid(cropped_weights_grid);
+                        auto cropped_weights_grid = weights[0].grid().shrink_to_fit(bbox.intersection(values.grid().extent()));
+                        auto cropped_common_grid = cropped_values_grid.common_grid(cropped_weights_grid);
 
-                            for (const auto &subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
-                                if (progress) std::cout << "." << std::flush;
-                                Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
+                        for (const auto &subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
+                            Raster<double> values_cropped = values.read_box(subgrid.extent());
+                            Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
 
-                                Raster<double> values_cropped = values.read_box(subgrid.extent());
-                                Raster<double> weights_cropped = w.read_box(subgrid.extent());
-
+                            for (size_t i = 0; i < weights.size(); i++) {
+                                Raster<double> weights_cropped = weights[i].read_box(subgrid.extent());
                                 raster_stats[i].process(coverage, values_cropped, weights_cropped);
-                            }
 
-                            write_stats_to_csv(name, raster_stats, stats, csvout);
+                                if (progress) std::cout << "." << std::flush;
+                            }
                         }
+
+                        write_stats_to_csv(name, raster_stats, stats, csvout);
                     } else {
                         RasterStats<double> raster_stats{store_values};
 

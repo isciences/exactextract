@@ -252,6 +252,10 @@ namespace exactextract {
                     m_dy == b.m_dy;
         }
 
+        bool operator!=(const Grid<extent_tag> &b) const {
+            return !(*this == b);
+        }
+
     private:
         Box m_extent;
 
