@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
 project(exactextract)
+set(default_build_type "Release")
 
 set(LIB_NAME exactextract)
 set(BIN_NAME exactextract_bin)
@@ -33,6 +34,12 @@ if (NOT EXISTS ${CLI11_INCLUDE})
     file(DOWNLOAD https://github.com/CLIUtils/CLI11/releases/download/v1.6.0/CLI11.hpp
             ${CLI11_INCLUDE}
             SHOW_PROGRESS)
+endif()
+
+# Make sure we know our build type
+if(NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to '${default_build_type}' as none was specified")
+    set(CMAKE_BUILD_TYPE "${default_build_type}")
 endif()
 
 set(PROJECT_SOURCES
