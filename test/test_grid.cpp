@@ -141,6 +141,25 @@ TEST_CASE("Shrink robustness (2)", "[grid]") {
     CHECK(reduced.ymax <= grid2.ymax());
 }
 
+TEST_CASE("Cropping", "[grid]") {
+    Grid<bounded_extent> grid{{0, 0, 10, 10}, 0.5, 0.5};
+
+    // Cropping with a box larger than the grid's extent has no effect
+    CHECK( grid.crop({-100, -100, 100, 100}) == grid );
+
+    // Nor does cropping a grid with its own box
+    CHECK( grid.crop(grid.extent()) == grid );
+
+    // Extent of cropped grid is no larger than necessary to contain box
+    CHECK( grid.crop({1.8, 2.2, 6.4, 7.5}) == Grid<bounded_extent>{{1.5, 2.0, 6.5, 7.5}, 0.5, 0.5} );
+
+    // But it doesn't expand to cover the box, where the box is larger than the grid's extent
+    CHECK( grid.crop({1.8, -2, 11, 7.5}) == Grid<bounded_extent>{{1.5, 0, 10, 7.5}, 0.5, 0.5} );
+
+    // The cropping code hits a special case when the new xmax/ymin falls exactly on a cell boundary
+    CHECK( grid.crop({2, 2, 8, 8}) == Grid<bounded_extent>{{2, 2, 8, 8}, 0.5, 0.5} );
+}
+
 TEST_CASE("Grid compatibility tests", "[grid]") {
     Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
     Grid<bounded_extent> one_degree_global{global, 1, 1};

@@ -115,6 +115,10 @@ namespace exactextract {
 
         double y_for_row(size_t row) const { return m_extent.ymax - ((row - extent_tag::padding) + 0.5) * m_dy; }
 
+        Grid<extent_tag> crop(const Box & b) const {
+            return shrink_to_fit(b.intersection(extent()));
+        }
+
         Grid<extent_tag> shrink_to_fit(const Box & b) const {
             if (b.xmin < m_extent.xmin || b.ymin < m_extent.ymin || b.xmax > m_extent.xmax || b.ymax > m_extent.ymax) {
                 throw std::range_error("Cannot shrink extent to bounds larger than original.");
@@ -144,6 +148,18 @@ namespace exactextract {
 
             size_t num_rows = 1 + (row0 - row1);
             size_t num_cols = 1 + (col1 - col0);
+
+            // If xmax or ymin falls cleanly on a cell boundary, we don't
+            // need as many rows or columns as we otherwise would, because
+            // we assume that the rightmost cell of the grid is a closed
+            // interval in x, and the lowermost cell of the grid is a
+            // closed interval in y.
+            if (num_rows > 2 && (snapped_ymax - (num_rows-1)*m_dy <= b.ymin)) {
+                num_rows--;
+            }
+            if (num_cols > 2 && (snapped_xmin + (num_cols-1)*m_dx >= b.xmax)) {
+                num_cols--;
+            }
 
             // Perform offsets relative to the new xmin, ymax origin
             // points. If this is not done, then floating point roundoff

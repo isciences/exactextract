@@ -173,8 +173,7 @@ TEST_CASE("Bouncing off boundary", "[raster-cell-intersection]") {
 
     check_cell_intersections(rci, {
             {0.25,   0.25},
-            {0.4375, 0.3125},
-            {0.0,    0.0},
+            {0.4375, 0.3125}
     });
 }
 
@@ -201,9 +200,9 @@ TEST_CASE("Follows grid boundary", "[raster-cell-intersection]") {
     Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
-            {0.25, 0.5, 0.0},
-            {0.50, 1.0, 0.0},
-            {0.25, 0.5, 0.0},
+            {0.25, 0.5},
+            {0.50, 1.0},
+            {0.25, 0.5},
     });
 }
 
@@ -217,9 +216,9 @@ TEST_CASE("Starts on vertical boundary, moving up", "[raster-cell-intersection]"
     Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
-            {0.25, 0.5, 0.5, 0.0},
-            {0.50, 1.0, 1.0, 0.0},
-            {0.25, 0.5, 0.5, 0.0},
+            {0.25, 0.5, 0.5},
+            {0.50, 1.0, 1.0},
+            {0.25, 0.5, 0.5},
     });
 }
 
@@ -233,9 +232,9 @@ TEST_CASE("Starts on vertical boundary, moving down", "[raster-cell-intersection
     Raster<float> rci = raster_cell_intersection(ex, g.get());
 
     check_cell_intersections(rci, {
-            {0.25, 0.5, 0.5, 0.0},
-            {0.50, 1.0, 1.0, 0.0},
-            {0.25, 0.5, 0.5, 0.0},
+            {0.25, 0.5, 0.5},
+            {0.50, 1.0, 1.0},
+            {0.25, 0.5, 0.5},
     });
 }
 
@@ -267,8 +266,7 @@ TEST_CASE("Starts on horizontal boundary, moving right", "[raster-cell-intersect
     check_cell_intersections(rci, {
             {0.25, 0.5, 0.25},
             {0.50, 1.0, 0.50},
-            {0.50, 1.0, 0.50},
-            {0.00, 0.0, 0.00},
+            {0.50, 1.0, 0.50}
      });
 }
 

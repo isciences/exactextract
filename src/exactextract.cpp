@@ -133,7 +133,6 @@ static void write_csv_header(const std::string & field_name, const std::vector<s
 
     csvout << std::endl;
 }
-
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract"};
 
@@ -211,10 +210,11 @@ int main(int argc, char** argv) {
             if (progress) std::cout << "Processing " << name << std::flush;
 
             try {
-                Box bbox = exactextract::geos_get_box(geom.get());
+                Box feature_bbox = exactextract::geos_get_box(geom.get());
 
-                if (bbox.intersects(values.grid().extent())) {
-                    auto cropped_values_grid = values.grid().shrink_to_fit(bbox.intersection(values.grid().extent()));
+                if (feature_bbox.intersects(values.grid().extent())) {
+                    // Reduce value grid to portion overlapping feature
+                    auto cropped_values_grid = values.grid().crop(feature_bbox);
 
                     if (use_weights) {
                         std::vector<RasterStats<double>> raster_stats;
@@ -223,8 +223,9 @@ int main(int argc, char** argv) {
                             raster_stats.emplace_back(store_values);
                         }
 
-                        auto cropped_weights_grid = weights[0].grid().shrink_to_fit(bbox.intersection(values.grid().extent()));
-                        auto cropped_common_grid = cropped_values_grid.common_grid(cropped_weights_grid);
+                        // Crop weight grid to area where feature and weights are both defined
+                        auto cropped_weights_grid = weights[0].grid().crop(feature_bbox);
+                        auto cropped_common_grid = cropped_values_grid.overlapping_grid(cropped_weights_grid);
 
                         for (const auto &subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
                             Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
