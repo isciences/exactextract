@@ -20,8 +20,6 @@
 #include <cstring>
 #include <vector>
 
-#define CHECK_BOUNDS true
-
 namespace exactextract {
 
 template<typename T>
@@ -96,7 +94,7 @@ class Matrix {
         }
 
         void check(size_t row, size_t col) const {
-            #if CHECK_BOUNDS
+            #ifdef MATRIX_CHECK_BOUNDS
                 if (row + 1 > m_rows) {
                     throw std::out_of_range("Row " + std::to_string(row) + " is out of range.");
                 }

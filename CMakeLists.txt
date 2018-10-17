@@ -85,6 +85,11 @@ set(BIN_SOURCES
         src/gdal_dataset_wrapper.h
         src/gdal_dataset_wrapper.cpp)
 
+# Handle differences between debug and release builds
+if (CMAKE_BUILD_TYPE EQUAL "Debug")
+    set_source_files_properties(src/matrix.h PROPERTIES COMPILE_DEFINITIONS - MATRIX_CHECK_BOUNDS)
+endif (CMAKE_BUILD_TYPE EQUAL "Debug")
+
 # Make a shared and static version of the library
 foreach(LINKING SHARED STATIC)
     add_library(${LIB_NAME}_${LINKING} ${LINKING} ${PROJECT_SOURCES})
