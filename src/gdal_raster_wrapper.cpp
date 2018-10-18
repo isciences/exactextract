@@ -42,7 +42,7 @@ namespace exactextract {
         return vals;
     }
 
-    Grid<bounded_extent> GDALRasterWrapper::compute_raster_grid() {
+    void GDALRasterWrapper::compute_raster_grid() {
         double adfGeoTransform[6];
         if (GDALGetGeoTransform(m_rast, adfGeoTransform) != CE_None) {
             throw std::runtime_error("Error reading transform");

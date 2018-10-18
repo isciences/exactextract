@@ -66,7 +66,7 @@ namespace exactextract {
         bool m_has_nodata;
         Grid<bounded_extent> m_grid;
 
-        Grid<bounded_extent> compute_raster_grid();
+        void compute_raster_grid();
     };
 
 }
