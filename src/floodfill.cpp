@@ -22,22 +22,23 @@
 
 namespace exactextract {
 
-    FloodFill::FloodFill(const GEOSGeometry *g, const Grid<bounded_extent> &extent) :
+    FloodFill::FloodFill(GEOSContextHandle_t context, const GEOSGeometry *g, const Grid<bounded_extent> &extent) :
+            m_geos_context{context},
             m_extent{extent},
-            m_g{nullptr, GEOSGeom_destroy},
-            m_pg{nullptr, GEOSPreparedGeom_destroy} {
-        geom_ptr ring_copy{GEOSGeom_clone(g), GEOSGeom_destroy};
-        m_g = {GEOSGeom_createPolygon(ring_copy.release(), nullptr, 0), GEOSGeom_destroy};
-        m_pg = {GEOSPrepare(m_g.get()), GEOSPreparedGeom_destroy};
+            m_g{nullptr},
+            m_pg{nullptr} {
+        geom_ptr_r ring_copy = geos_ptr(context, GEOSGeom_clone_r(context, g));
+        m_g = geos_ptr(context, GEOSGeom_createPolygon_r(context, ring_copy.release(), nullptr, 0));
+        m_pg = GEOSPrepare_ptr(context, m_g.get());
     }
 
     bool FloodFill::cell_is_inside(size_t i, size_t j) const {
         double x = m_extent.x_for_col(j);
         double y = m_extent.y_for_row(i);
 
-        auto point = GEOSGeom_createPoint_ptr(x, y);
+        auto point = GEOSGeom_createPoint_ptr(m_geos_context, x, y);
 
-        return GEOSPreparedContains(m_pg.get(), point.get());
+        return GEOSPreparedContains_r(m_geos_context, m_pg.get(), point.get());
     }
 
 }

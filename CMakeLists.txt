@@ -111,6 +111,12 @@ foreach(LINKING SHARED STATIC)
             ${GEOS_INCLUDE_DIR}
     )
 
+    target_compile_definitions(
+            ${LIB_NAME}_${LINKING}
+            PRIVATE
+            GEOS_USE_ONLY_R_API
+    )
+
     set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})
 endforeach(LINKING)
 
@@ -137,6 +143,8 @@ target_link_libraries(
 if (GDAL_FOUND)
     add_executable(${BIN_NAME} ${BIN_SOURCES})
     set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
+
+    target_compile_definitions(${BIN_NAME} PRIVATE GEOS_USE_ONLY_R_API)
 
     target_link_libraries(
             ${BIN_NAME}

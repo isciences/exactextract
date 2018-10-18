@@ -27,7 +27,7 @@ namespace exactextract {
     class RasterCellIntersection {
 
     public:
-        RasterCellIntersection(const Grid<bounded_extent> &raster_grid, const GEOSGeometry *g);
+        RasterCellIntersection(const Grid<bounded_extent> &raster_grid, GEOSContextHandle_t context, const GEOSGeometry *g);
 
         size_t rows() const { return m_overlap_areas->rows(); }
 
@@ -37,9 +37,9 @@ namespace exactextract {
 
         Grid<infinite_extent> m_geometry_grid;
     private:
-        void process(const GEOSGeometry *g);
+        void process(GEOSContextHandle_t context, const GEOSGeometry *g);
 
-        void process_ring(const GEOSGeometry *ls, bool exterior_ring);
+        void process_ring(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring);
 
         void add_ring_areas(size_t i0, size_t j0, const Matrix<float> &areas, bool exterior_ring);
 
@@ -47,7 +47,7 @@ namespace exactextract {
 
     };
 
-    Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, const GEOSGeometry* g);
+    Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, GEOSContextHandle_t context, const GEOSGeometry* g);
 
 }
 

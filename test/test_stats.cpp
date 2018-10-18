@@ -11,13 +11,14 @@
 using Catch::Detail::Approx;
 
 namespace exactextract {
-    static void init_geos() {
-        static bool initialized = false;
+    static GEOSContextHandle_t init_geos() {
+        static GEOSContextHandle_t context = nullptr;
 
-        if (!initialized) {
-            initGEOS(nullptr, nullptr);
-            initialized = true;
+        if (context == nullptr) {
+            context = initGEOS_r(nullptr, nullptr);
         }
+
+        return context;
     }
 
     template<typename T>
@@ -32,14 +33,14 @@ namespace exactextract {
     }
 
     TEST_CASE("Basic float stats") {
-        init_geos();
+        GEOSContextHandle_t context = init_geos();
 
         Box extent{-1, -1, 4, 4};
         Grid<bounded_extent> ex{extent, 1, 1}; // 4x5 grid
 
-        auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
+        auto g = GEOSGeom_read_r(context, "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
-        Raster<float> areas = raster_cell_intersection(ex, g.get());
+        Raster<float> areas = raster_cell_intersection(ex, context, g.get());
 
         Raster<float> values{{{
           {1, 1, 1, 1, 1},
@@ -76,16 +77,16 @@ namespace exactextract {
     }
 
     TEST_CASE("Weighted multiresolution float stats") {
-        init_geos();
+        GEOSContextHandle_t context = init_geos();
 
         Box extent { 0, 0, 8, 6 };
 
         Grid<bounded_extent> ex1{extent, 1, 1};
         Grid<bounded_extent> ex2{extent, 2, 2};
 
-        auto g = GEOSGeom_read("POLYGON ((3.5 1.5, 6.5 1.5, 6.5 2.5, 3.5 2.5, 3.5 1.5))");
+        auto g = GEOSGeom_read_r(context, "POLYGON ((3.5 1.5, 6.5 1.5, 6.5 2.5, 3.5 2.5, 3.5 1.5))");
 
-        Raster<float> areas = raster_cell_intersection(ex1.common_grid(ex2), g.get());
+        Raster<float> areas = raster_cell_intersection(ex1.common_grid(ex2), context, g.get());
         Raster<float> values{extent, 6, 8};
         Raster<float> weights{extent, 3, 4};
 
@@ -106,14 +107,14 @@ namespace exactextract {
     }
 
     TEST_CASE("Basic integer stats") {
-        init_geos();
+        GEOSContextHandle_t context = init_geos();
 
         Box extent{-1, -1, 4, 4};
         Grid<bounded_extent> ex{extent, 1, 1}; // 4x5 grid
 
-        auto g = GEOSGeom_read("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
+        auto g = GEOSGeom_read_r(context, "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
 
-        Raster<float> areas = raster_cell_intersection(ex, g.get());
+        Raster<float> areas = raster_cell_intersection(ex, context, g.get());
 
         int NODATA = -999;
 

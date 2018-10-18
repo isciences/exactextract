@@ -38,15 +38,16 @@ namespace exactextract {
     class FloodFill {
 
     public:
-        FloodFill(const GEOSGeometry *g, const Grid<bounded_extent> &extent);
+        FloodFill(GEOSContextHandle_t context, const GEOSGeometry *g, const Grid<bounded_extent> &extent);
 
         template<typename T>
         void flood(Matrix<T> &arr) const;
 
     private:
         Grid<bounded_extent> m_extent;
-        geom_ptr m_g;
-        prep_geom_ptr m_pg;
+        GEOSContextHandle_t m_geos_context;
+        geom_ptr_r m_g;
+        prep_geom_ptr_r m_pg;
 
         bool cell_is_inside(size_t i, size_t j) const;
 

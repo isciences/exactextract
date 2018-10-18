@@ -41,7 +41,7 @@ namespace exactextract {
         auto buff = std::make_unique<unsigned char[]>(sz);
         OGR_G_ExportToWkb(geom, wkbXDR, buff.get());
 
-        return GEOSGeomFromWKB_buf(buff.get(), sz);
+        return GEOSGeomFromWKB_buf_r(geos_context, buff.get(), sz);
     }
 
     std::string GDALDatasetWrapper::feature_field(const std::string &field_name) const {

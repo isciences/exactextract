@@ -23,8 +23,8 @@
 
 namespace exactextract {
 
-    Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, const GEOSGeometry* g) {
-        RasterCellIntersection rci(raster_grid, g);
+    Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, GEOSContextHandle_t context, const GEOSGeometry* g) {
+        RasterCellIntersection rci(raster_grid, context, g);
 
         return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
                  make_finite(rci.m_geometry_grid) };
@@ -41,12 +41,12 @@ namespace exactextract {
     }
 
 
-    static Grid<infinite_extent> get_geometry_grid(const Grid<bounded_extent> &raster_grid, const GEOSGeometry* g) {
-        if (GEOSisEmpty(g)) {
+    static Grid<infinite_extent> get_geometry_grid(const Grid<bounded_extent> &raster_grid, GEOSContextHandle_t context, const GEOSGeometry* g) {
+        if (GEOSisEmpty_r(context, g)) {
             throw std::invalid_argument("Can't get statistics for empty geometry");
         }
 
-        Box cropped_geometry_extent = raster_grid.extent().intersection(geos_get_box(g));
+        Box cropped_geometry_extent = raster_grid.extent().intersection(geos_get_box(context, g));
 
         if (cropped_geometry_extent.intersects(raster_grid.extent())) {
             return make_infinite(raster_grid.shrink_to_fit(cropped_geometry_extent));
@@ -56,40 +56,40 @@ namespace exactextract {
     }
 
 
-    RasterCellIntersection::RasterCellIntersection(const Grid<bounded_extent> &raster_grid, const GEOSGeometry *g)
-        : m_geometry_grid{get_geometry_grid(raster_grid, g)},
+    RasterCellIntersection::RasterCellIntersection(const Grid<bounded_extent> &raster_grid, GEOSContextHandle_t context, const GEOSGeometry *g)
+        : m_geometry_grid{get_geometry_grid(raster_grid, context, g)},
           m_overlap_areas{std::make_unique<Matrix<float>>(m_geometry_grid.rows() - 2, m_geometry_grid.cols() - 2)}
     {
         if (!m_geometry_grid.empty())
-            process(g);
+            process(context, g);
     }
 
-    void RasterCellIntersection::process(const GEOSGeometry *g) {
-        if (GEOSGeomTypeId(g) == GEOS_POLYGON) {
-            process_ring(GEOSGetExteriorRing(g), true);
+    void RasterCellIntersection::process(GEOSContextHandle_t context, const GEOSGeometry *g) {
+        if (GEOSGeomTypeId_r(context, g) == GEOS_POLYGON) {
+            process_ring(context, GEOSGetExteriorRing_r(context, g), true);
 
-            for (int i = 0; i < GEOSGetNumInteriorRings(g); i++) {
-                process_ring(GEOSGetInteriorRingN(g, i), false);
+            for (int i = 0; i < GEOSGetNumInteriorRings_r(context, g); i++) {
+                process_ring(context, GEOSGetInteriorRingN_r(context, g, i), false);
             }
-        } else if (GEOSGeomTypeId(g) == GEOS_MULTIPOLYGON) {
-            for (int i = 0; i < GEOSGetNumGeometries(g); i++) {
-                process(GEOSGetGeometryN(g, i));
+        } else if (GEOSGeomTypeId_r(context, g) == GEOS_MULTIPOLYGON) {
+            for (int i = 0; i < GEOSGetNumGeometries_r(context, g); i++) {
+                process(context, GEOSGetGeometryN_r(context, g, i));
             }
         } else {
             throw std::invalid_argument("Unsupported geometry type.");
         }
     }
 
-    static Grid<infinite_extent> get_ring_grid(const GEOSGeometry* ls, const Grid<infinite_extent> & geometry_grid) {
-        Box cropped_ring_extent = geometry_grid.extent().intersection(geos_get_box(ls));
+    static Grid<infinite_extent> get_ring_grid(GEOSContextHandle_t context, const GEOSGeometry* ls, const Grid<infinite_extent> & geometry_grid) {
+        Box cropped_ring_extent = geometry_grid.extent().intersection(geos_get_box(context, ls));
         return geometry_grid.shrink_to_fit(cropped_ring_extent);
     }
 
-    void RasterCellIntersection::process_ring(const GEOSGeometry *ls, bool exterior_ring) {
-        const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq(ls);
-        bool is_ccw = geos_is_ccw(seq);
+    void RasterCellIntersection::process_ring(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring) {
+        const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, ls);
+        bool is_ccw = geos_is_ccw(context, seq);
 
-        Grid<infinite_extent> ring_grid = get_ring_grid(ls, m_geometry_grid);
+        Grid<infinite_extent> ring_grid = get_ring_grid(context, ls, m_geometry_grid);
 
         size_t rows = ring_grid.rows();
         size_t cols = ring_grid.cols();
@@ -98,11 +98,11 @@ namespace exactextract {
 
         std::deque<Coordinate> stk;
         {
-            unsigned int npoints = geos_get_num_points(seq);
+            unsigned int npoints = geos_get_num_points(context, seq);
 
             for (unsigned int i = 0; i < npoints; i++) {
                 double x, y;
-                if (!GEOSCoordSeq_getX(seq, i, &x) || !GEOSCoordSeq_getY(seq, i, &y)) {
+                if (!GEOSCoordSeq_getX_r(context, seq, i, &x) || !GEOSCoordSeq_getY_r(context, seq, i, &y)) {
                     throw std::runtime_error("Error reading coordinates.");
                 }
 
@@ -124,10 +124,10 @@ namespace exactextract {
         // completely traverses the cell, we will have a traversal with a filled fraction
         // of 1.0 rather than a traversal with a filled fraction of 0.0. Leaving a traversal
         // with a filled fraction of 0.0 could allow a subsequent flood fill to penetrate
-        // the interior of our polygon. If we are already at the edge of a grid, it's not possibl
+        // the interior of our polygon. If we are already at the edge of a grid, it's not possible
         // to nudge the point into the next cell, but we don't need to since there's no
         // possibility of a flood fill penetrating from this direction.
-        SegmentOrientation iso = initial_segment_orientation(seq);
+        SegmentOrientation iso = initial_segment_orientation(context, seq);
         if (iso != SegmentOrientation::ANGLED) {
             Box b = grid_cell(ring_grid, row, col);
 
@@ -215,7 +215,7 @@ namespace exactextract {
             }
         }
 
-        FloodFill ff(ls, make_finite(ring_grid));
+        FloodFill ff(context, ls, make_finite(ring_grid));
         ff.flood(areas);
 
         // Transfer these areas to our global set

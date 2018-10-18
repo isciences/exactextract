@@ -31,14 +31,15 @@
 #include "raster_cell_intersection.h"
 
 using exactextract::Box;
-using exactextract::Grid;
-using exactextract::bounded_extent;
-using exactextract::subdivide;
-using exactextract::GDALRasterWrapper;
 using exactextract::GDALDatasetWrapper;
+using exactextract::GDALRasterWrapper;
+using exactextract::Grid;
 using exactextract::Raster;
 using exactextract::RasterStats;
 using exactextract::RasterView;
+using exactextract::bounded_extent;
+using exactextract::geos_ptr;
+using exactextract::subdivide;
 
 static bool stored_values_needed(const std::vector<std::string> & stats) {
     for (const auto& stat : stats) {
@@ -159,8 +160,6 @@ int main(int argc, char** argv) {
     bool use_weights = !weights_filenames.empty();
     max_cells_in_memory *= 1000000;
 
-    initGEOS(nullptr, nullptr);
-
     GDALAllRegister();
     GEOSContextHandle_t geos_context = initGEOS_r(nullptr, nullptr);
 
@@ -204,13 +203,12 @@ int main(int argc, char** argv) {
         std::string name{shp.feature_field(field_name)};
 
         if (filter.length() == 0 || name == filter) {
-            auto deleter = [&geos_context](GEOSGeometry* g) { GEOSGeom_destroy_r(geos_context, g); };
-            std::unique_ptr<GEOSGeometry, decltype(deleter)> geom{shp.feature_geometry(geos_context), deleter};
+            auto geom = geos_ptr(geos_context, shp.feature_geometry(geos_context));
 
             if (progress) std::cout << "Processing " << name << std::flush;
 
             try {
-                Box feature_bbox = exactextract::geos_get_box(geom.get());
+                Box feature_bbox = exactextract::geos_get_box(geos_context, geom.get());
 
                 if (feature_bbox.intersects(values.grid().extent())) {
                     // Reduce value grid to portion overlapping feature
@@ -228,7 +226,7 @@ int main(int argc, char** argv) {
                         auto cropped_common_grid = cropped_values_grid.overlapping_grid(cropped_weights_grid);
 
                         for (const auto &subgrid : subdivide(cropped_common_grid, max_cells_in_memory)) {
-                            Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
+                            Raster<float> coverage = raster_cell_intersection(subgrid, geos_context, geom.get());
 
                             if (coverage.grid().empty()) {
                                 continue;
@@ -249,7 +247,7 @@ int main(int argc, char** argv) {
 
                         for (const auto &subgrid : subdivide(cropped_values_grid, max_cells_in_memory)) {
                             if (progress) std::cout << "." << std::flush;
-                            Raster<float> coverage = raster_cell_intersection(subgrid, geom.get());
+                            Raster<float> coverage = raster_cell_intersection(subgrid, geos_context, geom.get());
                             Raster<double> values_cropped = values.read_box(subgrid.extent());
 
                             raster_stats.process(coverage, values_cropped);
@@ -277,7 +275,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    finishGEOS();
     finishGEOS_r(geos_context);
 
     if (failures.empty()) {
