@@ -42,6 +42,7 @@ using exactextract::bounded_extent;
 using exactextract::geos_ptr;
 using exactextract::subdivide;
 using exactextract::write_csv_header;
+using exactextract::write_nas_to_csv;
 using exactextract::write_stat_to_csv;
 using exactextract::write_stats_to_csv;
 
@@ -174,6 +175,8 @@ int main(int argc, char** argv) {
 
                         write_stats_to_csv(name, raster_stats, stats, csvout);
                     }
+                } else {
+                    write_nas_to_csv(name, stats.size()*(std::max(1ul, weights.size())), csvout);
                 }
 
             } catch (const std::exception & e) {

@@ -35,6 +35,11 @@ namespace exactextract {
             const std::vector<std::string> & stats,
             std::ostream & csvout);
 
+    void write_nas_to_csv(
+            const std::string & name,
+            size_t n,
+            std::ostream & csvout);
+
     void write_csv_header(
             const std::string & field_name,
             const std::vector<std::string> & stats,

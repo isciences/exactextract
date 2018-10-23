@@ -15,6 +15,8 @@
 
 namespace exactextract {
 
+    constexpr auto NA = "NA";
+
     void write_csv_header(const std::string & field_name, const std::vector<std::string> & stats, size_t num_weights, std::ostream & csvout) {
         csvout << field_name;
 
@@ -27,6 +29,16 @@ namespace exactextract {
                     csvout << "_" << (i+1);
                 }
             }
+        }
+
+        csvout << std::endl;
+    }
+
+    void write_nas_to_csv(const std::string & name, size_t n, std::ostream & csvout) {
+        csvout << name;
+
+        for (size_t i = 0; i < n; i++) {
+            csvout << ',' << NA;
         }
 
         csvout << std::endl;
@@ -71,31 +83,31 @@ namespace exactextract {
             if (raster_stats.sum() > 0) {
                 csvout << raster_stats.weighted_fraction();
             } else {
-                csvout << "NA";
+                csvout << NA;
             }
         } else if (stat == "min") {
             if (raster_stats.count() > 0) {
                 csvout << raster_stats.min();
             } else {
-                csvout << "NA";
+                csvout << NA;
             }
         } else if (stat == "max") {
             if (raster_stats.count() > 0) {
                 csvout << raster_stats.max();
             } else {
-                csvout << "NA";
+                csvout << NA;
             }
         } else if (stat == "mode") {
             if (raster_stats.count() > 0) {
                 csvout << raster_stats.mode();
             } else {
-                csvout << "NA";
+                csvout << NA;
             }
         } else if (stat == "minority") {
             if (raster_stats.count() > 0) {
                 csvout << raster_stats.minority();
             } else {
-                csvout << "NA";
+                csvout << NA;
             }
         } else {
             throw std::runtime_error("Unknown stat: " + stat);

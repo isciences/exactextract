@@ -66,3 +66,11 @@ TEST_CASE("Writing rows of output for >1 set of stats") {
 
     CHECK( out.str() == "35,2.5,10,2.5,20\n" );
 }
+
+TEST_CASE("Writing NA values") {
+    std::ostringstream out;
+
+    write_nas_to_csv("35", 3, out);
+
+    CHECK( out.str() == "35,NA,NA,NA\n" );
+}
