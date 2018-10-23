@@ -22,6 +22,7 @@
 #include "CLI11.hpp"
 
 #include "box.h"
+#include "csv_utils.h"
 #include "grid.h"
 #include "gdal_dataset_wrapper.h"
 #include "gdal_raster_wrapper.h"
@@ -40,6 +41,9 @@ using exactextract::RasterView;
 using exactextract::bounded_extent;
 using exactextract::geos_ptr;
 using exactextract::subdivide;
+using exactextract::write_csv_header;
+using exactextract::write_stat_to_csv;
+using exactextract::write_stats_to_csv;
 
 static bool stored_values_needed(const std::vector<std::string> & stats) {
     for (const auto& stat : stats) {
@@ -49,91 +53,6 @@ static bool stored_values_needed(const std::vector<std::string> & stats) {
     return false;
 }
 
-static void write_stat_to_csv(const RasterStats<double> & raster_stats, const std::string & stat, std::ostream & csvout) {
-    if (stat == "mean") {
-        csvout << raster_stats.mean();
-    } else if (stat == "count") {
-        csvout << raster_stats.count();
-    } else if (stat == "sum") {
-        csvout << raster_stats.sum();
-    } else if (stat == "variety") {
-        csvout << raster_stats.variety();
-    } else if (stat == "weighted mean") {
-        csvout << raster_stats.weighted_mean();
-    } else if (stat == "weighted count") {
-        csvout << raster_stats.weighted_count();
-    } else if (stat == "weighted sum") {
-        csvout << raster_stats.weighted_sum();
-    } else if (stat == "weighted fraction") {
-        if (raster_stats.sum() > 0) {
-            csvout << raster_stats.weighted_fraction();
-        } else {
-            csvout << "NA";
-        }
-    } else if (stat == "min") {
-        if (raster_stats.count() > 0) {
-            csvout << raster_stats.min();
-        } else {
-            csvout << "NA";
-        }
-    } else if (stat == "max") {
-        if (raster_stats.count() > 0) {
-            csvout << raster_stats.max();
-        } else {
-            csvout << "NA";
-        }
-    } else if (stat == "mode") {
-        if (raster_stats.count() > 0) {
-            csvout << raster_stats.mode();
-        } else {
-            csvout << "NA";
-        }
-    } else if (stat == "minority") {
-        if (raster_stats.count() > 0) {
-            csvout << raster_stats.minority();
-        } else {
-            csvout << "NA";
-        }
-    } else {
-        throw std::runtime_error("Unknown stat: " + stat);
-    }
-}
-static void write_stats_to_csv(const std::string & name, const RasterStats<double> & raster_stats, const std::vector<std::string> & stats, std::ostream & csvout) {
-    csvout << name;
-    for (const auto& stat : stats) {
-        csvout << ",";
-        write_stat_to_csv(raster_stats, stat, csvout);
-    }
-    csvout << std::endl;
-}
-
-static void write_stats_to_csv(const std::string & name, const std::vector<RasterStats<double>> & raster_stats, const std::vector<std::string> & stats, std::ostream & csvout) {
-    csvout << name;
-    for (const auto& rs : raster_stats) {
-        for (const auto& stat : stats) {
-            csvout << ",";
-            write_stat_to_csv(rs, stat, csvout);
-        }
-    }
-    csvout << std::endl;
-}
-
-static void write_csv_header(const std::string & field_name, const std::vector<std::string> & stats, size_t num_weights, std::ostream & csvout) {
-    csvout << field_name;
-
-    for (size_t i = 1; i <= num_weights; i++) {
-        for (auto stat : stats) {
-            std::replace(stat.begin(), stat.end(), ' ', '_');
-            csvout << "," << stat;
-
-            if (num_weights > 1) {
-                csvout << "_" << i;
-            }
-        }
-    }
-
-    csvout << std::endl;
-}
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract"};
 
