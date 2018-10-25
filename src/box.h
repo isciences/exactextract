@@ -110,6 +110,8 @@ namespace exactextract {
 
         Crossing crossing(const Coordinate &c1, const Coordinate &c2) const;
 
+        bool contains(const Box &b) const;
+
         bool contains(const Coordinate &c) const;
 
         bool strictly_contains(const Coordinate &c) const;
