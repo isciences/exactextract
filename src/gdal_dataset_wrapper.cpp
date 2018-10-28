@@ -13,6 +13,8 @@
 
 #include "gdal_dataset_wrapper.h"
 
+#include <memory>
+
 namespace exactextract {
 
     GDALDatasetWrapper::GDALDatasetWrapper(const std::string &filename, int layer) {
