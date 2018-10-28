@@ -52,6 +52,8 @@ set(PROJECT_SOURCES
         src/coordinate.cpp
         src/coordinate.h
         src/crossing.h
+        src/csv_utils.h
+        src/csv_utils.cpp
         src/floodfill.cpp
         src/floodfill.h
         src/geos_utils.cpp

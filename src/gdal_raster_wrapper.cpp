@@ -13,6 +13,8 @@
 
 #include "gdal_raster_wrapper.h"
 
+#include <stdexcept>
+
 namespace exactextract {
 
     Raster<double> GDALRasterWrapper::read_box(const Box &box) {
