@@ -16,6 +16,7 @@
 
 #include <gdal.h>
 #include <geos_c.h>
+#include <string>
 
 namespace exactextract {
 
