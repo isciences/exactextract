@@ -1,5 +1,5 @@
-test-stable:
-        image: isciences/exactextract-build-env:stable
+test:
+        image: isciences/exactextract-build-env:latest
         script:
                 - mkdir build-master
                 - cd build-master
@@ -7,8 +7,8 @@ test-stable:
                 - make catch_tests
                 - ./catch_tests
 
-test-geos37:
-        image: isciences/exactextract-build-env:geos37
+test-legacy:
+        image: isciences/exactextract-build-env:geos36
         script:
                 - mkdir build-master
                 - cd build-master
