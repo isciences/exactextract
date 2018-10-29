@@ -79,6 +79,7 @@ set(PROJECT_SOURCES
 set(TEST_SOURCES
         test/test_box.cpp
         test/test_cell.cpp
+        test/test_csv.cpp
         test/test_geos_utils.cpp
         test/test_grid.cpp
         test/test_main.cpp
