@@ -165,13 +165,33 @@ namespace exactextract {
             // points. If this is not done, then floating point roundoff
             // error can cause progressive shrink() calls with the same
             // inputs to produce different results.
-            Grid<extent_tag> reduced{
-                    {snapped_xmin,
+            Box reduced_box = {
+                    snapped_xmin,
                     std::min(snapped_ymax - num_rows * m_dy, b.ymin),
                     std::max(snapped_xmin + num_cols * m_dx, b.xmax),
-                    snapped_ymax},
-                    m_dx,
-                    m_dy};
+                    snapped_ymax
+            };
+
+            // Fudge computed xmax and ymin, if needed, to prevent extent
+            // from growing during a shrink operation.
+            if (reduced_box.xmax > m_extent.xmax) {
+                if (std::round((reduced_box.xmax - reduced_box.xmin)/m_dx) ==
+                    std::round((m_extent.xmax - reduced_box.xmin)/m_dx)) {
+                    reduced_box.xmax = m_extent.xmax;
+                } else {
+                    throw std::runtime_error("Shrink operation failed.");
+                }
+            }
+            if (reduced_box.ymin < m_extent.ymin) {
+                if (std::round((reduced_box.ymax - reduced_box.ymin)/m_dy) ==
+                    std::round((reduced_box.ymax - m_extent.ymin)/m_dy)) {
+                    reduced_box.ymin = m_extent.ymin;
+                } else {
+                    throw std::runtime_error("Shrink operation failed.");
+                }
+            }
+
+            Grid<extent_tag> reduced{reduced_box, m_dx, m_dy};
 
             if (b.xmin < reduced.xmin() || b.ymin < reduced.ymin() || b.xmax > reduced.xmax() || b.ymax > reduced.ymax()) {
                 throw std::runtime_error("Shrink operation failed.");

@@ -112,6 +112,10 @@ namespace exactextract {
 
     }
 
+    bool Box::contains(const Box& b) const {
+        return b.xmin >= xmin && b.xmax <= xmax && b.ymin >= ymin && b.ymax <= ymax;
+    }
+
     bool Box::contains(const Coordinate &c) const {
         return c.x >= xmin && c.x <= xmax && c.y >= ymin && c.y <= ymax;
     }
