@@ -30,6 +30,7 @@
 #include "raster.h"
 #include "raster_stats.h"
 #include "raster_cell_intersection.h"
+#include "version.h"
 
 using exactextract::Box;
 using exactextract::GDALDatasetWrapper;
@@ -55,7 +56,7 @@ static bool stored_values_needed(const std::vector<std::string> & stats) {
 }
 
 int main(int argc, char** argv) {
-    CLI::App app{"Zonal statistics using exactextract"};
+    CLI::App app{"Zonal statistics using exactextract: build " + exactextract::version()};
 
     std::string poly_filename, rast_filename, field_name, output_filename, filter;
     std::vector<std::string> stats;

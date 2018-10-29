@@ -13,8 +13,12 @@ include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
+include(VersionSource)
 find_package(GEOS REQUIRED)
 find_package(GDAL)
+
+message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
+configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h)
 
 # Download Catch (header-only library)
 set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
@@ -165,6 +169,7 @@ if (GDAL_FOUND)
             ${GEOS_INCLUDE_DIR}
             ${CLI11_INCLUDE_DIR}
             ${CMAKE_SOURCE_DIR}/src
+            ${CMAKE_BINARY_DIR}/generated
     )
 
     install(TARGETS ${BIN_NAME}
