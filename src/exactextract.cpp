@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
                 }
 
             } catch (const std::exception & e) {
-                std::cerr << e.what();
+                std::cerr << e.what() << std::endl;
                 if (progress) {
                     std::cout << "failed.";
                 }
