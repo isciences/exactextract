@@ -125,6 +125,12 @@ foreach(LINKING SHARED STATIC)
             GEOS_USE_ONLY_R_API
     )
 
+    target_link_libraries(
+            ${LIB_NAME}_${LINKING}
+            PUBLIC
+            ${GEOS_LIBRARY}
+    )
+
     set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})
 endforeach(LINKING)
 
