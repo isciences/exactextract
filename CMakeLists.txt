@@ -171,11 +171,11 @@ if (GDAL_FOUND)
     target_include_directories(
             ${BIN_NAME}
             PRIVATE
-            ${GDAL_INCLUDE_DIR}
-            ${GEOS_INCLUDE_DIR}
-            ${CLI11_INCLUDE_DIR}
-            ${CMAKE_SOURCE_DIR}/src
             ${CMAKE_BINARY_DIR}/generated
+            ${CMAKE_SOURCE_DIR}/src
+            ${CLI11_INCLUDE_DIR}
+            ${GEOS_INCLUDE_DIR}
+            ${GDAL_INCLUDE_DIR}
     )
 
     install(TARGETS ${BIN_NAME}
