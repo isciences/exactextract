@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
 project(exactextract)
-set(default_build_type "Release")
+set(DEFAULT_BUILD_TYPE "Release")
 
 set(LIB_NAME exactextract)
 set(BIN_NAME exactextract_bin)
@@ -40,10 +40,13 @@ if (NOT EXISTS ${CLI11_INCLUDE})
             SHOW_PROGRESS)
 endif()
 
+# Define coverage build type
+set(CMAKE_CXX_FLAGS_COVERAGE "-fprofile-arcs -ftest-coverage")
+
 # Make sure we know our build type
 if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "Setting build type to '${default_build_type}' as none was specified")
-    set(CMAKE_BUILD_TYPE "${default_build_type}")
+    message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified")
+    set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}")
 endif()
 
 set(PROJECT_SOURCES
@@ -182,4 +185,3 @@ else(GDAL_FOUND)
             "GDAL was not found. It is still possible to build and test libexactextract, but the "
             "exactextract executable cannot be built or installed.")
 endif(GDAL_FOUND)
-
