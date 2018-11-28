@@ -13,6 +13,9 @@ TEST_CASE("Exit from same side as entry", "[traversal-areas]" ) {
     TraversalVector traversals { &traversal };
 
     CHECK( left_hand_area(b, traversals) == 1 );
+
+    std::reverse(traversal.begin(), traversal.end());
+    CHECK( left_hand_area(b, traversals) == 99 );
 }
 
 TEST_CASE("Enter bottom, exit left", "[traversal-areas]") {
@@ -22,6 +25,26 @@ TEST_CASE("Enter bottom, exit left", "[traversal-areas]") {
     TraversalVector traversals { &traversal };
 
     CHECK( left_hand_area(b, traversals) == 25 );
+}
+
+TEST_CASE("Enter bottom, exit top", "[traversal-areas]") {
+    Box b{0, 0, 10, 10};
+
+    std::vector<Coordinate> traversal { {4, 0}, {4, 10} };
+    TraversalVector traversals { &traversal };
+
+    CHECK( left_hand_area(b, traversals) == 40 );
+}
+
+TEST_CASE("Multiple traversals (basic)", "[traversal-areas]") {
+    Box b{0, 0, 10, 10};
+
+    std::vector<Coordinate> t1 = { {2, 10}, {2,  0} };
+    std::vector<Coordinate> t2 = { {4,  0}, {4, 10} };
+
+    TraversalVector traversals{ &t1, &t2 };
+
+    CHECK( left_hand_area(b, traversals) == 20 );
 }
 
 TEST_CASE("Multiple traversals", "[traversal-areas]") {
