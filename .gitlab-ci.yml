@@ -31,9 +31,22 @@ test-legacy:
   script:
     - mkdir build-master
     - cd build-master
-    - cmake ..
+    - cmake -DCMAKE_BUILD_TYPE=Release ..
     - make catch_tests
     - ./catch_tests
+
+coverage:
+  stage: release
+  image: isciences/exactextract-build-env:latest
+  script:
+    - mkdir build-coverage
+    - cd build-coverage
+    - cmake -DCMAKE_BUILD_TYPE=Coverage ..
+    - make catch_tests
+    - ./catch_tests
+    - lcov
+    - bash <(curl -s https://codecov.io/bash)
+
 
 release-image:
   stage: release
