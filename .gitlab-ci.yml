@@ -40,17 +40,14 @@ coverage:
   image: isciences/exactextract-build-env:latest
   script:
     - apt-get update
-    - apt-get install -y curl
+    - apt-get install -y curl lcov
     - mkdir build-coverage
     - cd build-coverage
     - cmake -DCMAKE_BUILD_TYPE=Coverage ..
     - make catch_tests
     - ./catch_tests
+    - lcov --capture --directory CMakeFiles --output-file coverage.info
     - bash <(curl -s https://codecov.io/bash)
-
-#    - apt-get update
-#    - apt-get install -y lcov
-#    - lcov --capture --directory CMakeFiles --output-file coverage.info
 
 release-image:
   stage: release
