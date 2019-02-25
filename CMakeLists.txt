@@ -81,7 +81,7 @@ set(PROJECT_SOURCES
         src/traversal.h
         src/traversal_areas.cpp
         src/traversal_areas.h
-        )
+        src/output_writer.h src/csv_writer.cpp src/csv_writer.h src/operation.h src/stats_registry.h)
 
 set(TEST_SOURCES
         test/test_box.cpp
@@ -101,7 +101,10 @@ set(BIN_SOURCES
         src/gdal_raster_wrapper.h
         src/gdal_raster_wrapper.cpp
         src/gdal_dataset_wrapper.h
-        src/gdal_dataset_wrapper.cpp)
+        src/gdal_dataset_wrapper.cpp
+        src/raster_sequential_processor.cpp
+        src/raster_sequential_processor.h
+    )
 
 
 # Make a shared and static version of the library

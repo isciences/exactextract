@@ -39,11 +39,16 @@ namespace exactextract {
             m_band = band;
             m_nodata_value = nodata_value;
             m_has_nodata = static_cast<bool>(has_nodata);
+            m_name = filename;
             compute_raster_grid();
         }
 
         const Grid<bounded_extent> &grid() const {
             return m_grid;
+        }
+
+        std::string name() const {
+            return m_name;
         }
 
         Raster<double> read_box(const Box &box);
@@ -57,14 +62,13 @@ namespace exactextract {
 
         GDALRasterWrapper(const GDALRasterWrapper &) = delete;
         GDALRasterWrapper(GDALRasterWrapper &&) noexcept;
-
-
     private:
         GDALDatasetH m_rast;
         GDALRasterBandH m_band;
         double m_nodata_value;
         bool m_has_nodata;
         Grid<bounded_extent> m_grid;
+        std::string m_name;
 
         void compute_raster_grid();
     };
