@@ -61,16 +61,18 @@ namespace exactextract {
             m_csvout << fid;
 
             for (const auto & op : m_ops) {
-                auto& stats = m_reg->stats(fid, *op);
-
                 m_csvout << m_sepchar;
 
-                if (op->stat == "mean") {
-                    m_csvout << stats.mean();
-                } else if (op->stat == "sum") {
-                    m_csvout << stats.sum();
-                } else {
-                    // FIXME
+                if (m_reg->contains(fid, *op)) {
+                    const auto& stats = m_reg->stats(fid, *op);
+
+                    if (op->stat == "mean") {
+                        m_csvout << stats.mean();
+                    } else if (op->stat == "sum") {
+                        m_csvout << stats.sum();
+                    } else {
+                        // FIXME
+                    }
                 }
             }
 

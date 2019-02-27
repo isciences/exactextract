@@ -26,20 +26,26 @@ namespace exactextract {
     public:
         RasterStats<double> &stats(const std::string &feature, const Operation &op) {
             // TODO come up with a better storage method.
-            if (op.weighted()) {
-                return m_feature_stats[feature][op.values->name() + "|" + op.weights->name()];
-            } else {
-                return m_feature_stats[feature][op.values->name()];
-            }
+            return m_feature_stats[feature][op_key(op)];
         }
 
         const RasterStats<double> &stats(const std::string &feature, const Operation &op) const {
             // TODO come up with a better storage method.
-            if (op.weighted()) {
-                return m_feature_stats.at(feature).at(op.values->name() + "|" + op.weights->name());
-            } else {
-                return m_feature_stats.at(feature).at(op.values->name());
+            return m_feature_stats.at(feature).at(op_key(op));
+        }
+
+        bool contains (const std::string & feature, const Operation & op) const {
+            const auto& m = m_feature_stats;
+
+            auto it = m.find(feature);
+
+            if (it == m.end()) {
+                return false;
             }
+
+            const auto& m2 = it->second;
+
+            return m2.find(op_key(op)) != m2.end();
         }
 
         void flush_feature(const std::string &fid) {
@@ -49,9 +55,18 @@ namespace exactextract {
             m_feature_stats.erase(fid);
         }
 
+        std::string op_key(const Operation & op) const {
+            if (op.weighted()) {
+                return op.values->name() + "|" + op.weights->name();
+            } else {
+                return op.values->name();
+            }
+        }
+
+
     private:
         std::unordered_map<std::string,
-        std::unordered_map<std::string, RasterStats < double>>> m_feature_stats{};
+        std::unordered_map<std::string, RasterStats <double>>> m_feature_stats{};
     };
 
 }
