@@ -27,7 +27,7 @@ namespace exactextract {
 
     public:
         /**
-         * Compute raster statistics from the a Raster representing intersection percentages,
+         * Compute raster statistics from a Raster representing intersection percentages,
          * a Raster representing data values, and (optionally) a Raster representing weights.
          * and a set of raster values.
          */
