@@ -75,8 +75,10 @@ int main(int argc, char** argv) {
         for (const auto &descriptor : raster_descriptors) {
             auto parsed = exactextract::parse_raster_descriptor(descriptor);
 
-            rasters.emplace(std::get<0>(parsed),
-                            GDALRasterWrapper{std::get<1>(parsed), std::get<2>(parsed)});
+            auto name = std::get<0>(parsed);
+
+            rasters.emplace(name, GDALRasterWrapper{std::get<1>(parsed), std::get<2>(parsed)});
+            rasters.at(name).set_name(name);
         }
 
         GDALDatasetWrapper shp{poly_filename, 0};

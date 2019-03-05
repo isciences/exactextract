@@ -47,6 +47,10 @@ namespace exactextract {
             return m_grid;
         }
 
+        void set_name(const std::string & name) {
+            m_name = name;
+        }
+
         std::string name() const {
             return m_name;
         }
