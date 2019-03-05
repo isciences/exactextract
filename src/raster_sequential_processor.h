@@ -60,6 +60,8 @@ namespace exactextract {
             m_operations.push_back(op);
         }
 
+        virtual void process()= 0;
+
     protected:
 
         template<typename T>
@@ -112,7 +114,7 @@ namespace exactextract {
             }
         }
 
-        void process() {
+        virtual void process() override {
             read_features();
             populate_index();
 
@@ -183,7 +185,7 @@ namespace exactextract {
     public:
         using Processor::Processor;
 
-        void process() {
+        virtual void process() override {
             for (const auto& op : m_operations) {
                 m_output.add_operation(op);
             }

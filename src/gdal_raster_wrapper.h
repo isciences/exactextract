@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -72,7 +72,6 @@ namespace exactextract {
 
         void compute_raster_grid();
     };
-
 }
 
 #endif //EXACTEXTRACT_GDAL_RASTER_WRAPPER_H

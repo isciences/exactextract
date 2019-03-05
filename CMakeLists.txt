@@ -81,7 +81,7 @@ set(PROJECT_SOURCES
         src/traversal.h
         src/traversal_areas.cpp
         src/traversal_areas.h
-        src/output_writer.h src/csv_writer.cpp src/csv_writer.h src/operation.h src/stats_registry.h)
+        src/output_writer.h src/csv_writer.cpp src/csv_writer.h src/operation.h src/stats_registry.h src/utils.h src/utils.cpp)
 
 set(TEST_SOURCES
         test/test_box.cpp
@@ -94,7 +94,8 @@ set(TEST_SOURCES
         test/test_raster.cpp
         test/test_raster_cell_intersection.cpp
         test/test_traversal_areas.cpp
-        test/test_stats.cpp)
+        test/test_stats.cpp
+        test/test_utils.cpp)
 
 set(BIN_SOURCES
         src/exactextract.cpp
