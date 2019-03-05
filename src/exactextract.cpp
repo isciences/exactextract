@@ -112,6 +112,8 @@ int main(int argc, char** argv) {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
         }
 
+        proc->set_max_cells_in_memory(max_cells_in_memory);
+
         for (const auto &descriptor : stats) {
             auto stat = exactextract::parse_stat_descriptor(descriptor);
 

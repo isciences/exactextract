@@ -39,7 +39,7 @@ namespace exactextract {
 
         auto grid = common_grid(m_operations.begin(), m_operations.end());
 
-        for (const auto &subgrid : subdivide(grid, max_cells_in_memory)) {
+        for (const auto &subgrid : subdivide(grid, m_max_cells_in_memory)) {
             std::set<std::pair<GDALRasterWrapper*, GDALRasterWrapper*>> processed;
             std::vector<const Feature *> hits;
 

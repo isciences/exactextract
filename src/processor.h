@@ -46,6 +46,10 @@ namespace exactextract {
 
         virtual void process()= 0;
 
+        void set_max_cells_in_memory(size_t n) {
+            m_max_cells_in_memory = n;
+        }
+
     protected:
 
         template<typename T>
@@ -70,7 +74,7 @@ namespace exactextract {
 
         std::vector<Operation> m_operations;
 
-        size_t max_cells_in_memory = 1000000L;
+        size_t m_max_cells_in_memory = 1000000L;
     };
 }
 
