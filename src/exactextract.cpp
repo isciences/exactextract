@@ -122,10 +122,19 @@ int main(int argc, char** argv) {
     exactextract::CSVWriter writer(output_filename, field_name);
     //writer.add_var("_mean");
 
+    strategy = "raster-sequential";
+
     if (strategy == "feature-sequential") {
         auto proc = exactextract::FeatureSequentialProcessor(shp, writer, field_name);
-        //proc.add_operation({"mean", &rasters.at(raster_filenames[0])});
-        //proc.add_operation({"sum", &rasters.at(raster_filenames[0])});
+        proc.add_operation({"mean", &rasters.at(raster_filenames[0])});
+        proc.add_operation({"sum", &rasters.at(raster_filenames[0])});
+        proc.add_operation({"sum", &rasters.at(raster_filenames[1])});
+        proc.process();
+    }
+    if (strategy == "raster-sequential") {
+        auto proc = exactextract::RasterSequentialProcessor(shp, writer, field_name);
+        proc.add_operation({"mean", &rasters.at(raster_filenames[0])});
+        proc.add_operation({"sum", &rasters.at(raster_filenames[0])});
         proc.add_operation({"sum", &rasters.at(raster_filenames[1])});
         proc.process();
     }

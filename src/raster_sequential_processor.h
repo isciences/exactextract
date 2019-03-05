@@ -1,3 +1,5 @@
+#include <memory>
+
 #ifndef EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
 #define EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
 
@@ -60,7 +62,8 @@ namespace exactextract {
 
     protected:
 
-        void progress(const std::string & name) {
+        template<typename T>
+        void progress(const T & name) {
             std::cout << std::endl << "Processing " << name << std::flush;
         }
 
@@ -89,10 +92,9 @@ namespace exactextract {
         size_t max_cells_in_memory = 1000000L;
     };
 
-#if 0
-
     class RasterSequentialProcessor : public Processor {
     public:
+        using Processor::Processor;
 
         void read_features() {
             while (m_shp.next()) {
@@ -114,10 +116,10 @@ namespace exactextract {
             read_features();
             populate_index();
 
-            // FIXME actually get comon grid if needed
-            Grid<bounded_extent> common_grid = m_values[0]->grid();
+            auto grid = common_grid(m_operations.begin(), m_operations.end());
 
-            for (const auto &subgrid : subdivide(common_grid, max_cells_in_memory)) {
+            for (const auto &subgrid : subdivide(grid, max_cells_in_memory)) {
+                std::set<std::pair<GDALRasterWrapper*, GDALRasterWrapper*>> processed;
                 std::vector<const Feature *> hits;
 
                 auto query_rect = geos_make_box_polygon(m_geos_context, subgrid.extent());
@@ -129,41 +131,53 @@ namespace exactextract {
                     vec->push_back(feature);
                 }, &hits);
 
-                if (!hits.empty()) {
-                    for (const auto & v : m_values) {
-                        Raster<double> values_cropped = v->read_box(subgrid.extent());
+                for (const auto &f : hits) {
+                    // TODO avoid reading same values, weights multiple times. Just use a map?
 
-                        if (m_weights.empty()) {
-                            for (const auto& feature : hits) {
-                                Raster<float> coverage = raster_cell_intersection(subgrid, m_geos_context, feature->second.get());
+                    std::unique_ptr<Raster<float>> coverage;
 
-                                auto rs = m_reg.stats(feature->first, v->name());
-                                rs.process(coverage, values_cropped);
-                            }
-                        } else {
-                            for (const auto & w : m_weights) {
-                                Raster<double> weights_cropped = w->read_box(subgrid.extent());
+                    for (const auto &op : m_operations) {
+                        // Avoid processing same values/weights for different stats
+                        if (processed.find(std::make_pair(op.weights, op.values)) != processed.end())
+                            continue;
 
-                                for (const auto& feature : hits) {
-                                    Raster<float> coverage = raster_cell_intersection(subgrid, m_geos_context, feature->second.get());
-
-                                    auto rs = m_reg.stats(feature->first, v->name(), w->name());
-                                    rs.process(coverage, values_cropped, weights_cropped);
-                                }
-                            }
+                        if (!op.values->grid().extent().contains(subgrid.extent())) {
+                            continue;
                         }
 
+                        if (op.weighted() && !op.weights->grid().extent().contains(subgrid.extent())) {
+                            continue;
+                        }
+
+                        // Lazy-initialize coverage
+                        if (coverage == nullptr) {
+                            coverage = std::make_unique<Raster<float>>(
+                                    raster_cell_intersection(subgrid, m_geos_context, f->second.get()));
+                        }
+
+                        auto op_subgrid = subgrid.overlapping_grid(op.values->grid());
+
+                        if (op.weighted()) {
+                            op_subgrid = op_subgrid.overlapping_grid(op.weights->grid());
+                        }
+
+                        Raster<double> values = op.values->read_box(op_subgrid.extent());
+
+                        if (op.weighted()) {
+                            Raster<double> weights = op.weights->read_box(op_subgrid.extent());
+                        }
                     }
                 }
+
+                progress(subgrid.extent());
             }
         }
 
     private:
 
         std::vector<Feature> features;
-        tree_ptr_r feature_tree{GEOSSTRtree_create_r(m_geos_context, 10)};
+        tree_ptr_r feature_tree{geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10))};
     };
-#endif
 
     class FeatureSequentialProcessor : public Processor {
     public:
@@ -189,9 +203,7 @@ namespace exactextract {
                     auto cropped_grid = grid.crop(feature_bbox);
 
                     for (const auto &subgrid : subdivide(cropped_grid, max_cells_in_memory)) {
-                        Raster<float> coverage = raster_cell_intersection(subgrid, m_geos_context,
-                                                                          geom.get());
-
+                        std::unique_ptr<Raster<float>> coverage;
 
                         std::set<std::pair<GDALRasterWrapper*, GDALRasterWrapper*>> processed;
 
@@ -202,14 +214,34 @@ namespace exactextract {
                             if (processed.find(std::make_pair(op.weights, op.values)) != processed.end())
                                 continue;
 
-                            Raster<double> values = op.values->read_box(subgrid.extent());
+                            if (!op.values->grid().extent().contains(subgrid.extent())) {
+                                continue;
+                            }
+
+                            if (op.weighted() && !op.weights->grid().extent().contains(subgrid.extent())) {
+                                continue;
+                            }
+
+                            // Lazy-initialize coverage
+                            if (coverage == nullptr) {
+                                coverage = std::make_unique<Raster<float>>(
+                                        raster_cell_intersection(subgrid, m_geos_context, geom.get()));
+                            }
+
+                            auto op_subgrid = subgrid.overlapping_grid(op.values->grid());
 
                             if (op.weighted()) {
-                                Raster<double> weights = op.weights->read_box(subgrid.extent());
+                                op_subgrid = op_subgrid.overlapping_grid(op.weights->grid());
+                            }
 
-                                m_reg.stats(name, op).process(coverage, values, weights);
+                            Raster<double> values = op.values->read_box(op_subgrid.extent());
+
+                            if (op.weighted()) {
+                                Raster<double> weights = op.weights->read_box(op_subgrid.extent());
+
+                                m_reg.stats(name, op).process(*coverage, values, weights);
                             } else {
-                                m_reg.stats(name, op).process(coverage, values);
+                                m_reg.stats(name, op).process(*coverage, values);
                             }
 
                             progress();
