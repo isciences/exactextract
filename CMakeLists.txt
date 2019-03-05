@@ -122,7 +122,6 @@ set(BIN_SOURCES
         src/raster_sequential_processor.h
     )
 
-
 # Make a shared and static version of the library
 foreach(LINKING SHARED STATIC)
     add_library(${LIB_NAME}_${LINKING} ${LINKING} ${PROJECT_SOURCES})
@@ -147,7 +146,7 @@ foreach(LINKING SHARED STATIC)
             ${LIB_NAME}_${LINKING}
             PUBLIC
             ${GEOS_LIBRARY}
-            $<$<BOOL:NetCDF_FOUND>:NetCDF::NetCDF>
+            $<IF:$<BOOL:${NetCDF_FOUND}>,NetCDF::NetCDF,>
     )
 
     set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})
