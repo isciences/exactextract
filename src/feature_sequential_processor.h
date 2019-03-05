@@ -11,33 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <memory>
+#ifndef EXACTEXTRACT_FEATURE_SEQUENTIAL_PROCESSOR_H
+#define EXACTEXTRACT_FEATURE_SEQUENTIAL_PROCESSOR_H
 
-#ifndef EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
-#define EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
-
-
-#include "geos_utils.h"
 #include "processor.h"
 
 namespace exactextract {
-
-    class RasterSequentialProcessor : public Processor {
+    class FeatureSequentialProcessor : public Processor {
     public:
         using Processor::Processor;
 
-        void read_features();
-        void populate_index();
-
         virtual void process() override;
-
-    private:
-        using Feature=std::pair<std::string, geom_ptr_r>;
-
-        std::vector<Feature> features;
-        tree_ptr_r feature_tree{geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10))};
     };
+}
 
-};
-
-#endif //EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
+#endif

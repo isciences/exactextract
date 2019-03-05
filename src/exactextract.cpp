@@ -23,6 +23,8 @@
 #include "gdal_dataset_wrapper.h"
 #include "gdal_raster_wrapper.h"
 #include "operation.h"
+#include "processor.h"
+#include "feature_sequential_processor.h"
 #include "raster_sequential_processor.h"
 #include "utils.h"
 #include "version.h"

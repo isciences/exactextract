@@ -14,9 +14,10 @@
 #ifndef EXACTEXTRACT_GRID_H
 #define EXACTEXTRACT_GRID_H
 
-#include "box.h"
-
+#include <algorithm>
 #include <vector>
+
+#include "box.h"
 
 namespace exactextract {
     struct infinite_extent {
@@ -321,6 +322,23 @@ namespace exactextract {
     Grid<bounded_extent> make_finite(const Grid<infinite_extent> & grid);
 
     std::vector<Grid<bounded_extent>> subdivide(const Grid<bounded_extent> & grid, size_t max_size);
+
+    template<typename T>
+    Grid<bounded_extent> common_grid(T begin, T end) {
+        if (begin == end) {
+            return Grid<bounded_extent>::make_empty();
+        } else if (std::next(begin) == end) {
+            return begin->grid();
+        }
+        return std::accumulate(
+                std::next(begin),
+                end,
+                begin->grid(),
+                [](auto& acc, auto& op) {
+                    return acc.common_grid(op.grid());
+                });
+    }
+
 }
 
 #endif //EXACTEXTRACT_INFINITEGRID_H
