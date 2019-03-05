@@ -1,5 +1,3 @@
-#include <memory>
-
 // Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
@@ -14,48 +12,24 @@
 // limitations under the License.
 
 #include <exception>
-#include <fstream>
 #include <iostream>
-#include <iomanip>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <geos_c.h>
-#include <gdal.h>
-
 #include "CLI11.hpp"
 
-#include "box.h"
-#include "csv_utils.h"
-#include "grid.h"
+#include "csv_writer.h"
 #include "gdal_dataset_wrapper.h"
 #include "gdal_raster_wrapper.h"
-#include "geos_utils.h"
 #include "operation.h"
-#include "raster.h"
-#include "raster_stats.h"
-#include "raster_cell_intersection.h"
+#include "raster_sequential_processor.h"
 #include "utils.h"
 #include "version.h"
 
-#include "raster_sequential_processor.h"
-#include "csv_writer.h"
-
-using exactextract::Box;
 using exactextract::GDALDatasetWrapper;
 using exactextract::GDALRasterWrapper;
-using exactextract::Grid;
-using exactextract::Raster;
-using exactextract::RasterStats;
-using exactextract::RasterView;
-using exactextract::bounded_extent;
-using exactextract::geos_ptr;
 using exactextract::Operation;
-using exactextract::subdivide;
-using exactextract::write_csv_header;
-using exactextract::write_nas_to_csv;
-using exactextract::write_stat_to_csv;
-using exactextract::write_stats_to_csv;
 
 static bool stored_values_needed(const std::vector<std::string> & stats) {
     for (const auto& stat : stats) {
