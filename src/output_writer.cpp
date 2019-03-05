@@ -11,27 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_OUTPUT_WRITER_H
-#define EXACTEXTRACT_OUTPUT_WRITER_H
+#include <sstream>
 
-#include <string>
-#include <vector>
+#include "operation.h"
+#include "output_writer.h"
 
 namespace exactextract {
 
-    class Operation;
-    class StatsRegistry;
+    std::string OutputWriter::varname(const Operation &op) {
+        std::ostringstream ss;
 
-    class OutputWriter {
-    public:
-        virtual void write(const std::string & fid) = 0;
-        virtual void add_operation(const Operation & op) = 0;
-        virtual void set_registry(const StatsRegistry* reg) = 0;
+        if (op.weighted()) {
+            ss << op.values->name() << '_' << op.stat << '_' << op.weights->name();
+        } else {
+            ss << op.values->name() << '_' << op.stat;
+        }
 
-        static std::string varname(const Operation & op);
-        std::vector<const Operation*> m_ops;
-    };
+        return ss.str();
+    }
 
 }
-
-#endif //EXACTEXTRACT_OUTPUT_WRITER_H

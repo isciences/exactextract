@@ -16,6 +16,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(VersionSource)
 find_package(GEOS REQUIRED)
 find_package(GDAL)
+find_package(NetCDF)
 
 message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
 configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h)
@@ -82,12 +83,17 @@ set(PROJECT_SOURCES
         src/traversal_areas.cpp
         src/traversal_areas.h
         src/output_writer.h
+        src/output_writer.cpp
         src/csv_writer.cpp
         src/csv_writer.h
         src/operation.h
         src/stats_registry.h
         src/utils.h
         src/utils.cpp)
+
+if (NetCDF_FOUND)
+    list(APPEND PROJECT_SOURCES src/netcdf_writer.cpp src/netcdf_writer.h)
+endif()
 
 set(TEST_SOURCES
         test/test_box.cpp
@@ -141,6 +147,7 @@ foreach(LINKING SHARED STATIC)
             ${LIB_NAME}_${LINKING}
             PUBLIC
             ${GEOS_LIBRARY}
+            $<$<BOOL:NetCDF_FOUND>:NetCDF::NetCDF>
     )
 
     set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})

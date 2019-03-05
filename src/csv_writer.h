@@ -18,22 +18,8 @@
 #include "stats_registry.h"
 
 #include <fstream>
-#include <sstream>
 
 namespace exactextract {
-
-
-    static inline std::string varname(const Operation& op) {
-        std::ostringstream ss;
-
-        if (op.weighted()) {
-            ss << op.values->name() << '_' << op.stat << '_' << op.weights->name();
-        } else {
-            ss << op.values->name() << '_' << op.stat;
-        }
-
-        return ss.str();
-    }
 
     class CSVWriter : public OutputWriter {
     public:
@@ -96,7 +82,6 @@ namespace exactextract {
         std::ofstream m_csvout;
 
         std::string m_field_name;
-        std::vector<const Operation*> m_ops;
 
         const StatsRegistry* m_reg;
     };
