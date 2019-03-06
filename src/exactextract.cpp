@@ -28,6 +28,7 @@
 #include "raster_sequential_processor.h"
 #include "utils.h"
 #include "version.h"
+#include "netcdf_writer.h"
 
 using exactextract::GDALDatasetWrapper;
 using exactextract::GDALRasterWrapper;
@@ -63,14 +64,15 @@ int main(int argc, char** argv) {
         std::cout << app.help();
         return 0;
     }
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
     max_cells_in_memory *= 1000000;
 
+    std::unique_ptr<exactextract::Processor> proc;
+    std::unique_ptr<exactextract::OutputWriter> writer;
+    std::unordered_map<std::string, GDALRasterWrapper> rasters;
+
     try {
-
         GDALAllRegister();
-
-        std::unordered_map<std::string, GDALRasterWrapper> rasters;
 
         for (const auto &descriptor : raster_descriptors) {
             auto parsed = exactextract::parse_raster_descriptor(descriptor);
@@ -81,6 +83,7 @@ int main(int argc, char** argv) {
             rasters.at(name).set_name(name);
         }
 
+        // TODO have some way to select dataset within OGR dataset
         GDALDatasetWrapper shp{poly_filename, 0};
 
 #if 0
@@ -103,13 +106,20 @@ int main(int argc, char** argv) {
             }
         }
 #endif
-        exactextract::CSVWriter writer(output_filename, field_name);
-        std::unique_ptr<exactextract::Processor> proc;
+
+        auto format = output_filename.substr(output_filename.rfind('.') + 1);
+        if (format == "csv") {
+            writer = std::make_unique<exactextract::CSVWriter>(output_filename, field_name);
+        } else if (format == "nc") {
+            writer = std::make_unique<exactextract::NetCDFWriter>(output_filename, field_name);
+        } else {
+            throw std::runtime_error("Unknown/unsupported output file format: " + output_filename);
+        }
 
         if (strategy == "feature-sequential") {
-            proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, writer, field_name);
+            proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer, field_name);
         } else if (strategy == "raster-sequential") {
-            proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, writer, field_name);
+            proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer, field_name);
         } else {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
         }
@@ -142,6 +152,7 @@ int main(int argc, char** argv) {
         }
 
         proc->process();
+        writer->finish();
 
         return 0;
     } catch (const std::exception & e) {

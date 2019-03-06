@@ -29,8 +29,6 @@ public:
     m_ncout{filename, netCDF::NcFile::replace, netCDF::NcFile::nc4classic}
     {}
 
-    ~NetCDFWriter();
-
     void write(const std::string & fid) override;
 
     void add_operation(const Operation & op) override;
@@ -39,7 +37,7 @@ public:
         m_reg = reg;
     }
 
-    void finish();
+    void finish() override;
 
 private:
     netCDF::NcFile m_ncout;

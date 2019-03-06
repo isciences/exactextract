@@ -28,6 +28,8 @@ namespace exactextract {
         virtual void add_operation(const Operation & op) = 0;
         virtual void set_registry(const StatsRegistry* reg) = 0;
 
+        virtual void finish() {};
+
         static std::string varname(const Operation & op);
         std::vector<const Operation*> m_ops;
     };

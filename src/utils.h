@@ -21,6 +21,13 @@
 namespace exactextract {
     std::tuple<std::string, std::string, int> parse_raster_descriptor(const std::string &descriptor);
     std::array<std::string, 3> parse_stat_descriptor(const std::string & descriptor);
+
+
+    // https://stackoverflow.com/a/2072890
+    inline bool ends_with(std::string const & value, std::string const & ending) {
+        if (ending.size() > value.size()) return false;
+        return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    }
 }
 
 
