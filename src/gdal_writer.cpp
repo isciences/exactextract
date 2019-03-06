@@ -69,9 +69,9 @@ namespace exactextract {
                 const auto &stats = m_reg->stats(fid, *op);
 
                 if (op->stat == "mean") {
-                    OGR_F_SetFieldDouble(feature, field_pos, stats.mean());
+                    OGR_F_SetFieldDouble(feature, field_pos, static_cast<double>(stats.mean()));
                 } else if (op->stat == "sum") {
-                    OGR_F_SetFieldDouble(feature, field_pos, stats.sum());
+                    OGR_F_SetFieldDouble(feature, field_pos, static_cast<double>(stats.sum()));
                 } else {
                     // FIXME support all stats
                     OGR_F_Destroy(feature);

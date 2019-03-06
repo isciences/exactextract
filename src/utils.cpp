@@ -85,7 +85,7 @@ namespace exactextract {
             weights = descriptor.substr(pos2 + 1, descriptor.size() - pos2 - 2);
         }
 
-        return { values, weights, stat };
+        return {{ values, weights, stat }};
     }
 
 }

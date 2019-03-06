@@ -206,12 +206,12 @@ namespace exactextract {
 
         bool m_store_values;
 
-        void process_value(const T& val, double coverage, double weight) {
-            double ciwi = coverage*weight;
+        void process_value(const T& val, float coverage, double weight) {
+            double ciwi = static_cast<double>(coverage)*weight;
 
-            m_sum_ci += coverage;
+            m_sum_ci += static_cast<double>(coverage);
             m_sum_ciwi += ciwi;
-            m_sum_xici += val*coverage;
+            m_sum_xici += val*static_cast<double>(coverage);
             m_sum_xiciwi += val*ciwi;
 
             if (val < m_min) {

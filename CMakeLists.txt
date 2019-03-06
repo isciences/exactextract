@@ -147,6 +147,7 @@ foreach(LINKING SHARED STATIC)
             ${LIB_NAME}_${LINKING}
             PRIVATE
             $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
     )
 
     target_link_libraries(
@@ -210,7 +211,8 @@ if (GDAL_FOUND)
     target_compile_options(
             ${BIN_NAME}
             PRIVATE
-            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow>)
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>)
 
     install(TARGETS ${BIN_NAME}
             RUNTIME
