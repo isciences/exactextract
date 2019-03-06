@@ -94,7 +94,9 @@ int main(int argc, char** argv) {
             }
         }
 #endif
-        writer = std::make_unique<exactextract::GDALWriter>(output_filename, field_name);
+        auto gdal_writer = std::make_unique<exactextract::GDALWriter>(output_filename);
+        gdal_writer->copy_id_field(shp);
+        writer = std::move(gdal_writer);
 
         if (strategy == "feature-sequential") {
             proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer, field_name);

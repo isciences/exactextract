@@ -18,10 +18,12 @@
 
 namespace exactextract {
 
+    class GDALDatasetWrapper;
+
     class GDALWriter : public OutputWriter {
 
     public:
-        GDALWriter(const std::string & filename, const std::string & id_field);
+        GDALWriter(const std::string & filename);
 
         ~GDALWriter();
 
@@ -33,6 +35,8 @@ namespace exactextract {
 
         void write(const std::string & fid) override;
 
+        void copy_id_field(const GDALDatasetWrapper & w);
+
     private:
         using GDALDatasetH = void*;
         using OGRLayerH = void*;
@@ -40,6 +44,7 @@ namespace exactextract {
         GDALDatasetH m_dataset;
         OGRLayerH m_layer;
         const StatsRegistry* m_reg;
+        bool id_field_defined = false;
     };
 
 }

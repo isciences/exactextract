@@ -61,6 +61,19 @@ namespace exactextract {
         return OGR_F_GetFieldAsString(m_feature, index);
     }
 
+    void GDALDatasetWrapper::copy_field(const std::string & name, OGRLayerH copy_to) const {
+        auto src_layer_defn = OGR_L_GetLayerDefn(m_layer);
+        auto src_index = OGR_FD_GetFieldIndex(src_layer_defn, name.c_str());
+
+        if (src_index == -1) {
+            throw std::runtime_error("Cannot find field " + name);
+        }
+
+        auto src_field_defn = OGR_FD_GetFieldDefn(src_layer_defn, src_index);
+
+        OGR_L_CreateField(copy_to, src_field_defn, true);
+    }
+
     GDALDatasetWrapper::~GDALDatasetWrapper(){
         GDALClose(m_dataset);
 

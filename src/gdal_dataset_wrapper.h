@@ -30,6 +30,10 @@ namespace exactextract {
 
         std::string feature_field(const std::string &field_name) const;
 
+        const std::string& id_field() const { return m_id_field; }
+
+        void copy_field(const std::string & field_name, OGRLayerH to) const;
+
         ~GDALDatasetWrapper();
 
     private:

@@ -12,14 +12,16 @@
 // limitations under the License.
 
 #include "gdal_writer.h"
+#include "gdal_dataset_wrapper.h"
 #include "stats_registry.h"
 #include "utils.h"
 
 #include "gdal.h"
 #include "ogr_api.h"
+#include "cpl_string.h"
 
 namespace exactextract {
-    GDALWriter::GDALWriter(const std::string & filename, const std::string & id_field)
+    GDALWriter::GDALWriter(const std::string & filename)
     {
         auto driver_name = get_driver_name(filename);
         auto driver = GDALGetDriverByName(driver_name.c_str());
@@ -28,13 +30,14 @@ namespace exactextract {
             throw std::runtime_error("Could not load output driver: " + driver_name);
         }
 
-        m_dataset = GDALCreate(driver, filename.c_str(), 0, 0, 0, GDT_Unknown, nullptr);
-        m_layer = GDALDatasetCreateLayer(m_dataset, "output", nullptr, wkbNone, nullptr);
+        char** layer_creation_options = nullptr;
+        if (driver_name == "NetCDF") {
+            //creation_options = CSLSetNameValue(creation_options, "FORMAT", "NC3"); // crashes w/NC4C
+            layer_creation_options = CSLSetNameValue(layer_creation_options, "RECORD_DIM_NAME", "id");
+        }
 
-        auto id_def = OGR_Fld_Create(id_field.c_str(), OFTString);
-        OGR_Fld_SetWidth(id_def, 32); // FIXME
-        OGR_L_CreateField(m_layer, id_def, true);
-        OGR_Fld_Destroy(id_def);
+        m_dataset = GDALCreate(driver, filename.c_str(), 0, 0, 0, GDT_Unknown, nullptr);
+        m_layer = GDALDatasetCreateLayer(m_dataset, "output", nullptr, wkbNone, layer_creation_options);
     }
 
     GDALWriter::~GDALWriter() {
@@ -43,7 +46,16 @@ namespace exactextract {
         }
     }
 
+    void GDALWriter::copy_id_field(const GDALDatasetWrapper & w) {
+        w.copy_field(w.id_field(), m_layer);
+        id_field_defined = true;
+    }
+
     void GDALWriter::add_operation(const Operation & op) {
+        if (!id_field_defined) {
+            throw std::runtime_error("Must defined ID field before adding operations.");
+        }
+
         auto field_name = varname(op);
 
         // TODO set type here?
