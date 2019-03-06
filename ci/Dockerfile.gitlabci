@@ -1,23 +1,11 @@
-FROM debian:latest
+FROM debian:buster-slim
 
 RUN apt-get update && apt-get install -y \
   build-essential \
   cmake \
+  git \
   libgdal-dev \
+  libgeos-dev \
+  libnetcdf-c++4-dev \
   unzip \
   wget
-
-# Build our own GEOS until 3.7 hits debian repo
-RUN wget http://download.osgeo.org/geos/geos-3.7.0.tar.bz2 && \
-    bunzip2 geos-3.7.0.tar.bz2 && \
-    tar -xvf geos-3.7.0.tar && \
-    mkdir /geos-build && \
-    cd /geos-build && \
-    cmake -DCMAKE_BUILD_TYPE=Release ../geos-3.7.0 && \
-    make && \
-    make install && \
-    cd / && \
-    rm -rf /geos-build && \
-    rm -rf /geos-3.7.0 && \
-    rm /geos-3.7.0.tar && \
-    ldconfig
