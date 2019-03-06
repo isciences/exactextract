@@ -23,7 +23,7 @@ namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
-        explicit AbstractRaster(const Grid<bounded_extent> & ex) : m_grid{ex}, m_has_nodata{false} {}
+        explicit AbstractRaster(const Grid<bounded_extent> & ex) : m_grid{ex}, m_has_nodata{false}, m_nodata{std::numeric_limits<T>::min()} {}
         AbstractRaster(const Grid<bounded_extent> & ex, const T& nodata_val) : m_grid{ex}, m_has_nodata{true}, m_nodata{nodata_val} {}
 
         size_t rows() const {

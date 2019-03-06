@@ -143,6 +143,12 @@ foreach(LINKING SHARED STATIC)
             GEOS_USE_ONLY_R_API
     )
 
+    target_compile_options(
+            ${LIB_NAME}_${LINKING}
+            PRIVATE
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall>
+    )
+
     target_link_libraries(
             ${LIB_NAME}_${LINKING}
             PUBLIC
@@ -195,6 +201,11 @@ if (GDAL_FOUND)
             ${GEOS_INCLUDE_DIR}
             ${GDAL_INCLUDE_DIR}
     )
+
+    target_compile_options(
+            ${BIN_NAME}
+            PRIVATE
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall>)
 
     install(TARGETS ${BIN_NAME}
             RUNTIME

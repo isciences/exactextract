@@ -19,9 +19,7 @@
 #include "ogr_api.h"
 
 namespace exactextract {
-    GDALWriter::GDALWriter(const std::string & filename, const std::string & id_field) :
-            m_layer{nullptr},
-            m_dataset{nullptr}
+    GDALWriter::GDALWriter(const std::string & filename, const std::string & id_field)
     {
         auto driver_name = get_driver_name(filename);
         auto driver = GDALGetDriverByName(driver_name.c_str());
@@ -82,8 +80,9 @@ namespace exactextract {
             }
         }
 
-        // FIXME check return vals
-        OGR_L_CreateFeature(m_layer, feature);
+        if (OGR_L_CreateFeature(m_layer, feature) != OGRERR_NONE) {
+            throw std::runtime_error("Error writing results for record: " + fid);
+        }
         OGR_F_Destroy(feature);
     }
 

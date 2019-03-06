@@ -26,13 +26,14 @@ namespace exactextract {
     class Processor {
 
     public:
+        // FIXME add GEOS error/notice handlers
         Processor(GDALDatasetWrapper & ds, OutputWriter & out, const std::string & id_field) :
-                m_shp{ds},
                 m_reg{},
+                m_geos_context{initGEOS_r(nullptr, nullptr)},
                 m_output{out},
+                m_shp{ds},
                 m_field_name{id_field}
         {
-            m_geos_context = initGEOS_r(nullptr, nullptr);
             m_output.set_registry(&m_reg);
         }
 
@@ -61,8 +62,9 @@ namespace exactextract {
             std::cout << "." << std::flush;
         }
 
-        GEOSContextHandle_t m_geos_context;
         StatsRegistry m_reg;
+
+        GEOSContextHandle_t m_geos_context;
 
         OutputWriter& m_output;
 

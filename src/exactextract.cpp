@@ -34,14 +34,6 @@ using exactextract::GDALDatasetWrapper;
 using exactextract::GDALRasterWrapper;
 using exactextract::Operation;
 
-static bool stored_values_needed(const std::vector<std::string> & stats) {
-    for (const auto& stat : stats) {
-        if (stat == "mode" || stat == "majority" || stat == "minority" || stat == "variety")
-            return true;
-    }
-    return false;
-}
-
 static std::unordered_map<std::string, GDALRasterWrapper> load_rasters(const std::vector<std::string> & descriptors);
 static std::vector<Operation> prepare_operations(const std::vector<std::string> & descriptors,
         std::unordered_map<std::string, GDALRasterWrapper> & rasters);

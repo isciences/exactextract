@@ -40,8 +40,8 @@ namespace exactextract {
             m_extent{extent},
             m_dx{dx},
             m_dy{dy},
-            m_num_cols{2*extent_tag::padding + (extent.xmax > extent.xmin ? static_cast<size_t>(std::round((extent.xmax - extent.xmin) / dx)) : 0)},
-            m_num_rows{2*extent_tag::padding + (extent.ymax > extent.ymin ? static_cast<size_t>(std::round((extent.ymax - extent.ymin) / dy)) : 0)}
+            m_num_rows{2*extent_tag::padding + (extent.ymax > extent.ymin ? static_cast<size_t>(std::round((extent.ymax - extent.ymin) / dy)) : 0)},
+            m_num_cols{2*extent_tag::padding + (extent.xmax > extent.xmin ? static_cast<size_t>(std::round((extent.xmax - extent.xmin) / dx)) : 0)}
         {}
 
         static Grid make_empty() {

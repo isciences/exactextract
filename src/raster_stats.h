@@ -32,13 +32,13 @@ namespace exactextract {
          * and a set of raster values.
          */
         explicit RasterStats(bool store_values = true) :
-                m_store_values{store_values},
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_sum_ciwi{0},
                 m_sum_ci{0},
                 m_sum_xici{0},
-                m_sum_xiciwi{0} {}
+                m_sum_xiciwi{0},
+                m_store_values{store_values} {}
 
         void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast) {
             RasterView<T> rv{rast, intersection_percentages.grid()};
