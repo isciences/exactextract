@@ -14,10 +14,12 @@
 #ifndef EXACTEXTRACT_OPERATION_H
 #define EXACTEXTRACT_OPERATION_H
 
+#include <functional>
 #include <string>
 
 #include "grid.h"
 #include "gdal_raster_wrapper.h"
+#include "raster_stats.h"
 
 namespace exactextract {
 
@@ -37,6 +39,18 @@ namespace exactextract {
                 return values->grid().common_grid(weights->grid());
             } else {
                 return values->grid();
+            }
+        }
+
+        std::function<double(RasterStats<double>)> result_fetcher() const {
+            if (stat == "mean") {
+                return [](const RasterStats<double> & s) { return s.mean(); };
+            } else if (stat == "sum") {
+                return [](const RasterStats<double> & s) { return s.sum(); };
+            } else if (stat == "weighted_mean") {
+                return [](const RasterStats<double> & s) { return s.weighted_mean(); };
+            } else {
+                throw std::runtime_error("Unknown stat: '" + stat + "'");
             }
         }
 

@@ -80,15 +80,10 @@ namespace exactextract {
                 const auto field_pos = OGR_F_GetFieldIndex(feature, varname(*op).c_str());
                 const auto &stats = m_reg->stats(fid, *op);
 
-                if (op->stat == "mean") {
-                    OGR_F_SetFieldDouble(feature, field_pos, static_cast<double>(stats.mean()));
-                } else if (op->stat == "sum") {
-                    OGR_F_SetFieldDouble(feature, field_pos, static_cast<double>(stats.sum()));
-                } else {
-                    // FIXME support all stats
-                    OGR_F_Destroy(feature);
-                    throw std::runtime_error("Not implemented.");
-                }
+                // TODO store between features
+                auto fetcher = op->result_fetcher();
+
+                OGR_F_SetFieldDouble(feature, field_pos, fetcher(stats));
             }
         }
 
