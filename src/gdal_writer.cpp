@@ -36,6 +36,7 @@ namespace exactextract {
         auto id_def = OGR_Fld_Create(id_field.c_str(), OFTString);
         OGR_Fld_SetWidth(id_def, 32); // FIXME
         OGR_L_CreateField(m_layer, id_def, true);
+        OGR_Fld_Destroy(id_def);
     }
 
     GDALWriter::~GDALWriter() {
@@ -50,6 +51,7 @@ namespace exactextract {
         // TODO set type here?
         auto def = OGR_Fld_Create(field_name.c_str(), OFTReal);
         OGR_L_CreateField(m_layer, def, true);
+        OGR_Fld_Destroy(def);
 
         m_ops.push_back(&op);
     }
