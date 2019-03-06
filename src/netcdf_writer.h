@@ -17,6 +17,7 @@
 #include "output_writer.h"
 
 #include <netcdf>
+#include <numeric>
 #include <vector>
 
 namespace exactextract {
@@ -62,36 +63,54 @@ private:
 
     class Variable {
     public:
-        Variable(std::string name, const std::string & type, size_t n) :
+        Variable(std::string name, std::string type) :
             m_name{std::move(name)},
-            m_type{std::move(type)}
-        {
-            if (type == "double") {
-                m_data = std::make_unique<uint8_t[]>(n * sizeof(double));
-            }
-        }
+            m_type{std::move(type)},
+            m_data{std::make_unique<std::vector<uint8_t>>(16)}
+        {}
 
         template<typename T>
         void put(T d) {
-            auto loc = reinterpret_cast<T*>(&(m_data[m_pos * sizeof(T)]));
+            if (m_pos + sizeof(T) >= m_data->size()) {
+                m_data->resize(2 * m_data->size());
+            }
+
+            std::cout << "Writing " << sizeof(T) << " at " << m_pos << std::endl;
+            std::cout << "Size is " << m_data->size() << std::endl;
+
+            auto loc = reinterpret_cast<T*>(m_data->data() + m_pos);
             *loc = d;
             m_pos += sizeof(T);
         }
 
         void write(netCDF::NcVar & v) {
             auto type = v.getType();
+            auto dims = v.getDims();
+            auto expected_size = std::accumulate(dims.begin(),
+                    dims.end(),
+                    0ul,
+                    [](const auto & acc, const auto & elem) {
+                        return std::max(acc, 1ul) * elem.getSize();
+                    }
+            );
 
             if (type == netCDF::ncDouble) {
+                check_size<double>(expected_size);
                 v.putVar(as<double>());
             } else if (type == netCDF::ncFloat) {
+                check_size<float>(expected_size);
                 v.putVar(as<float>());
             } else if (type == netCDF::ncInt) {
+                check_size<int32_t>(expected_size);
                 v.putVar(as<int32_t>());
             } else if (type == netCDF::ncInt64) {
+                check_size<int64_t>(expected_size);
                 v.putVar(as<int64_t>());
             } else if (type == netCDF::ncShort) {
+                check_size<int16_t>(expected_size);
                 v.putVar(as<int16_t>());
             } else if (type == netCDF::ncByte) {
+                check_size<int8_t>(expected_size);
                 v.putVar(as<int8_t>());
             } else {
                 throw std::runtime_error("Unhandled variable type.");
@@ -112,8 +131,15 @@ private:
             return reinterpret_cast<T*>(m_data.get());
         }
 
+        template<typename T>
+        void check_size(size_t expected) {
+            if (m_pos != expected*sizeof(T)) {
+                throw std::runtime_error("Unexpected size when writing to variable.");
+            }
+        }
+
         size_t m_pos = 0;
-        std::unique_ptr<uint8_t[]> m_data;
+        std::unique_ptr<std::vector<uint8_t>> m_data;
         std::string m_name;
         std::string m_type;
     };

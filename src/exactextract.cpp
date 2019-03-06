@@ -22,6 +22,7 @@
 #include "csv_writer.h"
 #include "gdal_dataset_wrapper.h"
 #include "gdal_raster_wrapper.h"
+#include "gdal_writer.h"
 #include "operation.h"
 #include "processor.h"
 #include "feature_sequential_processor.h"
@@ -108,13 +109,14 @@ int main(int argc, char** argv) {
 #endif
 
         auto format = output_filename.substr(output_filename.rfind('.') + 1);
-        if (format == "csv") {
-            writer = std::make_unique<exactextract::CSVWriter>(output_filename, field_name);
-        } else if (format == "nc") {
-            writer = std::make_unique<exactextract::NetCDFWriter>(output_filename, field_name);
-        } else {
-            throw std::runtime_error("Unknown/unsupported output file format: " + output_filename);
-        }
+        //if (format == "csv") {
+        //    writer = std::make_unique<exactextract::CSVWriter>(output_filename, field_name);
+        //} else if (format == "nc") {
+        //    writer = std::make_unique<exactextract::NetCDFWriter>(output_filename, field_name);
+        //} else {
+            writer = std::make_unique<exactextract::GDALWriter>(output_filename, field_name);
+            //throw std::runtime_error("Unknown/unsupported output file format: " + output_filename);
+        //}
 
         if (strategy == "feature-sequential") {
             proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer, field_name);

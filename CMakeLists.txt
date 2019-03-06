@@ -92,6 +92,7 @@ set(PROJECT_SOURCES
         src/csv_writer.h
         src/operation.h
         src/stats_registry.h
+        src/gdal_writer.h
         src/utils.h
         src/utils.cpp)
 

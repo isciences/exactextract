@@ -21,7 +21,7 @@ namespace exactextract {
 
     void NetCDFWriter::add_operation(const Operation & op) {
         m_ops.push_back(&op);
-        m_data.emplace_back(varname(op), "double", 100);
+        m_data.emplace_back(varname(op), "float");
     }
 
     void NetCDFWriter::write(const std::string & fid) {
@@ -48,16 +48,15 @@ namespace exactextract {
         using namespace netCDF;
 
         NcDim id = m_ncout.addDim("id", m_data.size());
-
-        std::vector<NcVar> vars;
-        vars.reserve(m_data.size());
+        std::vector<NcVar> nc_vars;
+        nc_vars.reserve(m_data.size());
 
         for (auto &i : m_data) {
-            vars.push_back(m_ncout.addVar(i.name(), i.type(), "id"));
+            nc_vars.push_back(m_ncout.addVar(i.name(), i.type(), "id"));
         }
 
-        for (size_t i = 0; i < vars.size(); i++) {
-            m_data[i].write(vars[i]);
+        for (size_t i = 0; i < nc_vars.size(); i++) {
+            m_data[i].write(nc_vars[i]);
         }
     }
 

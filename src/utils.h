@@ -24,9 +24,14 @@ namespace exactextract {
 
 
     // https://stackoverflow.com/a/2072890
-    inline bool ends_with(std::string const & value, std::string const & ending) {
-        if (ending.size() > value.size()) return false;
-        return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    inline bool ends_with(std::string const & value, std::string const & suffix) {
+        if (suffix.size() > value.size()) return false;
+        return std::equal(suffix.rbegin(), suffix.rend(), value.rbegin());
+    }
+
+    inline bool starts_with(std::string const & value, std::string const & prefix) {
+        if (prefix.size() > value.size()) return false;
+        return std::equal(prefix.cbegin(), prefix.cend(), value.cbegin());
     }
 }
 
