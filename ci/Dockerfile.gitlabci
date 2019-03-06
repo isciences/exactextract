@@ -6,6 +6,6 @@ RUN apt-get update && apt-get install -y \
   git \
   libgdal-dev \
   libgeos-dev \
-  libnetcdf-c++4-dev \
   unzip \
+  valgrind \
   wget
