@@ -29,7 +29,6 @@
 #include "raster_sequential_processor.h"
 #include "utils.h"
 #include "version.h"
-#include "netcdf_writer.h"
 
 using exactextract::GDALDatasetWrapper;
 using exactextract::GDALRasterWrapper;
@@ -107,16 +106,7 @@ int main(int argc, char** argv) {
             }
         }
 #endif
-
-        auto format = output_filename.substr(output_filename.rfind('.') + 1);
-        //if (format == "csv") {
-        //    writer = std::make_unique<exactextract::CSVWriter>(output_filename, field_name);
-        //} else if (format == "nc") {
-        //    writer = std::make_unique<exactextract::NetCDFWriter>(output_filename, field_name);
-        //} else {
-            writer = std::make_unique<exactextract::GDALWriter>(output_filename, field_name);
-            //throw std::runtime_error("Unknown/unsupported output file format: " + output_filename);
-        //}
+        writer = std::make_unique<exactextract::GDALWriter>(output_filename, field_name);
 
         if (strategy == "feature-sequential") {
             proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer, field_name);
