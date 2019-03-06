@@ -22,7 +22,7 @@ namespace exactextract {
 
     class GDALDatasetWrapper {
     public:
-        GDALDatasetWrapper(const std::string &filename, int layer);
+        GDALDatasetWrapper(const std::string &filename, int layer, std::string id_field);
 
         bool next();
 
@@ -30,15 +30,13 @@ namespace exactextract {
 
         std::string feature_field(const std::string &field_name) const;
 
-        std::string name() const { return m_name; }
-
         ~GDALDatasetWrapper();
 
     private:
         GDALDatasetH m_dataset;
         OGRFeatureH m_feature;
         OGRLayerH m_layer;
-        std::string m_name;
+        std::string m_id_field;
     };
 
 }

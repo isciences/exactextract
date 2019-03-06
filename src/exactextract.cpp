@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
         auto rasters = load_rasters(raster_descriptors);
 
         // TODO have some way to select dataset within OGR dataset
-        GDALDatasetWrapper shp{poly_filename, 0};
+        GDALDatasetWrapper shp{poly_filename, 0, field_name};
 
 #if 0
         // Check grid compatibility
@@ -176,4 +176,6 @@ static std::vector<Operation> prepare_operations(const std::vector<std::string> 
 
         ops.emplace_back(stat[2], values, weights);
     }
+
+    return ops;
 }

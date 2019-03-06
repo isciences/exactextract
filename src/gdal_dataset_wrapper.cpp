@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -17,7 +17,9 @@
 
 namespace exactextract {
 
-    GDALDatasetWrapper::GDALDatasetWrapper(const std::string &filename, int layer) {
+    GDALDatasetWrapper::GDALDatasetWrapper(const std::string & filename, int layer, std::string id_field) :
+    m_id_field{std::move(id_field)}
+    {
         m_dataset = GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
         if (m_dataset == nullptr) {
             throw std::runtime_error("Failed to open " + filename);
@@ -26,6 +28,13 @@ namespace exactextract {
         m_layer = GDALDatasetGetLayer(m_dataset, layer);
         OGR_L_ResetReading(m_layer);
         m_feature = nullptr;
+
+        auto defn = OGR_L_GetLayerDefn(m_layer);
+        auto index = OGR_FD_GetFieldIndex(defn, m_id_field.c_str());
+
+        if (index == -1) {
+            throw std::runtime_error("ID field '" + m_id_field + "' not found in " + filename + ".");
+        }
     }
 
     bool GDALDatasetWrapper::next() {
@@ -39,7 +48,7 @@ namespace exactextract {
     GEOSGeometry* GDALDatasetWrapper::feature_geometry(const GEOSContextHandle_t &geos_context) const {
         OGRGeometryH geom = OGR_F_GetGeometryRef(m_feature);
 
-        int sz = OGR_G_WkbSize(geom);
+        auto sz = static_cast<size_t>(OGR_G_WkbSize(geom));
         auto buff = std::make_unique<unsigned char[]>(sz);
         OGR_G_ExportToWkb(geom, wkbXDR, buff.get());
 
@@ -47,16 +56,16 @@ namespace exactextract {
     }
 
     std::string GDALDatasetWrapper::feature_field(const std::string &field_name) const {
-            int index = OGR_F_GetFieldIndex(m_feature, field_name.c_str());
-            // TODO check handling of invalid field name
-            return OGR_F_GetFieldAsString(m_feature, index);
+        int index = OGR_F_GetFieldIndex(m_feature, field_name.c_str());
+        // TODO check handling of invalid field name
+        return OGR_F_GetFieldAsString(m_feature, index);
     }
 
     GDALDatasetWrapper::~GDALDatasetWrapper(){
-            GDALClose(m_dataset);
+        GDALClose(m_dataset);
 
-            if (m_feature != nullptr) {
-                    OGR_F_Destroy(m_feature);
-            }
+        if (m_feature != nullptr) {
+            OGR_F_Destroy(m_feature);
+        }
     }
 }
