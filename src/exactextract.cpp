@@ -42,6 +42,10 @@ static bool stored_values_needed(const std::vector<std::string> & stats) {
     return false;
 }
 
+static std::unordered_map<std::string, GDALRasterWrapper> load_rasters(const std::vector<std::string> & descriptors);
+static std::vector<Operation> prepare_operations(const std::vector<std::string> & descriptors,
+        std::unordered_map<std::string, GDALRasterWrapper> & rasters);
+
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract: build " + exactextract::version()};
 
@@ -69,19 +73,11 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<exactextract::Processor> proc;
     std::unique_ptr<exactextract::OutputWriter> writer;
-    std::unordered_map<std::string, GDALRasterWrapper> rasters;
 
     try {
         GDALAllRegister();
 
-        for (const auto &descriptor : raster_descriptors) {
-            auto parsed = exactextract::parse_raster_descriptor(descriptor);
-
-            auto name = std::get<0>(parsed);
-
-            rasters.emplace(name, GDALRasterWrapper{std::get<1>(parsed), std::get<2>(parsed)});
-            rasters.at(name).set_name(name);
-        }
+        auto rasters = load_rasters(raster_descriptors);
 
         // TODO have some way to select dataset within OGR dataset
         GDALDatasetWrapper shp{poly_filename, 0};
@@ -116,32 +112,11 @@ int main(int argc, char** argv) {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
         }
 
-        proc->set_max_cells_in_memory(max_cells_in_memory);
-
-        for (const auto &descriptor : stats) {
-            auto stat = exactextract::parse_stat_descriptor(descriptor);
-
-            auto values_it = rasters.find(stat[0]);
-            if (values_it == rasters.end()) {
-                throw std::runtime_error("Unknown raster " + stat[0] + " in stat descriptor: " + descriptor);
-            }
-
-            GDALRasterWrapper* values = &(values_it->second);
-            GDALRasterWrapper* weights;
-
-            if (stat[1].empty()) {
-                weights = nullptr;
-            } else {
-                auto weights_it = rasters.find(stat[1]);
-                if (weights_it == rasters.end()) {
-                    throw std::runtime_error("Unknown raster " + stat[1] + " in stat descriptor: " + descriptor);
-                }
-
-                weights = &(weights_it->second);
-            }
-
-            proc->add_operation({stat[2], values, weights});
+        for (const auto& op : prepare_operations(stats, rasters)) {
+            proc->add_operation(op);
         }
+
+        proc->set_max_cells_in_memory(max_cells_in_memory);
 
         proc->process();
         writer->finish();
@@ -155,5 +130,50 @@ int main(int argc, char** argv) {
         std::cerr << "Unknown error." << std::endl;
 
         return 1;
+    }
+}
+
+static std::unordered_map<std::string, GDALRasterWrapper> load_rasters(const std::vector<std::string> & descriptors) {
+    std::unordered_map<std::string, GDALRasterWrapper> rasters;
+
+    for (const auto &descriptor : descriptors) {
+        auto parsed = exactextract::parse_raster_descriptor(descriptor);
+
+        auto name = std::get<0>(parsed);
+
+        rasters.emplace(name, GDALRasterWrapper{std::get<1>(parsed), std::get<2>(parsed)});
+        rasters.at(name).set_name(name);
+    }
+
+    return rasters;
+}
+
+static std::vector<Operation> prepare_operations(const std::vector<std::string> & descriptors,
+        std::unordered_map<std::string, GDALRasterWrapper> & rasters) {
+    std::vector<Operation> ops;
+
+    for (const auto &descriptor : descriptors) {
+        auto stat = exactextract::parse_stat_descriptor(descriptor);
+
+        auto values_it = rasters.find(stat[0]);
+        if (values_it == rasters.end()) {
+            throw std::runtime_error("Unknown raster " + stat[0] + " in stat descriptor: " + descriptor);
+        }
+
+        GDALRasterWrapper* values = &(values_it->second);
+        GDALRasterWrapper* weights;
+
+        if (stat[1].empty()) {
+            weights = nullptr;
+        } else {
+            auto weights_it = rasters.find(stat[1]);
+            if (weights_it == rasters.end()) {
+                throw std::runtime_error("Unknown raster " + stat[1] + " in stat descriptor: " + descriptor);
+            }
+
+            weights = &(weights_it->second);
+        }
+
+        ops.emplace_back(stat[2], values, weights);
     }
 }
