@@ -92,7 +92,6 @@ set(PROJECT_SOURCES
         src/csv_writer.h
         src/operation.h
         src/stats_registry.h
-        src/gdal_writer.h
         src/utils.h
         src/utils.cpp)
 
@@ -120,6 +119,8 @@ set(BIN_SOURCES
         src/gdal_raster_wrapper.cpp
         src/gdal_dataset_wrapper.h
         src/gdal_dataset_wrapper.cpp
+        src/gdal_writer.h
+        src/gdal_writer.cpp
         src/processor.h
         src/feature_sequential_processor.cpp
         src/feature_sequential_processor.h
