@@ -146,7 +146,7 @@ foreach(LINKING SHARED STATIC)
     target_compile_options(
             ${LIB_NAME}_${LINKING}
             PRIVATE
-            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow>
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
     )
 
     target_link_libraries(
