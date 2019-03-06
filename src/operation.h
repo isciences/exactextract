@@ -23,10 +23,10 @@ namespace exactextract {
 
     class Operation {
     public:
-        Operation(const std::string & stat, GDALRasterWrapper* values, GDALRasterWrapper* weights = nullptr) :
-                stat{stat},
-                values{values},
-                weights{weights} {}
+        Operation(const std::string & p_stat, GDALRasterWrapper* p_values, GDALRasterWrapper* p_weights = nullptr) :
+                stat{p_stat},
+                values{p_values},
+                weights{p_weights} {}
 
         bool weighted() const {
             return weights != nullptr;

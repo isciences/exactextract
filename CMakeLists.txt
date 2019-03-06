@@ -146,7 +146,7 @@ foreach(LINKING SHARED STATIC)
     target_compile_options(
             ${LIB_NAME}_${LINKING}
             PRIVATE
-            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra>
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow>
     )
 
     target_link_libraries(
@@ -197,15 +197,20 @@ if (GDAL_FOUND)
             PRIVATE
             ${CMAKE_BINARY_DIR}/generated
             ${CMAKE_SOURCE_DIR}/src
-            ${CLI11_INCLUDE_DIR}
             ${GEOS_INCLUDE_DIR}
             ${GDAL_INCLUDE_DIR}
+    )
+
+    # Include CLI11 as a system include so that -Wshadow warnings are suppressed.
+    target_include_directories(
+            ${BIN_NAME}
+            SYSTEM PRIVATE ${CLI11_INCLUDE_DIR}
     )
 
     target_compile_options(
             ${BIN_NAME}
             PRIVATE
-            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra>)
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow>)
 
     install(TARGETS ${BIN_NAME}
             RUNTIME

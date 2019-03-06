@@ -25,7 +25,7 @@ namespace exactextract {
 
         Coordinate() {}
 
-        Coordinate(double x, double y) : x{x}, y{y} {}
+        Coordinate(double p_x, double p_y) : x{p_x}, y{p_y} {}
 
         bool equals(const Coordinate &other, double tol) const {
             return std::abs(other.x - x) < tol && std::abs(other.y - y) < tol;

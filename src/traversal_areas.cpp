@@ -28,10 +28,10 @@ namespace exactextract {
         const std::vector<Coordinate> *coordinates;
         bool visited;
 
-        CoordinateChain(double start, double stop, const std::vector<Coordinate> *coords) :
-                start{start},
-                stop{stop},
-                coordinates{coords},
+        CoordinateChain(double p_start, double p_stop, const std::vector<Coordinate>* p_coords) :
+                start{p_start},
+                stop{p_stop},
+                coordinates{p_coords},
                 visited{false} {}
     };
 

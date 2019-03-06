@@ -34,19 +34,19 @@ namespace exactextract {
     using seq_ptr_r = std::unique_ptr<GEOSCoordSequence, std::function<void(GEOSCoordSequence*)>>;
     using prep_geom_ptr_r = std::unique_ptr<const GEOSPreparedGeometry, std::function<void(const GEOSPreparedGeometry*)>>;
 
-    inline geom_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSGeometry* g) {
+    inline geom_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSGeometry* geom) {
         auto deleter = [context](GEOSGeometry* g){ GEOSGeom_destroy_r(context, g); };
-        return geom_ptr_r{g, deleter};
+        return geom_ptr_r{geom, deleter};
     }
 
-    inline tree_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSSTRtree* t) {
+    inline tree_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSSTRtree* tree) {
         auto deleter = [context](GEOSSTRtree_t* t){ GEOSSTRtree_destroy_r(context, t); };
-        return tree_ptr_r{t, deleter};
+        return tree_ptr_r{tree, deleter};
     }
 
-    inline seq_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSCoordSequence* s) {
+    inline seq_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSCoordSequence* seq) {
         auto deleter = [context](GEOSCoordSequence* s){ GEOSCoordSeq_destroy_r(context, s); };
-        return seq_ptr_r{s, deleter};
+        return seq_ptr_r{seq, deleter};
     }
 
     inline prep_geom_ptr_r
