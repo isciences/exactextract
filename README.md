@@ -49,19 +49,75 @@ Feedback concerning building on these platforms is welcome.
 
 ### Using `exactextract`
 
-`exactextract` provides a simple command-line executable that uses GDAL to read a raster file and a shapefile and write various zonal statistics to a CSV.
+`exactextract` provides a simple command-line interface that uses GDAL to read a vector data source and one or more raster files, perform zonal statistics, and write output to a CSV, netCDF, or other tabular formats supported by GDAL.
+
 Command line documentation can be accessed by `exactextract -h`.
 
-An example usage is as follows:
+A minimal usage is as follows, in which we want to compute a mean temperature for each country:
 
 ```bash
 exactextract \
-  -r temp.tif \
-  -w runoff.tif \
-  -f NAME \
-  -p ne_110m_admin_0_countries.shp \
-  -s mean \
-  -o runoff_weighted_mean_temperature.csv
+  -r temp:temperature_2018.tif \
+  -p countries.shp \
+  -f country_name \
+  -s mean(temp) \
+  -o mean_temperature.csv
 ```
+
+In this example, `exactextract` will This example summarizes temperatures stored in `temperature_2018.tif` over the country boundaries stored in `countries.shp`.
+  * The `-r` argument provides the location for of the raster input and specifies that we'd like to refer to it using the name `temp`. 
+  * The `-p` argument provides the location for the polygon input.
+  * The `-f` argument indicates that we'd like the field `country_name` from the shapefile to be included as a field in the output file.
+  * The `-s` argument instructs `exactextract` to compute the mean of the raster we refer to as `temp` for each polygon. These values will be stored as a field called `temp_mean` in the output file.
+  * The `-o` argument indicates the location of the output file.
+
+With reasonable real-world inputs, the processing time of `exactextract` is roughly divided evenly between (a) I/O (reading raster cells, which may require decompression) and (b) computing the area of each raster cell that is covered by each polygon. In common usage, we might want to perform a many calculations in which one or both of these steps can be reused:
+
+  * Computing the mean, min, and max temperatures in each country
+  * Computing the mean temperature for several different years, each of which is stored in a different raster file but having the same grid
+
+The following more advanced usage shows how `exactextract` might be called in these cases
+
+```bash
+exactextract \
+  -r temp_2016:temperature_2016.tif \
+  -r temp_2017:temperature_2017.tif \
+  -r temp_2018:temperature_2018.tif \
+  -p countries.shp \
+  -f country_name \
+  -s min(temp_2016) \
+  -s mean(temp_2016) \
+  -s max(temp_2016) \
+  -s min(temp_2017) \
+  -s mean(temp_2017) \
+  -s max(temp_2017) \
+  -s min(temp_2017) \
+  -s mean(temp_2017) \
+  -s max(temp_2017) \
+  -o temp_summary.csv
+```
+
+In this case, the output `temp_summary.csv` file would contain the fields `min_temp_2016`, `mean_temp_2016`, etc. Each raster would be read only a single time, and each polygon/raster overlay would be performed a single time (because the three input rasters have the same extent and resolution.)
+
+Another more advanced usage of `exactextract` involves calculations in which the values of one raster are weighted by the values of a second raster.
+For example, we may wish to calculate both a standard and population-weighted mean temperature for each country:
+
+```bash
+exactextract \
+  -r temp:temperature_2018.tif \
+  -r pop:world_population.tif \
+  -p countries.shp \
+  -f country_name \
+  -s mean(temp) \
+  -s weighted_mean(temp, pop) \
+  -o mean_temperature.csv
+```
+
+
+
+
+
+
+
 
 In addition to the command-line executable, an R package ([`exactextractr`](https://github.com/isciences/exactextractr)) allows the functionality of `exactextract` to be used with `sf` and `raster` objects.
