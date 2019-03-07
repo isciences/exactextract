@@ -31,7 +31,7 @@ namespace exactextract {
          * a Raster representing data values, and (optionally) a Raster representing weights.
          * and a set of raster values.
          */
-        explicit RasterStats(bool store_values = true) :
+        explicit RasterStats(bool store_values = false) :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_sum_ciwi{0},
