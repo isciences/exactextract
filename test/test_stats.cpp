@@ -50,7 +50,7 @@ namespace exactextract {
           {1, 1, 1, 1, 1}
         }}, extent};
 
-        RasterStats<float> stats;
+        RasterStats<float> stats{true};
         stats.process(areas, values);
 
         CHECK( stats.count() ==
@@ -127,7 +127,7 @@ namespace exactextract {
         }}, extent};
         values.set_nodata(NODATA);
 
-        RasterStats<int> stats;
+        RasterStats<int> stats{true};
         stats.process(areas, values);
 
         CHECK( stats.count() ==
