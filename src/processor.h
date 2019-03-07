@@ -51,15 +51,21 @@ namespace exactextract {
             m_max_cells_in_memory = n;
         }
 
+        void show_progress(bool val) {
+            m_show_progress = val;
+        }
+
     protected:
 
         template<typename T>
-        void progress(const T & name) {
-            std::cout << std::endl << "Processing " << name << std::flush;
+        void progress(const T & name) const {
+            if (m_show_progress)
+                std::cout << std::endl << "Processing " << name << std::flush;
         }
 
-        void progress() {
-            std::cout << "." << std::flush;
+        void progress() const {
+            if (m_show_progress)
+                std::cout << "." << std::flush;
         }
 
         StatsRegistry m_reg;
@@ -73,6 +79,7 @@ namespace exactextract {
         std::string m_field_name;
 
         bool store_values=false;
+        bool m_show_progress=false;
 
         std::vector<Operation> m_operations;
 
