@@ -27,7 +27,7 @@ namespace exactextract {
         }
 
         while (m_shp.next()) {
-            std::string name{m_shp.feature_field(m_field_name)};
+            std::string name{m_shp.feature_field(m_shp.id_field())};
             auto geom = geos_ptr(m_geos_context, m_shp.feature_geometry(m_geos_context));
 
             progress(name);

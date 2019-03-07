@@ -20,7 +20,7 @@ namespace exactextract {
     void RasterSequentialProcessor::read_features() {
         while (m_shp.next()) {
             Feature feature = std::make_pair(
-                    m_shp.feature_field(m_field_name),
+                    m_shp.feature_field(m_shp.id_field()),
                     geos_ptr(m_geos_context, m_shp.feature_geometry(m_geos_context)));
             features.push_back(std::move(feature));
         }

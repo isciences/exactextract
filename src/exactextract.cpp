@@ -97,16 +97,14 @@ int main(int argc, char** argv) {
         gdal_writer->copy_id_field(shp);
         writer = std::move(gdal_writer);
 
+        auto operations = prepare_operations(stats, rasters);
+
         if (strategy == "feature-sequential") {
-            proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer, field_name);
+            proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer, operations);
         } else if (strategy == "raster-sequential") {
-            proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer, field_name);
+            proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer, operations);
         } else {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
-        }
-
-        for (const auto& op : prepare_operations(stats, rasters)) {
-            proc->add_operation(op);
         }
 
         proc->set_max_cells_in_memory(max_cells_in_memory);
