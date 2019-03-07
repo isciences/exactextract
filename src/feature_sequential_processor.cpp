@@ -37,7 +37,7 @@ namespace exactextract {
             auto grid = common_grid(m_operations.begin(), m_operations.end());
 
             if (feature_bbox.intersects(grid.extent())) {
-// Crop grid to portion overlapping feature
+                // Crop grid to portion overlapping feature
                 auto cropped_grid = grid.crop(feature_bbox);
 
                 for (const auto &subgrid : subdivide(cropped_grid, m_max_cells_in_memory)) {
@@ -46,11 +46,15 @@ namespace exactextract {
                     std::set<std::pair<GDALRasterWrapper*, GDALRasterWrapper*>> processed;
 
                     for (const auto &op : m_operations) {
-// TODO avoid reading same values, weights multiple times. Just use a map?
+                        // TODO avoid reading same values/weights multiple times. Just use a map?
 
-// Avoid processing same values/weights for different stats
-                        if (processed.find(std::make_pair(op.weights, op.values)) != processed.end())
+                        // Avoid processing same values/weights for different stats
+                        auto key = std::make_pair(op.weights, op.values);
+                        if (processed.find(key) != processed.end()) {
                             continue;
+                        } else {
+                            processed.insert(key);
+                        }
 
                         if (!op.values->grid().extent().contains(subgrid.extent())) {
                             continue;
@@ -60,7 +64,7 @@ namespace exactextract {
                             continue;
                         }
 
-// Lazy-initialize coverage
+                        // Lazy-initialize coverage
                         if (coverage == nullptr) {
                             coverage = std::make_unique<Raster<float>>(
                                     raster_cell_intersection(subgrid, m_geos_context, geom.get()));
