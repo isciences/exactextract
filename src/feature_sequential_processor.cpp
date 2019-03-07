@@ -70,16 +70,10 @@ namespace exactextract {
                                     raster_cell_intersection(subgrid, m_geos_context, geom.get()));
                         }
 
-                        auto op_subgrid = subgrid.overlapping_grid(op.values->grid());
+                        Raster<double> values = op.values->read_box(subgrid.extent().intersection(op.values->grid().extent()));
 
                         if (op.weighted()) {
-                            op_subgrid = op_subgrid.overlapping_grid(op.weights->grid());
-                        }
-
-                        Raster<double> values = op.values->read_box(op_subgrid.extent());
-
-                        if (op.weighted()) {
-                            Raster<double> weights = op.weights->read_box(op_subgrid.extent());
+                            Raster<double> weights = op.weights->read_box(subgrid.extent().intersection(op.weights->grid().extent()));
 
                             m_reg.stats(name, op).process(*coverage, values, weights);
                         } else {
