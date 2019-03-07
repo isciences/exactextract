@@ -29,15 +29,15 @@ namespace exactextract {
         void read_features();
         void populate_index();
 
-        virtual void process() override;
+        void process() override;
 
     private:
         using Feature=std::pair<std::string, geom_ptr_r>;
 
-        std::vector<Feature> features;
-        tree_ptr_r feature_tree{geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10))};
+        std::vector<Feature> m_features;
+        tree_ptr_r m_feature_tree{geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10))};
     };
 
-};
+}
 
 #endif //EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
