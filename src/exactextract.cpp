@@ -41,7 +41,7 @@ static std::vector<Operation> prepare_operations(const std::vector<std::string> 
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract: build " + exactextract::version()};
 
-    std::string poly_filename, field_name, output_filename, filter, strategy;
+    std::string poly_filename, field_name, output_filename, strategy;
     std::vector<std::string> stats;
     std::vector<std::string> raster_descriptors;
     size_t max_cells_in_memory = 30;
@@ -51,7 +51,6 @@ int main(int argc, char** argv) {
     app.add_option("-f", field_name, "id from polygon dataset to retain in output")->required(true);
     app.add_option("-o", output_filename, "output filename")->required(true);
     app.add_option("-s", stats, "statistics")->required(true)->expected(-1);
-    app.add_option("--filter", filter, "only process specified value of id")->required(false);
     app.add_option("--max-cells", max_cells_in_memory, "maximum number of raster cells to read in memory at once, in millions")->required(false)->default_val("30");
     app.add_option("--strategy", strategy, "processing strategy")->required(false)->default_val("feature-sequential");
     app.add_flag("--progress", progress);
