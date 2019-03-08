@@ -38,6 +38,8 @@ namespace exactextract {
 
         m_dataset = GDALCreate(driver, filename.c_str(), 0, 0, 0, GDT_Unknown, nullptr);
         m_layer = GDALDatasetCreateLayer(m_dataset, "output", nullptr, wkbNone, layer_creation_options);
+
+        CSLDestroy(layer_creation_options);
     }
 
     GDALWriter::~GDALWriter() {
