@@ -34,6 +34,7 @@ using exactextract::GDALDatasetWrapper;
 using exactextract::GDALRasterWrapper;
 using exactextract::Operation;
 
+static GDALDatasetWrapper load_dataset(const std::string & descriptor, const std::string & field_name);
 static std::unordered_map<std::string, GDALRasterWrapper> load_rasters(const std::vector<std::string> & descriptors);
 static std::vector<Operation> prepare_operations(const std::vector<std::string> & descriptors,
         std::unordered_map<std::string, GDALRasterWrapper> & rasters);
@@ -41,12 +42,12 @@ static std::vector<Operation> prepare_operations(const std::vector<std::string> 
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract: build " + exactextract::version()};
 
-    std::string poly_filename, field_name, output_filename, strategy;
+    std::string poly_descriptor, field_name, output_filename, strategy;
     std::vector<std::string> stats;
     std::vector<std::string> raster_descriptors;
     size_t max_cells_in_memory = 30;
     bool progress;
-    app.add_option("-p", poly_filename, "polygon dataset")->required(true);
+    app.add_option("-p", poly_descriptor, "polygon dataset")->required(true);
     app.add_option("-r", raster_descriptors, "raster dataset")->required(true);
     app.add_option("-f", field_name, "id from polygon dataset to retain in output")->required(true);
     app.add_option("-o", output_filename, "output filename")->required(true);
@@ -70,8 +71,7 @@ int main(int argc, char** argv) {
 
         auto rasters = load_rasters(raster_descriptors);
 
-        // TODO have some way to select dataset within OGR dataset
-        GDALDatasetWrapper shp{poly_filename, 0, field_name};
+        GDALDatasetWrapper shp = load_dataset(poly_descriptor, field_name);
 
 #if 0
         // Check grid compatibility
@@ -123,6 +123,12 @@ int main(int argc, char** argv) {
 
         return 1;
     }
+}
+
+static GDALDatasetWrapper load_dataset(const std::string & descriptor, const std::string & field_name) {
+    auto parsed = exactextract::parse_dataset_descriptor(descriptor);
+
+    return GDALDatasetWrapper{parsed.first, parsed.second, field_name};
 }
 
 static std::unordered_map<std::string, GDALRasterWrapper> load_rasters(const std::vector<std::string> & descriptors) {

@@ -2,8 +2,27 @@
 
 #include "utils.h"
 
+using exactextract::parse_dataset_descriptor;
 using exactextract::parse_raster_descriptor;
 using exactextract::parse_stat_descriptor;
+
+TEST_CASE("Parsing feature descriptor: no layer specified") {
+    auto descriptor = "countries.shp";
+
+    auto parsed = parse_dataset_descriptor(descriptor);
+
+    CHECK( parsed.first == "countries.shp" );
+    CHECK( parsed.second == "0" );
+}
+
+TEST_CASE("Parsing feature descriptor with layer") {
+    auto descriptor = "PG:dbname=postgres port=5432[countries]";
+
+    auto parsed = parse_dataset_descriptor(descriptor);
+
+    CHECK( parsed.first == "PG:dbname=postgres port=5432" );
+    CHECK( parsed.second == "countries" );
+}
 
 TEST_CASE("Parsing raster descriptor: file with name and band") {
     auto descriptor = "pop:gpw_v4.tif[27]";

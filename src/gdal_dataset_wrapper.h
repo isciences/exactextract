@@ -22,7 +22,7 @@ namespace exactextract {
 
     class GDALDatasetWrapper {
     public:
-        GDALDatasetWrapper(const std::string &filename, int layer, std::string id_field);
+        GDALDatasetWrapper(const std::string &filename, const std::string & layer, std::string id_field);
 
         bool next();
 

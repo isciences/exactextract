@@ -13,11 +13,12 @@
 
 #include "gdal_dataset_wrapper.h"
 
+#include <algorithm>
 #include <memory>
 
 namespace exactextract {
 
-    GDALDatasetWrapper::GDALDatasetWrapper(const std::string & filename, int layer, std::string id_field) :
+    GDALDatasetWrapper::GDALDatasetWrapper(const std::string & filename, const std::string & layer, std::string id_field) :
     m_id_field{std::move(id_field)}
     {
         m_dataset = GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
@@ -25,7 +26,19 @@ namespace exactextract {
             throw std::runtime_error("Failed to open " + filename);
         }
 
-        m_layer = GDALDatasetGetLayer(m_dataset, layer);
+        bool numeric = std::all_of(layer.begin(),layer.end(),
+                                   [](char c) { return std::isdigit(c); });
+
+        if (numeric) {
+            m_layer = GDALDatasetGetLayer(m_dataset, std::stoi(layer));
+        } else {
+            m_layer = GDALDatasetGetLayerByName(m_dataset, layer.c_str());
+        }
+
+        if (m_layer == nullptr) {
+            throw std::runtime_error("No layer " + layer + " found in " + filename);
+        }
+
         OGR_L_ResetReading(m_layer);
         m_feature = nullptr;
 

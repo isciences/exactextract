@@ -17,6 +17,20 @@
 
 namespace exactextract {
 
+    std::pair<std::string, std::string> parse_dataset_descriptor(const std::string & descriptor) {
+        if (descriptor.empty())
+            throw std::runtime_error("Empty descriptor.");
+
+        auto pos = descriptor.rfind('[');
+
+        if (pos == std::string::npos) {
+            return std::make_pair(descriptor, "0");
+        }
+
+        return std::make_pair(descriptor.substr(0, pos),
+                              descriptor.substr(pos + 1, descriptor.length() - pos - 2));
+    }
+
     std::tuple<std::string, std::string, int> parse_raster_descriptor(const std::string &descriptor) {
         if (descriptor.empty())
             throw std::runtime_error("Empty descriptor.");

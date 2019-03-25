@@ -17,8 +17,10 @@
 #include <array>
 #include <string>
 #include <tuple>
+#include <utility>
 
 namespace exactextract {
+    std::pair<std::string, std::string> parse_dataset_descriptor(const std::string &descriptor);
     std::tuple<std::string, std::string, int> parse_raster_descriptor(const std::string &descriptor);
     std::array<std::string, 3> parse_stat_descriptor(const std::string & descriptor);
 
