@@ -4,7 +4,7 @@
 
 `exactextract` provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as **zonal statistics**. Unlike other zonal statistics implementations, it takes into account raster cells that are partially covered by the polygon.
 
-<img align="right" width="380" height="380" src="https://wsim.isciences.com/exactextract.svg" />
+<img align="right" width="380" height="380" src="https://s3.us-east-2.amazonaws.com/exactextract/exactextract.svg" />
 
 ### Background
 
@@ -115,7 +115,29 @@ exactextract \
 
 
 
+### Supported Statistics
 
+The statistics supported by `exactextract` are summarized in the table below.
+Values in the "example result" column refer to the value and weighting rasters shown below.
+
+| Example Value Raster | Example Weighting Raster |
+| -------------------- | ------------------------ |
+| <img align="left" width="200" height="200" src="https://s3.us-east-2.amazonaws.com/exactextract/readme_example_values.svg" /> | <img align="left" width="200" height="200" src="https://s3.us-east-2.amazonaws.com/exactextract/readme_example_weights.svg" /> |
+
+
+| Name           | Formula                                                                              | Description                                                                     | Typical Application  | Example Result |
+| -------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------- |--------------- |
+| count          | &Sigma;c<sub>i</sub>                                                                 | Sum of all cell coverage fractions. | | 1.75 |
+| sum            | &Sigma;x<sub>i</sub>c<sub>i</sub>                                                    | Sum of values of raster cells that intersect the polygon, with each raster value weighted by its coverage fraction. | Total population | 4.5 |
+| mean           | (&Sigma;x<sub>i</sub>c<sub>i</sub>)/(&Sigma;c<sub>i</sub>)                           | Mean value of cells that intersect the polygon, weighted by the percent of the cell that is covered. | Average temperature | 2.57 |
+| minority       | -                                                                                    | The raster value occupying the least number of cells. Cell coverage fractions and weights are not taken into account. | Most common land cover type | |
+| majority       | -                                                                                    | The raster value occupying the greatest number of cells. Cell coverage fractions and weights are not taken into account. | Least common land cover type | |
+| variety        | -                                                                                    | The number of distinct raster values in cells wholly or partially covered by the polygon. | Number of land cover types |
+| weighted_count | &Sigma;c<sub>i</sub>w<sub>i</sub>                                                    | Sum of weights for each cell that intersects the polygon, with each
+| weighted_sum   | &Sigma;x<sub>i</sub>c<sub>i</sub>w<sub>i</sub>                                       | Sum of raster cells covered by the polygon, with each raster value weighted by its coverage fraction and weighting raster value.
+| weighted_mean  | (&Sigma;x<sub>i</sub>c<sub>i</sub>w<sub>i</sub>)/(&Sigma;c<sub>i</sub>w<sub>i</sub>) | Mean value of cells that intersect the polygon, weighted by the product over the coverage fraction and the weighting raster. | Population-weighted average temperature | 
+
+                                     
 
 
 
