@@ -49,6 +49,8 @@ namespace exactextract {
                 return [](const RasterStats<double> & s) { return s.sum(); };
             } else if (stat == "weighted_mean") {
                 return [](const RasterStats<double> & s) { return s.weighted_mean(); };
+            } else if (stat == "weighted_sum") {
+                return [](const RasterStats<double> & s) { return s.weighted_sum(); };
             } else {
                 throw std::runtime_error("Unknown stat: '" + stat + "'");
             }
