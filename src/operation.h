@@ -47,6 +47,8 @@ namespace exactextract {
                 return [](const RasterStats<double> & s) { return s.mean(); };
             } else if (stat == "sum") {
                 return [](const RasterStats<double> & s) { return s.sum(); };
+            } else if (stat == "count") {
+                return [](const RasterStats<double> & s) { return s.count(); };
             } else if (stat == "weighted_mean") {
                 return [](const RasterStats<double> & s) { return s.weighted_mean(); };
             } else if (stat == "weighted_sum") {
