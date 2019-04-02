@@ -73,26 +73,6 @@ int main(int argc, char** argv) {
 
         GDALDatasetWrapper shp = load_dataset(poly_descriptor, field_name);
 
-#if 0
-        // Check grid compatibility
-        if (!weights.empty()) {
-            if (!values.grid().compatible_with(weights[0].grid())) {
-                std::cerr << "Value and weighting rasters do not have compatible grids." << std::endl;
-                std::cerr << "Value grid origin: (" << values.grid().xmin() << "," << values.grid().ymin() << ") resolution: (";
-                std::cerr << values.grid().dx() << "," << values.grid().dy() << ")" << std::endl;
-                std::cerr << "Weighting grid origin: (" << weights[0].grid().xmin() << "," << weights[0].grid().ymin() << ") resolution: (";
-                std::cerr << weights[0].grid().dx() << "," << weights[0].grid().dy() << ")" << std::endl;
-                return 1;
-            }
-
-            for (size_t i = 1; i < weights.size(); i++) {
-                if (weights[i].grid() != weights[0].grid()) {
-                    std::cerr << "All weighting rasters must have the same resolution and extent.";
-                    return 1;
-                }
-            }
-        }
-#endif
         auto gdal_writer = std::make_unique<exactextract::GDALWriter>(output_filename);
         gdal_writer->copy_id_field(shp);
         writer = std::move(gdal_writer);
