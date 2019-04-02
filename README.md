@@ -117,9 +117,11 @@ exactextract \
   -p countries.shp \
   -f country_name \
   -s mean(temp) \
-  -s weighted_mean(temp,pop) \
+  -s "pop_weighted_mean=weighted_mean(temp,pop)" \
   -o mean_temperature.csv
 ```
+
+This also demonstrates the ability to control the name of a stat's output column by prefixing the stat name with an output column name.
 
 Further details on weighted statistics are provided in the section below.
 

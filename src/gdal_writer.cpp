@@ -58,10 +58,8 @@ namespace exactextract {
             throw std::runtime_error("Must defined ID field before adding operations.");
         }
 
-        auto field_name = varname(op);
-
         // TODO set type here?
-        auto def = OGR_Fld_Create(field_name.c_str(), OFTReal);
+        auto def = OGR_Fld_Create(op.name.c_str(), OFTReal);
         OGR_L_CreateField(m_layer, def, true);
         OGR_Fld_Destroy(def);
 
@@ -79,7 +77,7 @@ namespace exactextract {
 
         for (const auto &op : m_ops) {
             if (m_reg->contains(fid, *op)) {
-                const auto field_pos = OGR_F_GetFieldIndex(feature, varname(*op).c_str());
+                const auto field_pos = OGR_F_GetFieldIndex(feature, op->name.c_str());
                 const auto &stats = m_reg->stats(fid, *op);
 
                 // TODO store between features

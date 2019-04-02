@@ -20,10 +20,17 @@
 #include <utility>
 
 namespace exactextract {
+
+    struct StatDescriptor {
+        std::string name;
+        std::string values;
+        std::string weights;
+        std::string stat;
+    };
+
     std::pair<std::string, std::string> parse_dataset_descriptor(const std::string &descriptor);
     std::tuple<std::string, std::string, int> parse_raster_descriptor(const std::string &descriptor);
-    std::array<std::string, 3> parse_stat_descriptor(const std::string & descriptor);
-
+    StatDescriptor parse_stat_descriptor(const std::string & descriptor);
 
     // https://stackoverflow.com/a/2072890
     inline bool ends_with(std::string const & value, std::string const & suffix) {

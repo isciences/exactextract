@@ -153,26 +153,26 @@ static std::vector<Operation> prepare_operations(const std::vector<std::string> 
     for (const auto &descriptor : descriptors) {
         auto stat = exactextract::parse_stat_descriptor(descriptor);
 
-        auto values_it = rasters.find(stat[0]);
+        auto values_it = rasters.find(stat.values);
         if (values_it == rasters.end()) {
-            throw std::runtime_error("Unknown raster " + stat[0] + " in stat descriptor: " + descriptor);
+            throw std::runtime_error("Unknown raster " + stat.values + " in stat descriptor: " + descriptor);
         }
 
         GDALRasterWrapper* values = &(values_it->second);
         GDALRasterWrapper* weights;
 
-        if (stat[1].empty()) {
+        if (stat.weights.empty()) {
             weights = nullptr;
         } else {
-            auto weights_it = rasters.find(stat[1]);
+            auto weights_it = rasters.find(stat.weights);
             if (weights_it == rasters.end()) {
-                throw std::runtime_error("Unknown raster " + stat[1] + " in stat descriptor: " + descriptor);
+                throw std::runtime_error("Unknown raster " + stat.weights + " in stat descriptor: " + descriptor);
             }
 
             weights = &(weights_it->second);
         }
 
-        ops.emplace_back(stat[2], values, weights);
+        ops.emplace_back(stat.stat, stat.name, values, weights);
     }
 
     return ops;

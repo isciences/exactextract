@@ -80,15 +80,30 @@ TEST_CASE("Degenerate raster descriptor") {
 }
 
 TEST_CASE("Parsing stat descriptor with no weighting") {
-    auto descriptor = "sum(population)";
+    auto descriptor = parse_stat_descriptor("sum(population)");
 
-    CHECK( parse_stat_descriptor(descriptor) == std::array<std::string, 3>{ "population", "", "sum" } );
+    CHECK( descriptor.name == "population_sum" );
+    CHECK( descriptor.stat == "sum" );
+    CHECK( descriptor.values == "population" );
+    CHECK( descriptor.weights == "" );
 }
 
 TEST_CASE("Parsing stat descriptor with weighting") {
-    auto descriptor = "mean(deficit,population)";
+    auto descriptor = parse_stat_descriptor("mean(deficit,population)");
 
-    CHECK( parse_stat_descriptor(descriptor) == std::array<std::string, 3>{ "deficit", "population", "mean" });
+    CHECK( descriptor.name == "deficit_mean_population" );
+    CHECK( descriptor.stat == "mean" );
+    CHECK( descriptor.values == "deficit" );
+    CHECK( descriptor.weights == "population" );
+}
+
+TEST_CASE("Parsing stat descriptor with name and weighting") {
+    auto descriptor = parse_stat_descriptor("pop_weighted_mean_deficit=mean(deficit,population)");
+
+    CHECK( descriptor.name == "pop_weighted_mean_deficit" );
+    CHECK( descriptor.stat == "mean" );
+    CHECK( descriptor.values == "deficit" );
+    CHECK( descriptor.weights == "population" );
 }
 
 TEST_CASE("Parsing degenerate stat descriptors") {

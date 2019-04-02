@@ -25,8 +25,9 @@ namespace exactextract {
 
     class Operation {
     public:
-        Operation(const std::string & p_stat, GDALRasterWrapper* p_values, GDALRasterWrapper* p_weights = nullptr) :
-                stat{p_stat},
+        Operation(std::string p_stat, std::string p_name, GDALRasterWrapper* p_values, GDALRasterWrapper* p_weights = nullptr) :
+                stat{std::move(p_stat)},
+                name{std::move(p_name)},
                 values{p_values},
                 weights{p_weights} {}
 
@@ -59,6 +60,7 @@ namespace exactextract {
         }
 
         std::string stat;
+        std::string name;
         GDALRasterWrapper* values;
         GDALRasterWrapper* weights;
     };
