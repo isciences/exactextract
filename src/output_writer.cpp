@@ -11,23 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <sstream>
-
-#include "operation.h"
 #include "output_writer.h"
 
-namespace exactextract {
-
-    std::string OutputWriter::varname(const Operation &op) {
-        std::ostringstream ss;
-
-        if (op.weighted()) {
-            ss << op.values->name() << '_' << op.stat << '_' << op.weights->name();
-        } else {
-            ss << op.values->name() << '_' << op.stat;
-        }
-
-        return ss.str();
-    }
-
-}
+namespace exactextract {}

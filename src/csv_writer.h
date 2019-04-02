@@ -70,7 +70,7 @@ namespace exactextract {
             m_csvout << m_field_name;
 
             for (const auto & op : m_ops) {
-                m_csvout << m_sepchar << varname(*op);
+                m_csvout << m_sepchar << op->name;
             }
 
             m_csvout << "\n";

@@ -13,6 +13,8 @@
 
 #include "utils.h"
 
+#include <regex>
+#include <sstream>
 #include <stdexcept>
 
 namespace exactextract {
@@ -74,32 +76,55 @@ namespace exactextract {
         return std::make_tuple(name, fname, band);
     }
 
-    std::array<std::string, 3> parse_stat_descriptor(const std::string & descriptor) {
-        if (descriptor.empty()) {
-            throw std::runtime_error("Invalid stat descriptor.");
-        }
+     StatDescriptor parse_stat_descriptor(const std::string & descriptor) {
+         if (descriptor.empty()) {
+             throw std::runtime_error("Invalid stat descriptor.");
+         }
 
-        auto pos1 = descriptor.find('(');
+         StatDescriptor ret;
 
-        if (pos1 == 0 || pos1 == std::string::npos || pos1 > (descriptor.size() - 3)) {
-            throw std::runtime_error("Invalid stat descriptor.");
-        }
+         const std::regex re_result_name("^(\\w+)=");
+         std::smatch result_name_match;
+         if (std::regex_search(descriptor, result_name_match, re_result_name)) {
+             ret.name = result_name_match[1].str();
+         }
 
-        std::string stat = descriptor.substr(0, pos1);
-        std::string values;
-        std::string weights;
+         const std::regex re_func_name("=?(\\w+)\\(");
+         std::smatch func_name_match;
+         if (std::regex_search(descriptor, func_name_match, re_func_name)) {
+             ret.stat = func_name_match[1].str();
+         } else {
+             throw std::runtime_error("Invalid stat descriptor.");
+         }
 
-        auto pos2 = descriptor.find(',', pos1 + 1);
+         const std::regex re_args("\\(([,\\w]+)+\\)$");
+         std::smatch arg_names_match;
+         if (std::regex_search(descriptor, arg_names_match, re_args)) {
+             auto args = arg_names_match[1].str();
 
-        if (pos2 == std::string::npos) {
-            values = descriptor.substr(pos1 + 1, descriptor.size() - pos1 - 2);
-            weights = "";
-        } else {
-            values = descriptor.substr(pos1 + 1, pos2 - pos1 - 1);
-            weights = descriptor.substr(pos2 + 1, descriptor.size() - pos2 - 2);
-        }
+             auto pos = args.find(',');
+             if (pos == std::string::npos) {
+                 ret.values = std::move(args);
+             } else {
+                 ret.values = args.substr(0, pos);
+                 ret.weights = args.substr(pos + 1);
+             }
+         } else {
+             throw std::runtime_error("Invalid stat descriptor.");
+         };
 
-        return {{ values, weights, stat }};
+         if (ret.name.empty()) {
+             std::ostringstream ss;
+             ss << ret.values << '_' << ret.stat;
+
+             if (!ret.weights.empty()) {
+                 ss << '_' << ret.weights;
+             }
+
+             ret.name = ss.str();
+         }
+
+        return ret;
     }
 
 }

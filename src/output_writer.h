@@ -30,7 +30,6 @@ namespace exactextract {
 
         virtual void finish() {};
 
-        static std::string varname(const Operation & op);
         std::vector<const Operation*> m_ops;
     };
 
