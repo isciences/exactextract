@@ -20,6 +20,8 @@
 #include "ogr_api.h"
 #include "cpl_string.h"
 
+#include <stdexcept>
+
 namespace exactextract {
     GDALWriter::GDALWriter(const std::string & filename)
     {
@@ -49,13 +51,41 @@ namespace exactextract {
     }
 
     void GDALWriter::copy_id_field(const GDALDatasetWrapper & w) {
+        if (id_field_defined) {
+            throw std::runtime_error("ID field already defined.");
+        }
+
         w.copy_field(w.id_field(), m_layer);
+        id_field_defined = true;
+    }
+
+    void GDALWriter::add_id_field(const std::string & field_name, const std::string & field_type) {
+        if (id_field_defined) {
+            throw std::runtime_error("ID field already defined.");
+        }
+
+        OGRFieldType ogr_type;
+        if (field_type == "int" || field_type == "int32")  {
+            ogr_type = OFTInteger;
+        } else if (field_type == "long" || field_type == "int64") {
+            ogr_type = OFTInteger64;
+        } else if (field_type == "text" || field_type == "string") {
+            ogr_type = OFTString;
+        } else if (field_type == "double" || field_type == "float" || field_type == "real") {
+            ogr_type = OFTReal;
+        } else {
+            throw std::runtime_error("Unknown field type: " + field_type);
+        }
+
+        auto def = OGR_Fld_Create(field_name.c_str(), ogr_type);
+        OGR_L_CreateField(m_layer, def, true);
+        OGR_Fld_Destroy(def);
         id_field_defined = true;
     }
 
     void GDALWriter::add_operation(const Operation & op) {
         if (!id_field_defined) {
-            throw std::runtime_error("Must defined ID field before adding operations.");
+            throw std::runtime_error("Must define ID field before adding operations.");
         }
 
         // TODO set type here?
