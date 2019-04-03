@@ -33,6 +33,21 @@ coverage:
     - lcov --capture --directory CMakeFiles --output-file coverage.info
     - bash <(curl -s https://codecov.io/bash)
 
+pages:
+  stage: release
+  image: isciences/exactextract-build-env:latest
+  script:
+    - mkdir build-docs
+    - cd build-docs
+    - cmake ..
+    - make doc_doxygen
+    - mv html ../public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+
 release-image:
   stage: release
   script:
