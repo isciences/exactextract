@@ -179,13 +179,14 @@ TEST_CASE("Creating a scaled and shifted view (greater extent)") {
     CHECK (rv == expected );
 }
 
-TEST_CASE("Get method accesses value and tells us if it was defiend") {
+TEST_CASE("Get method accesses value and tells us if it was defined") {
     float nan = std::numeric_limits<float>::quiet_NaN();
 
     Raster<float> r{
-        {{{ 1, -999},
-          {nan, 7  }}},
-      {0, 0, 2, 2}};
+        Matrix<float>{{
+            { 1, -999},
+            {nan, 7  }}},
+        Box{0, 0, 2, 2}};
     r.set_nodata(-999);
 
     float f{0};

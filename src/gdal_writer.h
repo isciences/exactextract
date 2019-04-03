@@ -23,7 +23,7 @@ namespace exactextract {
     class GDALWriter : public OutputWriter {
 
     public:
-        GDALWriter(const std::string & filename);
+        explicit GDALWriter(const std::string & filename);
 
         ~GDALWriter();
 

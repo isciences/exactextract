@@ -23,7 +23,7 @@ namespace exactextract {
         double x;
         double y;
 
-        Coordinate() {}
+        Coordinate() = default;
 
         Coordinate(double p_x, double p_y) : x{p_x}, y{p_y} {}
 

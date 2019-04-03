@@ -97,7 +97,7 @@ namespace exactextract {
              throw std::runtime_error("Invalid stat descriptor.");
          }
 
-         const std::regex re_args("\\(([,\\w]+)+\\)$");
+         const std::regex re_args(R"(\(([,\w]+)+\)$)");
          std::smatch arg_names_match;
          if (std::regex_search(descriptor, arg_names_match, re_args)) {
              auto args = arg_names_match[1].str();
@@ -111,7 +111,7 @@ namespace exactextract {
              }
          } else {
              throw std::runtime_error("Invalid stat descriptor.");
-         };
+         }
 
          if (ret.name.empty()) {
              std::ostringstream ss;

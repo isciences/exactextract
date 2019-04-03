@@ -21,7 +21,7 @@ namespace exactextract {
     public:
         using Processor::Processor;
 
-        virtual void process() override;
+        void process() override;
     };
 }
 

@@ -53,12 +53,12 @@ namespace exactextract {
     GEOSPrepare_ptr(GEOSContextHandle_t context, const GEOSGeometry *g) {
         auto deleter = [context](const GEOSPreparedGeometry* pg) { GEOSPreparedGeom_destroy_r(context, pg); };
         return prep_geom_ptr_r{GEOSPrepare_r(context, g), deleter};
-    };
+    }
 
     inline seq_ptr_r
     GEOSCoordSeq_create_ptr(GEOSContextHandle_t context, unsigned int size, unsigned int dims) {
         return geos_ptr(context, GEOSCoordSeq_create_r(context, size, dims));
-    };
+    }
 
     inline geom_ptr_r
     GEOSGeom_createPoint_ptr(GEOSContextHandle_t context, double x, double y) {
@@ -66,12 +66,12 @@ namespace exactextract {
         GEOSCoordSeq_setX_r(context, seq.get(), 0, x);
         GEOSCoordSeq_setY_r(context, seq.get(), 0, y);
         return geos_ptr(context, GEOSGeom_createPoint_r(context, seq.release()));
-    };
+    }
 
     inline geom_ptr_r
     GEOSGeom_createLineString_ptr(GEOSContextHandle_t context, GEOSCoordSequence *seq) {
         return geos_ptr(context, GEOSGeom_createLineString_r(context, seq));
-    };
+    }
 
     inline unsigned int geos_get_num_points(GEOSContextHandle_t context, const GEOSCoordSequence *s) {
         unsigned int result;

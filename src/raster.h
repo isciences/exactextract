@@ -14,6 +14,7 @@
 #ifndef EXACTEXTRACT_RASTER_H
 #define EXACTEXTRACT_RASTER_H
 
+#include <cmath>
 #include <limits>
 
 #include "grid.h"

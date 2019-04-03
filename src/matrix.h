@@ -37,7 +37,7 @@ class Matrix {
             }
         }
 
-        Matrix(const std::vector<std::vector<T>> & data) :
+        explicit Matrix(const std::vector<std::vector<T>> & data) :
             m_rows{data.size()},
             m_cols{data[0].size()}
         {
@@ -49,7 +49,7 @@ class Matrix {
             }
         }
 
-        Matrix(Matrix<T>&& m) :
+        Matrix(Matrix<T>&& m) noexcept :
                 m_rows{m.rows()},
                 m_cols{m.cols()}
         {

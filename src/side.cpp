@@ -36,7 +36,7 @@ namespace exactextract {
                 return os;
         }
 
-        return os;
+        return os; // unreachable statement needed for -Werror=return-type
     }
 
 }
