@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -106,17 +106,32 @@ namespace exactextract {
             if (ymin() != other.ymin())
                 return false;
 
+            // Do the rasters differ in their definition of NODATA? If so, we need to do some more detailed
+            // checking below.
+            bool nodata_differs = has_nodata() != other.has_nodata() ||
+                    (has_nodata() && other.has_nodata() && nodata() != other.nodata());
+
             for (size_t i = 0; i < rows(); i++) {
                 for (size_t j = 0; j < cols(); j++) {
                     if(operator()(i, j) != other(i, j)) {
+                        // Override default behavior of NAN != NAN
                         if (!std::isnan(operator()(i, j)) || !std::isnan(other(i, j))) {
                             return false;
                         }
+                    } else if (nodata_differs && (operator()(i, j) == nodata() || other(i, j) == other.nodata())) {
+                        // For data types that do not have NAN, or even for floating point types where the user has
+                        // selected some other value to represent NODATA, we need to reverse a positive equality test
+                        // where the value is considered to be NODATA in one raster but not the other.
+                        return false;
                     }
                 }
             }
 
             return true;
+        }
+
+        bool operator!=(const AbstractRaster<T> & other) const {
+            return !(operator==(other));
         }
     private:
         Grid<bounded_extent> m_grid;
@@ -139,7 +154,7 @@ namespace exactextract {
             m_values{std::move(values)} {}
 
         Raster(const Box & box, size_t nrow, size_t ncol) :
-                AbstractRaster<T>(Grid<bounded_extent>(box, std::round((box.xmax-box.xmin) / ncol), std::round((box.ymax-box.ymin) / nrow))),
+                AbstractRaster<T>(Grid<bounded_extent>(box, (box.xmax-box.xmin) / ncol, (box.ymax-box.ymin) / nrow)),
                 m_values{nrow, ncol}
                 {}
 
