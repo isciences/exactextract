@@ -14,6 +14,8 @@
 #ifndef EXACTEXTRACT_CELL_H
 #define EXACTEXTRACT_CELL_H
 
+#include <memory>
+
 #include "box.h"
 #include "crossing.h"
 #include "coordinate.h"
@@ -28,6 +30,8 @@ namespace exactextract {
 
         Cell(double xmin, double ymin, double xmax, double ymax) :
                 m_box{xmin, ymin, xmax, ymax} {}
+
+        explicit Cell(const Box & b) : m_box{b} {}
 
         void force_exit();
 
@@ -59,11 +63,7 @@ namespace exactextract {
         Location location(const Coordinate &c) const;
 
         Traversal &traversal_in_progress();
-
-        friend std::ostream &operator<<(std::ostream &os, const Cell &c);
     };
-
-    std::ostream &operator<<(std::ostream &os, const Cell &c);
 
 }
 

@@ -1,18 +1,46 @@
-test-stable:
-        image: isciences/exactextract-build-env:stable
-        script:
-                - mkdir build-master
-                - cd build-master
-                - cmake ..
-                - make catch_tests
-                - ./catch_tests
+image: docker:latest
 
-test-geos37:
-        image: isciences/exactextract-build-env:geos37
-        script:
-                - mkdir build-master
-                - cd build-master
-                - cmake ..
-                - make catch_tests
-                - ./catch_tests
+services:
+  - docker:dind
+
+stages:
+  - build
+  - release
+
+variables:
+  CONTAINER_TEST_IMAGE: isciences/exactextract:$CI_COMMIT_REF_NAME
+  CONTAINER_RELEASE_IMAGE: isciences/exactextract:latest
+
+# The build stage includes running of the unit tests
+# We run them here so that we can delete the project
+# sources and test executables after we're done.
+build:
+  stage: build
+  script:
+    - docker login -u ci4isciences -p $DOCKERHUB_PW
+    - docker build --pull -t $CONTAINER_TEST_IMAGE .
+    - docker push $CONTAINER_TEST_IMAGE
+
+coverage:
+  stage: build
+  image: isciences/exactextract-build-env:latest
+  script:
+    - mkdir build-coverage
+    - cd build-coverage
+    - cmake -DCMAKE_BUILD_TYPE=Coverage ..
+    - make -j2 catch_tests
+    - ./catch_tests
+    - lcov --capture --directory CMakeFiles --output-file coverage.info
+    - bash <(curl -s https://codecov.io/bash)
+
+release-image:
+  stage: release
+  script:
+    - docker login -u ci4isciences -p $DOCKERHUB_PW
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+
+  only:
+    - master
 

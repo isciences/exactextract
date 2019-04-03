@@ -1,9 +1,9 @@
 Makefile
-cmake-build-debug
+cmake-build-*
 *.csv
 *.o
+*.swo
 *.swp
 .vscode
-zonal_test
 .idea/
 callgrind.out.*

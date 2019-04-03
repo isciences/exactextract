@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -15,6 +15,7 @@
 #define EXACTEXTRACT_GEOS_UTILS_H
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -22,71 +23,80 @@
 
 #include <geos_c.h>
 
-#define HAVE_370 (GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 7)
-
 #include "box.h"
 #include "coordinate.h"
 #include "segment_orientation.h"
 
 namespace exactextract {
 
-    using seq_ptr = std::unique_ptr<GEOSCoordSequence, decltype(&GEOSCoordSeq_destroy)>;
-    using geom_ptr = std::unique_ptr<GEOSGeometry, decltype(&GEOSGeom_destroy)>;
-    using prep_geom_ptr = std::unique_ptr<const GEOSPreparedGeometry, decltype(&GEOSPreparedGeom_destroy)>;
+    using geom_ptr_r = std::unique_ptr<GEOSGeometry, std::function<void(GEOSGeometry*)>>;
+    using tree_ptr_r = std::unique_ptr<GEOSSTRtree, std::function<void(GEOSSTRtree*)>>;
+    using seq_ptr_r = std::unique_ptr<GEOSCoordSequence, std::function<void(GEOSCoordSequence*)>>;
+    using prep_geom_ptr_r = std::unique_ptr<const GEOSPreparedGeometry, std::function<void(const GEOSPreparedGeometry*)>>;
 
-    inline prep_geom_ptr
-    GEOSPrepare_ptr(const GEOSGeometry *g) {
-        return {GEOSPrepare(g), GEOSPreparedGeom_destroy};
-    };
-
-    inline seq_ptr
-    GEOSCoordSeq_create_ptr(unsigned int size, unsigned int dims) {
-        return {GEOSCoordSeq_create(size, dims), GEOSCoordSeq_destroy};
-    };
-
-    inline geom_ptr
-    GEOSGeom_createPoint_ptr(GEOSCoordSequence *seq) {
-        return {GEOSGeom_createPoint(seq), GEOSGeom_destroy};
-    };
-
-    inline geom_ptr
-    GEOSGeom_read(const std::string &s) {
-        return {GEOSGeomFromWKT(s.c_str()), GEOSGeom_destroy};
+    inline geom_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSGeometry* geom) {
+        auto deleter = [context](GEOSGeometry* g){ GEOSGeom_destroy_r(context, g); };
+        return geom_ptr_r{geom, deleter};
     }
 
-    inline geom_ptr
-    GEOSGeom_createPoint_ptr(double x, double y) {
-        auto seq = GEOSCoordSeq_create_ptr(1, 2);
-        GEOSCoordSeq_setX(seq.get(), 0, x);
-        GEOSCoordSeq_setY(seq.get(), 0, y);
-        return {GEOSGeom_createPoint(seq.release()), GEOSGeom_destroy};
-    };
+    inline tree_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSSTRtree* tree) {
+        auto deleter = [context](GEOSSTRtree_t* t){ GEOSSTRtree_destroy_r(context, t); };
+        return tree_ptr_r{tree, deleter};
+    }
 
-    inline geom_ptr
-    GEOSGeom_createLineString_ptr(GEOSCoordSequence *seq) {
-        return {GEOSGeom_createLineString(seq), GEOSGeom_destroy};
-    };
+    inline seq_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSCoordSequence* seq) {
+        auto deleter = [context](GEOSCoordSequence* s){ GEOSCoordSeq_destroy_r(context, s); };
+        return seq_ptr_r{seq, deleter};
+    }
 
-    inline unsigned int geos_get_num_points(const GEOSCoordSequence *s) {
+    inline prep_geom_ptr_r
+    GEOSPrepare_ptr(GEOSContextHandle_t context, const GEOSGeometry *g) {
+        auto deleter = [context](const GEOSPreparedGeometry* pg) { GEOSPreparedGeom_destroy_r(context, pg); };
+        return prep_geom_ptr_r{GEOSPrepare_r(context, g), deleter};
+    }
+
+    inline seq_ptr_r
+    GEOSCoordSeq_create_ptr(GEOSContextHandle_t context, unsigned int size, unsigned int dims) {
+        return geos_ptr(context, GEOSCoordSeq_create_r(context, size, dims));
+    }
+
+    inline geom_ptr_r
+    GEOSGeom_createPoint_ptr(GEOSContextHandle_t context, double x, double y) {
+        auto seq = GEOSCoordSeq_create_ptr(context, 1, 2);
+        GEOSCoordSeq_setX_r(context, seq.get(), 0, x);
+        GEOSCoordSeq_setY_r(context, seq.get(), 0, y);
+        return geos_ptr(context, GEOSGeom_createPoint_r(context, seq.release()));
+    }
+
+    inline geom_ptr_r
+    GEOSGeom_createLineString_ptr(GEOSContextHandle_t context, GEOSCoordSequence *seq) {
+        return geos_ptr(context, GEOSGeom_createLineString_r(context, seq));
+    }
+
+    inline unsigned int geos_get_num_points(GEOSContextHandle_t context, const GEOSCoordSequence *s) {
         unsigned int result;
-        if (!GEOSCoordSeq_getSize(s, &result)) {
-            throw std::runtime_error("Error calling GEOSCoordSeq_getSize.");
+        if (!GEOSCoordSeq_getSize_r(context, s, &result)) {
+            throw std::runtime_error("Error calling GEOSCoordSeq_getSize_r.");
         }
         return result;
     }
 
-    geom_ptr geos_make_box_polygon(double x0, double y0, double x1, double y1);
+    inline geom_ptr_r
+    GEOSGeom_read_r(GEOSContextHandle_t context, const std::string &s) {
+        return geos_ptr(context, GEOSGeomFromWKT_r(context, s.c_str()));
+    }
+    geom_ptr_r geos_make_box_polygon(GEOSContextHandle_t context, const Box & b);
 
-    Box geos_get_box(const GEOSGeometry *g);
+    Box geos_get_box(GEOSContextHandle_t context, const GEOSGeometry* g);
 
-    bool segment_intersection(const Coordinate &a0, const Coordinate &a1, const Coordinate &b0, const Coordinate &b1,
+    bool segment_intersection(GEOSContextHandle_t context, const Coordinate &a0, const Coordinate &a1, const Coordinate &b0, const Coordinate &b1,
                               Coordinate &result);
 
-    bool geos_is_ccw(const GEOSCoordSequence *s);
+    bool geos_is_ccw(GEOSContextHandle_t context, const GEOSCoordSequence *s);
 
-    std::vector<Coordinate> read(const GEOSCoordSequence *s);
+    std::vector<Coordinate> read(GEOSContextHandle_t context, const GEOSCoordSequence *s);
 
-    SegmentOrientation initial_segment_orientation(const GEOSCoordSequence *s);
+    SegmentOrientation initial_segment_orientation(GEOSContextHandle_t context, const GEOSCoordSequence *s);
 
 }
 
