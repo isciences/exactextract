@@ -1,6 +1,8 @@
 # exactextract
 
 [![Build Status](https://gitlab.com/isciences/exactextract/badges/master/build.svg)](https://gitlab.com/isciences/exactextract/pipelines)
+[![codecov](https://codecov.io/gl/isciences/exactextract/branch/master/graph/badge.svg)](https://codecov.io/gl/isciences/exactextract)
+[![Doxygen](https://img.shields.io/badge/Doxygen-documentation-brightgreen.svg)](https://isciences.gitlab.io/exactextract)
 
 `exactextract` provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as **zonal statistics**. Unlike other zonal statistics implementations, it takes into account raster cells that are partially covered by the polygon.
 
