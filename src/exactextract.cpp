@@ -19,7 +19,6 @@
 
 #include "CLI11.hpp"
 
-#include "csv_writer.h"
 #include "gdal_dataset_wrapper.h"
 #include "gdal_raster_wrapper.h"
 #include "gdal_writer.h"
