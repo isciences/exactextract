@@ -28,11 +28,11 @@ namespace exactextract {
         double xmax;
         double ymax;
 
-        Box(double xmin, double ymin, double xmax, double ymax) :
-                xmin{xmin},
-                ymin{ymin},
-                xmax{xmax},
-                ymax{ymax} {}
+        Box(double p_xmin, double p_ymin, double p_xmax, double p_ymax) :
+                xmin{p_xmin},
+                ymin{p_ymin},
+                xmax{p_xmax},
+                ymax{p_ymax} {}
 
         static Box maximum_finite() {
             return {

@@ -5,7 +5,6 @@ services:
 
 stages:
   - build
-  - test
   - release
 
 variables:
@@ -21,19 +20,6 @@ build:
     - docker login -u ci4isciences -p $DOCKERHUB_PW
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
-
-# The "test" stage just includes an additional test run
-# against an older version of GEOS. Testing against
-# current GEOS is done in the build stage.
-test-legacy:
-  stage: test
-  image: isciences/exactextract-build-env:geos36
-  script:
-    - mkdir build-master
-    - cd build-master
-    - cmake -DCMAKE_BUILD_TYPE=Release ..
-    - make catch_tests
-    - ./catch_tests
 
 coverage:
   stage: release

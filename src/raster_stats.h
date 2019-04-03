@@ -27,18 +27,18 @@ namespace exactextract {
 
     public:
         /**
-         * Compute raster statistics from the a Raster representing intersection percentages,
+         * Compute raster statistics from a Raster representing intersection percentages,
          * a Raster representing data values, and (optionally) a Raster representing weights.
          * and a set of raster values.
          */
-        explicit RasterStats(bool store_values = true) :
-                m_store_values{store_values},
+        explicit RasterStats(bool store_values = false) :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
                 m_sum_ciwi{0},
                 m_sum_ci{0},
                 m_sum_xici{0},
-                m_sum_xiciwi{0} {}
+                m_sum_xiciwi{0},
+                m_store_values{store_values} {}
 
         void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast) {
             RasterView<T> rv{rast, intersection_percentages.grid()};
@@ -206,12 +206,12 @@ namespace exactextract {
 
         bool m_store_values;
 
-        void process_value(const T& val, double coverage, double weight) {
-            double ciwi = coverage*weight;
+        void process_value(const T& val, float coverage, double weight) {
+            double ciwi = static_cast<double>(coverage)*weight;
 
-            m_sum_ci += coverage;
+            m_sum_ci += static_cast<double>(coverage);
             m_sum_ciwi += ciwi;
-            m_sum_xici += val*coverage;
+            m_sum_xici += val*static_cast<double>(coverage);
             m_sum_xiciwi += val*ciwi;
 
             if (val < m_min) {

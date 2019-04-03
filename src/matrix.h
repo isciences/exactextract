@@ -37,7 +37,7 @@ class Matrix {
             }
         }
 
-        Matrix(const std::vector<std::vector<T>> & data) :
+        explicit Matrix(const std::vector<std::vector<T>> & data) :
             m_rows{data.size()},
             m_cols{data[0].size()}
         {
@@ -49,7 +49,7 @@ class Matrix {
             }
         }
 
-        Matrix(Matrix<T>&& m) :
+        Matrix(Matrix<T>&& m) noexcept :
                 m_rows{m.rows()},
                 m_cols{m.cols()}
         {
@@ -93,16 +93,18 @@ class Matrix {
             return m_data.get();
         }
 
+#ifdef MATRIX_CHECK_BOUNDS
         void check(size_t row, size_t col) const {
-            #ifdef MATRIX_CHECK_BOUNDS
                 if (row + 1 > m_rows) {
                     throw std::out_of_range("Row " + std::to_string(row) + " is out of range.");
                 }
                 if (col + 1 > m_cols) {
                     throw std::out_of_range("Col " + std::to_string(col) + " is out of range.");
                 }
-            #endif
         }
+#else
+        void check(size_t, size_t) const {}
+#endif
 
     private:
         std::unique_ptr<T[]> m_data;

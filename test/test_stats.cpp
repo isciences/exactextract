@@ -42,7 +42,7 @@ namespace exactextract {
 
         Raster<float> areas = raster_cell_intersection(ex, context, g.get());
 
-        Raster<float> values{{{
+        Raster<float> values{Matrix<float>{{
           {1, 1, 1, 1, 1},
           {1, 1, 2, 3, 1},
           {1, 4, 5, 6, 1},
@@ -50,7 +50,7 @@ namespace exactextract {
           {1, 1, 1, 1, 1}
         }}, extent};
 
-        RasterStats<float> stats;
+        RasterStats<float> stats{true};
         stats.process(areas, values);
 
         CHECK( stats.count() ==
@@ -118,7 +118,7 @@ namespace exactextract {
 
         int NODATA = -999;
 
-        Raster<int> values{{{
+        Raster<int> values{Matrix<int>{{
             {1, 1,      1, 1, 1},
             {1, 1,      2, 3, 1},
             {1, 4,      5, 6, 1},
@@ -127,7 +127,7 @@ namespace exactextract {
         }}, extent};
         values.set_nodata(NODATA);
 
-        RasterStats<int> stats;
+        RasterStats<int> stats{true};
         stats.process(areas, values);
 
         CHECK( stats.count() ==

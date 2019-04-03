@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.8)
 project(exactextract)
 set(DEFAULT_BUILD_TYPE "Release")
 
@@ -19,6 +19,10 @@ find_package(GDAL)
 
 message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
 configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h)
+
+if (GEOS_VERSION_MAJOR LESS 3 OR GEOS_VERSION_MINOR LESS 7)
+    message(FATAL_ERROR "GEOS version 3.7 or later is required.")
+endif()
 
 # Download Catch (header-only library)
 set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
@@ -59,8 +63,6 @@ set(PROJECT_SOURCES
         src/coordinate.cpp
         src/coordinate.h
         src/crossing.h
-        src/csv_utils.h
-        src/csv_utils.cpp
         src/floodfill.cpp
         src/floodfill.h
         src/geos_utils.cpp
@@ -81,12 +83,16 @@ set(PROJECT_SOURCES
         src/traversal.h
         src/traversal_areas.cpp
         src/traversal_areas.h
-        )
+        src/output_writer.h
+        src/output_writer.cpp
+        src/operation.h
+        src/stats_registry.h
+        src/utils.h
+        src/utils.cpp)
 
 set(TEST_SOURCES
         test/test_box.cpp
         test/test_cell.cpp
-        test/test_csv.cpp
         test/test_geos_utils.cpp
         test/test_grid.cpp
         test/test_main.cpp
@@ -94,15 +100,23 @@ set(TEST_SOURCES
         test/test_raster.cpp
         test/test_raster_cell_intersection.cpp
         test/test_traversal_areas.cpp
-        test/test_stats.cpp)
+        test/test_stats.cpp
+        test/test_utils.cpp)
 
 set(BIN_SOURCES
         src/exactextract.cpp
         src/gdal_raster_wrapper.h
         src/gdal_raster_wrapper.cpp
         src/gdal_dataset_wrapper.h
-        src/gdal_dataset_wrapper.cpp)
-
+        src/gdal_dataset_wrapper.cpp
+        src/gdal_writer.h
+        src/gdal_writer.cpp
+        src/processor.h
+        src/feature_sequential_processor.cpp
+        src/feature_sequential_processor.h
+        src/raster_sequential_processor.cpp
+        src/raster_sequential_processor.h
+    )
 
 # Make a shared and static version of the library
 foreach(LINKING SHARED STATIC)
@@ -122,6 +136,13 @@ foreach(LINKING SHARED STATIC)
             ${LIB_NAME}_${LINKING}
             PRIVATE
             GEOS_USE_ONLY_R_API
+    )
+
+    target_compile_options(
+            ${LIB_NAME}_${LINKING}
+            PRIVATE
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
     )
 
     target_link_libraries(
@@ -172,10 +193,21 @@ if (GDAL_FOUND)
             PRIVATE
             ${CMAKE_BINARY_DIR}/generated
             ${CMAKE_SOURCE_DIR}/src
-            ${CLI11_INCLUDE_DIR}
             ${GEOS_INCLUDE_DIR}
             ${GDAL_INCLUDE_DIR}
     )
+
+    # Include CLI11 as a system include so that -Wshadow warnings are suppressed.
+    target_include_directories(
+            ${BIN_NAME}
+            SYSTEM PRIVATE ${CLI11_INCLUDE_DIR}
+    )
+
+    target_compile_options(
+            ${BIN_NAME}
+            PRIVATE
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>)
 
     install(TARGETS ${BIN_NAME}
             RUNTIME

@@ -23,8 +23,8 @@
 namespace exactextract {
 
     FloodFill::FloodFill(GEOSContextHandle_t context, const GEOSGeometry *g, const Grid<bounded_extent> &extent) :
-            m_geos_context{context},
             m_extent{extent},
+            m_geos_context{context},
             m_g{nullptr},
             m_pg{nullptr} {
         geom_ptr_r ring_copy = geos_ptr(context, GEOSGeom_clone_r(context, g));

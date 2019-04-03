@@ -31,7 +31,7 @@ namespace exactextract {
         Cell(double xmin, double ymin, double xmax, double ymax) :
                 m_box{xmin, ymin, xmax, ymax} {}
 
-        Cell(const Box & b) : m_box{b} {}
+        explicit Cell(const Box & b) : m_box{b} {}
 
         void force_exit();
 

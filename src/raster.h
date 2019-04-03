@@ -14,6 +14,7 @@
 #ifndef EXACTEXTRACT_RASTER_H
 #define EXACTEXTRACT_RASTER_H
 
+#include <cmath>
 #include <limits>
 
 #include "grid.h"
@@ -23,7 +24,7 @@ namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
-        explicit AbstractRaster(const Grid<bounded_extent> & ex) : m_grid{ex}, m_has_nodata{false} {}
+        explicit AbstractRaster(const Grid<bounded_extent> & ex) : m_grid{ex}, m_has_nodata{false}, m_nodata{std::numeric_limits<T>::min()} {}
         AbstractRaster(const Grid<bounded_extent> & ex, const T& nodata_val) : m_grid{ex}, m_has_nodata{true}, m_nodata{nodata_val} {}
 
         size_t rows() const {
@@ -172,8 +173,8 @@ namespace exactextract {
             double disaggregation_factor_x = r.xres() / ex.dx();
             double disaggregation_factor_y = r.yres() / ex.dy();
 
-            if (disaggregation_factor_x != std::floor(disaggregation_factor_x) ||
-                disaggregation_factor_y != std::floor(disaggregation_factor_y)) {
+            if (std::abs(disaggregation_factor_x - std::floor(disaggregation_factor_x)) > 1e-6 ||
+                std::abs(disaggregation_factor_y - std::floor(disaggregation_factor_y)) > 1e-6) {
                 throw std::runtime_error("Must construct view at resolution that is an integer multiple of original.");
             }
 

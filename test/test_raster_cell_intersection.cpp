@@ -409,3 +409,14 @@ TEST_CASE("Robustness regression test #4", "[raster-cell-intersection]") {
 
     CHECK_NOTHROW( raster_cell_intersection(ex, context, g.get()) );
 }
+
+TEST_CASE("Robustness regression test #5", "[raster-cell-intersection]") {
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 10, 10}, 1, 1};
+
+    auto g = GEOSGeom_read_r(context, "POINT (2 2)");
+    g.reset(GEOSBuffer_r(context, g.get(), 1, 30));
+
+    CHECK_NOTHROW( raster_cell_intersection(ex, context, g.get()) );
+}

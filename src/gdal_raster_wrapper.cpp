@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,11 +11,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gdal.h>
+
 #include "gdal_raster_wrapper.h"
 
 #include <stdexcept>
 
 namespace exactextract {
+
+    GDALRasterWrapper::GDALRasterWrapper(const std::string &filename, int bandnum) : m_grid{Grid<bounded_extent>::make_empty()} {
+        auto rast = GDALOpen(filename.c_str(), GA_ReadOnly);
+        if (!rast) {
+            throw std::runtime_error("Failed to open " + filename);
+        }
+
+        int has_nodata;
+        auto band = GDALGetRasterBand(rast, bandnum);
+        double nodata_value = GDALGetRasterNoDataValue(band, &has_nodata);
+
+        m_rast = rast;
+        m_band = band;
+        m_nodata_value = nodata_value;
+        m_has_nodata = static_cast<bool>(has_nodata);
+        m_name = filename;
+        compute_raster_grid();
+    }
+    
+    GDALRasterWrapper::~GDALRasterWrapper() {
+        // We can't use a std::unique_ptr because GDALDatasetH is an incomplete type.
+        // So we include a destructor and move constructor to manage the resource.
+        if (m_rast != nullptr)
+            GDALClose(m_rast);
+    }
 
     Raster<double> GDALRasterWrapper::read_box(const Box &box) {
         auto cropped_grid = m_grid.shrink_to_fit(box);

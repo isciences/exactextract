@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -15,14 +15,13 @@
 #define EXACTEXTRACT_GEOS_UTILS_H
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <vector>
 
 #include <geos_c.h>
-
-#define HAVE_370 (GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 7)
 
 #include "box.h"
 #include "coordinate.h"
@@ -35,31 +34,31 @@ namespace exactextract {
     using seq_ptr_r = std::unique_ptr<GEOSCoordSequence, std::function<void(GEOSCoordSequence*)>>;
     using prep_geom_ptr_r = std::unique_ptr<const GEOSPreparedGeometry, std::function<void(const GEOSPreparedGeometry*)>>;
 
-    inline geom_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSGeometry* g) {
-        auto deleter = [&context](GEOSGeometry* g){ GEOSGeom_destroy_r(context, g); };
-        return geom_ptr_r{g, deleter};
+    inline geom_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSGeometry* geom) {
+        auto deleter = [context](GEOSGeometry* g){ GEOSGeom_destroy_r(context, g); };
+        return geom_ptr_r{geom, deleter};
     }
 
-    inline tree_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSSTRtree* t) {
-        auto deleter = [&context](GEOSSTRtree_t* t){ GEOSSTRtree_destroy_r(context, t); };
-        return tree_ptr_r{t, deleter};
+    inline tree_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSSTRtree* tree) {
+        auto deleter = [context](GEOSSTRtree_t* t){ GEOSSTRtree_destroy_r(context, t); };
+        return tree_ptr_r{tree, deleter};
     }
 
-    inline seq_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSCoordSequence* s) {
-        auto deleter = [&context](GEOSCoordSequence* s){ GEOSCoordSeq_destroy_r(context, s); };
-        return seq_ptr_r{s, deleter};
+    inline seq_ptr_r geos_ptr(GEOSContextHandle_t context, GEOSCoordSequence* seq) {
+        auto deleter = [context](GEOSCoordSequence* s){ GEOSCoordSeq_destroy_r(context, s); };
+        return seq_ptr_r{seq, deleter};
     }
 
     inline prep_geom_ptr_r
     GEOSPrepare_ptr(GEOSContextHandle_t context, const GEOSGeometry *g) {
-        auto deleter = [&context](const GEOSPreparedGeometry* pg) { GEOSPreparedGeom_destroy_r(context, pg); };
+        auto deleter = [context](const GEOSPreparedGeometry* pg) { GEOSPreparedGeom_destroy_r(context, pg); };
         return prep_geom_ptr_r{GEOSPrepare_r(context, g), deleter};
-    };
+    }
 
     inline seq_ptr_r
     GEOSCoordSeq_create_ptr(GEOSContextHandle_t context, unsigned int size, unsigned int dims) {
         return geos_ptr(context, GEOSCoordSeq_create_r(context, size, dims));
-    };
+    }
 
     inline geom_ptr_r
     GEOSGeom_createPoint_ptr(GEOSContextHandle_t context, double x, double y) {
@@ -67,12 +66,12 @@ namespace exactextract {
         GEOSCoordSeq_setX_r(context, seq.get(), 0, x);
         GEOSCoordSeq_setY_r(context, seq.get(), 0, y);
         return geos_ptr(context, GEOSGeom_createPoint_r(context, seq.release()));
-    };
+    }
 
     inline geom_ptr_r
     GEOSGeom_createLineString_ptr(GEOSContextHandle_t context, GEOSCoordSequence *seq) {
         return geos_ptr(context, GEOSGeom_createLineString_r(context, seq));
-    };
+    }
 
     inline unsigned int geos_get_num_points(GEOSContextHandle_t context, const GEOSCoordSequence *s) {
         unsigned int result;
