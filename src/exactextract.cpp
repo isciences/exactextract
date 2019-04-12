@@ -41,7 +41,7 @@ static std::vector<Operation> prepare_operations(const std::vector<std::string> 
 int main(int argc, char** argv) {
     CLI::App app{"Zonal statistics using exactextract: build " + exactextract::version()};
 
-    std::string poly_descriptor, field_name, output_filename, strategy;
+    std::string poly_descriptor, field_name, output_filename, strategy, id_type, id_name;
     std::vector<std::string> stats;
     std::vector<std::string> raster_descriptors;
     size_t max_cells_in_memory = 30;
@@ -53,6 +53,8 @@ int main(int argc, char** argv) {
     app.add_option("-s,--stat", stats, "statistics")->required(true)->expected(-1);
     app.add_option("--max-cells", max_cells_in_memory, "maximum number of raster cells to read in memory at once, in millions")->required(false)->default_val("30");
     app.add_option("--strategy", strategy, "processing strategy")->required(false)->default_val("feature-sequential");
+    app.add_option("--id-type", id_type, "override type of id field in output")->required(false);
+    app.add_option("--id-name", id_name, "override name of id field in output")->required(false);
     app.add_flag("--progress", progress);
     app.set_config("--config");
 
@@ -61,6 +63,12 @@ int main(int argc, char** argv) {
         return 0;
     }
     CLI11_PARSE(app, argc, argv)
+
+    if (id_name.empty() != id_type.empty()) {
+        std::cerr << "Must specify both --id_type and --id_name" << std::endl;
+        return 1;
+    }
+
     max_cells_in_memory *= 1000000;
 
     std::unique_ptr<exactextract::Processor> proc;
@@ -74,7 +82,11 @@ int main(int argc, char** argv) {
         GDALDatasetWrapper shp = load_dataset(poly_descriptor, field_name);
 
         auto gdal_writer = std::make_unique<exactextract::GDALWriter>(output_filename);
-        gdal_writer->copy_id_field(shp);
+        if (!id_name.empty() && !id_type.empty()) {
+            gdal_writer->add_id_field(id_name, id_type);
+        } else {
+            gdal_writer->copy_id_field(shp);
+        }
         writer = std::move(gdal_writer);
 
         auto operations = prepare_operations(stats, rasters);

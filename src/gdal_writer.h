@@ -35,6 +35,8 @@ namespace exactextract {
 
         void write(const std::string & fid) override;
 
+        void add_id_field(const std::string & field_name, const std::string & field_type);
+
         void copy_id_field(const GDALDatasetWrapper & w);
 
     private:
