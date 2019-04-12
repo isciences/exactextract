@@ -46,14 +46,15 @@ int main(int argc, char** argv) {
     std::vector<std::string> raster_descriptors;
     size_t max_cells_in_memory = 30;
     bool progress;
-    app.add_option("-p", poly_descriptor, "polygon dataset")->required(true);
-    app.add_option("-r", raster_descriptors, "raster dataset")->required(true);
-    app.add_option("-f", field_name, "id from polygon dataset to retain in output")->required(true);
-    app.add_option("-o", output_filename, "output filename")->required(true);
-    app.add_option("-s", stats, "statistics")->required(true)->expected(-1);
+    app.add_option("-p,--polygons", poly_descriptor, "polygon dataset")->required(true);
+    app.add_option("-r,--raster", raster_descriptors, "raster dataset")->required(true);
+    app.add_option("-f,--fid", field_name, "id from polygon dataset to retain in output")->required(true);
+    app.add_option("-o,--output", output_filename, "output filename")->required(true);
+    app.add_option("-s,--stat", stats, "statistics")->required(true)->expected(-1);
     app.add_option("--max-cells", max_cells_in_memory, "maximum number of raster cells to read in memory at once, in millions")->required(false)->default_val("30");
     app.add_option("--strategy", strategy, "processing strategy")->required(false)->default_val("feature-sequential");
     app.add_flag("--progress", progress);
+    app.set_config("--config");
 
     if (argc == 1) {
         std::cout << app.help();
