@@ -25,7 +25,7 @@ namespace exactextract {
     public:
         explicit GDALWriter(const std::string & filename);
 
-        ~GDALWriter();
+        ~GDALWriter() override;
 
         static std::string get_driver_name(const std::string & filename);
 
