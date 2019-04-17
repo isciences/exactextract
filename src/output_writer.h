@@ -30,6 +30,8 @@ namespace exactextract {
 
         virtual void finish() {};
 
+        virtual ~OutputWriter()= default;
+
         std::vector<const Operation*> m_ops;
     };
 
