@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -45,6 +45,19 @@ namespace exactextract {
             const Coordinate &b0,
             const Coordinate &b1,
             Coordinate &result) {
+#if HAVE_370
+        int code = GEOSSegmentIntersection_r(context,
+                                             a0.x, a0.y,
+                                             a1.x, a1.y,
+                                             b0.x, b0.y,
+                                             b1.x, b1.y,
+                                             &result.x, &result.y);
+        if (!code) {
+            throw std::runtime_error("Error in GEOSSegmentIntersection_r");
+        }
+
+        return code == 1;
+#else
         auto seqa = GEOSCoordSeq_create_ptr(context, 2, 2);
         auto seqb = GEOSCoordSeq_create_ptr(context, 2, 2);
 
@@ -75,6 +88,7 @@ namespace exactextract {
         GEOSGeomGetY_r(context, intersection.get(), &result.y);
 
         return true;
+#endif
     }
 
     Box geos_get_box(GEOSContextHandle_t context, const GEOSGeometry* g) {
