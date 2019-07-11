@@ -9,7 +9,5 @@ RUN apt-get update && apt-get install -y \
   graphviz \
   libgdal-dev \
   libgeos-dev \
-  lcov \
   unzip \
-  valgrind \
   wget

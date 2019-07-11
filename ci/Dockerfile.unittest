@@ -1,0 +1,22 @@
+FROM debian:buster-slim
+
+RUN apt-get update && apt-get install -y \
+  build-essential \
+  cmake \
+  curl \
+  git \
+  lcov \
+  valgrind \
+  wget
+
+ARG GEOS_VERSION
+
+RUN wget http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 && \
+    tar -xjf geos-${GEOS_VERSION}.tar.bz2 && \
+    cd geos-${GEOS_VERSION} && \
+    ./configure && make -j`grep -c '^processor' /proc/cpuinfo` && make install && \
+    cd .. && \
+    rm -rf geos-${GEOS_VERSION} && \
+    rm geos-${GEOS_VERSION}.tar.bz2
+
+RUN ldconfig
