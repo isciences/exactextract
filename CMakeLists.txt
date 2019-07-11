@@ -20,10 +20,6 @@ find_package(GDAL)
 message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
 configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h)
 
-if (GEOS_VERSION_MAJOR LESS 3 OR GEOS_VERSION_MINOR LESS 7)
-    message(FATAL_ERROR "GEOS version 3.7 or later is required.")
-endif()
-
 # Download Catch (header-only library)
 set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
 set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)

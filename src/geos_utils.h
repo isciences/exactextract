@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -22,6 +22,8 @@
 #include <vector>
 
 #include <geos_c.h>
+
+#define HAVE_370 (GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 7)
 
 #include "box.h"
 #include "coordinate.h"

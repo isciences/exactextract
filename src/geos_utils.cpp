@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -80,22 +80,96 @@ namespace exactextract {
     Box geos_get_box(GEOSContextHandle_t context, const GEOSGeometry* g) {
         double xmin, ymin, xmax, ymax;
 
+#if HAVE_370
         if (!(GEOSGeom_getXMin_r(context, g, &xmin) &&
               GEOSGeom_getYMin_r(context, g, &ymin) &&
               GEOSGeom_getXMax_r(context, g, &xmax) &&
               GEOSGeom_getYMax_r(context, g, &ymax))) {
             throw std::runtime_error("Error getting geometry extent.");
         }
+#else
+        geom_ptr_r env = geos_ptr(context, GEOSEnvelope_r(context, g));
 
+        const GEOSGeometry* ring = GEOSGetExteriorRing_r(context, env.get());
+        const GEOSCoordSequence* seq = GEOSGeom_getCoordSeq_r(context, ring);
+
+        xmin = std::numeric_limits<double>::max();
+        ymin = std::numeric_limits<double>::max();
+        xmax = std::numeric_limits<double>::lowest();
+        ymax = std::numeric_limits<double>::lowest();
+
+        for (unsigned int i = 0; i < 4; i++) {
+            double x, y;
+
+            if (!GEOSCoordSeq_getX_r(context, seq, i, &x) || !GEOSCoordSeq_getY_r(context, seq, i, &y)) {
+                throw std::runtime_error("Error reading coordinates.");
+            }
+
+            xmin = std::min(xmin, x);
+            ymin = std::min(ymin, y);
+            xmax = std::max(xmax, x);
+            ymax = std::max(ymax, y);
+        }
+#endif
         return {xmin, ymin, xmax, ymax};
     }
 
     bool geos_is_ccw(GEOSContextHandle_t context, const GEOSCoordSequence *s) {
+#if HAVE_370
         char result;
         if (!GEOSCoordSeq_isCCW_r(context, s, &result)) {
             throw std::runtime_error("Error calling GEOSCoordSeq_isCCW_r.");
         }
         return result;
+#else
+        std::vector<Coordinate> coords = read(context, s);
+
+        if (coords.size() < 4) {
+            throw std::runtime_error("Ring has fewer than 4 points, so orientation cannot be determined.");
+        }
+
+        // find highest point
+        size_t hi_index = (size_t) std::distance(
+                coords.begin(),
+                std::max_element(coords.begin(), coords.end(), [](const auto& a, const auto&b) {
+                    return a.y < b.y;
+                })
+        );
+
+        // find distinct point before highest point
+        size_t i_prev = hi_index;
+        do {
+            if (i_prev == 0) {
+                i_prev = coords.size() - 1;
+            } else {
+                i_prev--;
+            }
+        } while (i_prev != hi_index && coords[i_prev] == coords[hi_index]);
+
+        // find distinct point after highest point
+        size_t i_next = hi_index;
+        do {
+            i_next = (i_next + 1) % coords.size();
+        } while (i_next != hi_index && coords[i_next] == coords[hi_index]);
+
+        Coordinate& a = coords[i_prev];
+        Coordinate& b = coords[hi_index];
+        Coordinate& c = coords[i_next];
+
+        if (a == b || b == c || a == c) {
+            return false;
+        }
+
+        int disc = GEOSOrientationIndex_r(context, a.x, a.y, b.x, b.y, c.x, c.y);
+
+        if (disc == 0) {
+            // poly is CCW if prev x is right of next x
+            return (a.x > b.x);
+        } else {
+            // if area is positive, points are ordered CCW
+            return disc > 0;
+        }
+#endif
     }
 
     std::vector<Coordinate> read(GEOSContextHandle_t context, const GEOSCoordSequence *s) {
