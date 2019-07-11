@@ -15,6 +15,7 @@
 #define EXACTEXTRACT_GRID_H
 
 #include <numeric>
+#include <stdexcept>
 #include <vector>
 
 #include "box.h"
