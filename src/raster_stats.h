@@ -71,7 +71,8 @@ namespace exactextract {
                     T weight;
                     T val;
 
-                    if (pct_cov > 0 && wv.get(i, j, weight) && rv.get(i, j, val)) {
+                    if (pct_cov > 0 && rv.get(i, j, val)) {
+                        wv.get(i, j, weight);
                         process_value(val, pct_cov, weight);
                     }
                 }
@@ -90,6 +91,10 @@ namespace exactextract {
          * The mean value of cells covered by this polygon, weighted
          * by the percent of the cell that is covered and a secondary
          * weighting raster.
+         *
+         * If any weights are undefined, will return NAN. If this is undesirable,
+         * caller should replace undefined weights with a suitable default
+         * before computing statistics.
          */
          float weighted_mean() const {
              return weighted_sum() / weighted_count();
@@ -110,6 +115,10 @@ namespace exactextract {
          * be returned. Weights are not taken into account.
          */
         T mode() const {
+            if (variety() == 0) {
+                return std::numeric_limits<T>::quiet_NaN();
+            }
+
             return std::max_element(m_freq.cbegin(),
                                     m_freq.cend(),
                                     [](const auto &a, const auto &b) {
@@ -122,6 +131,9 @@ namespace exactextract {
          * by the polygon. Weights are not taken into account.
          */
         T min() const {
+            if (m_sum_ci == 0) {
+                return std::numeric_limits<T>::quiet_NaN();
+            }
             return m_min;
         }
 
@@ -130,6 +142,9 @@ namespace exactextract {
          * by the polygon. Weights are not taken into account.
          */
         T max() const {
+            if (m_sum_ci == 0) {
+                return std::numeric_limits<T>::quiet_NaN();
+            }
             return m_max;
         }
 
@@ -144,6 +159,10 @@ namespace exactextract {
         /**
          * The sum of raster cells covered by the polygon, with each raster
          * value weighted by its coverage fraction and weighting raster value.
+         *
+         * If any weights are undefined, will return NAN. If this is undesirable,
+         * caller should replace undefined weights with a suitable default
+         * before computing statistics.
          */
         float weighted_sum() const {
             return (float) m_sum_xiciwi;
@@ -158,9 +177,14 @@ namespace exactextract {
             return (float) m_sum_ci;
         }
 
-        /** The sum of weights for each cell covered by the
-         *  polygon, with each weight multiplied by the coverage
-         *  coverage fraction of each cell.
+        /**
+         * The sum of weights for each cell covered by the
+         * polygon, with each weight multiplied by the coverage
+         * coverage fraction of each cell.
+         *
+         * If any weights are undefined, will return NAN. If this is undesirable,
+         * caller should replace undefined weights with a suitable default
+         * before computing statistics.
          */
         float weighted_count() const {
             return (float) m_sum_ciwi;
@@ -175,6 +199,10 @@ namespace exactextract {
          * Cell weights are not taken into account.
          */
         T minority() const {
+            if (variety() == 0) {
+                return std::numeric_limits<T>::quiet_NaN();
+            }
+
             return std::min_element(m_freq.cbegin(),
                                     m_freq.cend(),
                                     [](const auto &a, const auto &b) {
@@ -207,12 +235,12 @@ namespace exactextract {
         bool m_store_values;
 
         void process_value(const T& val, float coverage, double weight) {
-            double ciwi = static_cast<double>(coverage)*weight;
-
             m_sum_ci += static_cast<double>(coverage);
-            m_sum_ciwi += ciwi;
             m_sum_xici += val*static_cast<double>(coverage);
-            m_sum_xiciwi += val*ciwi;
+
+            double ciwi = static_cast<double>(coverage)*weight;
+            m_sum_ciwi += ciwi;
+            m_sum_xiciwi += val * ciwi;
 
             if (val < m_min) {
                 m_min = val;

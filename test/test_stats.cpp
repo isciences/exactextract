@@ -93,7 +93,7 @@ namespace exactextract {
         fill_by_row<float>(values, 1, 1);
         fill_by_row<float>(weights, 5, 5);
 
-        RasterStats<float> stats;
+        RasterStats<float> stats(false);
         stats.process(areas, values, weights);
 
         std::valarray<double> cov_values  = {   28,  29,  30,   31,   36,  37,  38,   39 };
@@ -151,5 +151,140 @@ namespace exactextract {
         CHECK( stats.max() == 7 );
 
         CHECK( stats.variety() == 8 );
+    }
+
+    TEST_CASE("Missing data handling") {
+        GEOSContextHandle_t context = init_geos();
+
+        Box extent{0, 0, 2, 2};
+        Grid<bounded_extent> ex{extent, 1, 1}; // 2x2 grid
+
+        auto g = GEOSGeom_read_r(context, "POLYGON ((0.5 0.5, 1.5 0.5, 1.5 1.5, 0.5 1.5, 0.5 0.5))");
+
+        Raster<float> areas = raster_cell_intersection(ex, context, g.get());
+
+        // Polygon covers 25% of each of the four cells
+        for (size_t i = 0; i < areas.rows(); i++) {
+            for (size_t j = 0; j < areas.cols(); j++) {
+                CHECK( areas(i, j) == 0.25f );
+            }
+        }
+
+        Raster<float> all_values_missing{Matrix<float>{{
+            {NAN, NAN},
+            {NAN, NAN}
+        }}, extent};
+
+        Raster<float> all_values_defined{Matrix<float>{{
+            {1, 2},
+            {3, 4},
+        }}, extent};
+
+        Raster<float> some_values_defined{Matrix<float>{{
+            {1,     2},
+            {NAN, NAN}
+        }}, extent};
+
+        // All values missing, no weights provided
+        // Example application: land cover on an island not covered by dataset
+        {
+            RasterStats<float> stats(false);
+            stats.process(areas, all_values_missing);
+
+            CHECK( stats.count() == 0 );
+            CHECK( stats.sum() == 0 );
+            CHECK( std::isnan(stats.min()) );
+            CHECK( std::isnan(stats.max()) );
+            CHECK( std::isnan(stats.mean()) );
+            CHECK( std::isnan(stats.mode()) );
+            CHECK( std::isnan(stats.minority()) );
+            CHECK( stats.variety() == 0 );
+            CHECK( stats.weighted_count() == stats.count() );
+            CHECK( stats.weighted_sum() == stats.sum() );
+            CHECK( std::isnan(stats.weighted_mean()) );
+        }
+
+        // All values defined, no weights defined
+        // Example application: precipitation over polygon in the middle of continent
+        {
+            RasterStats<float> stats{true};
+            stats.process(areas, all_values_defined);
+
+            CHECK( stats.count() == 1.0f );
+            CHECK( stats.sum() == 2.5f );
+            CHECK( stats.min() == 1.0f );
+            CHECK( stats.max() == 4.0f );
+            CHECK( stats.mean() == 2.5f );
+            CHECK( stats.mode() == 4.0f );
+            CHECK( stats.minority() == 1.0f );
+            CHECK( stats.weighted_count() == stats.count() );
+            CHECK( stats.weighted_sum() == stats.sum() );
+            CHECK( stats.weighted_mean() == stats.mean() );
+        }
+
+        // Some values defined, no weights provided
+        // Example application: precipitation at edge of continent
+        {
+            RasterStats<float> stats{true};
+            stats.process(areas, some_values_defined);
+
+            CHECK( stats.count() == 0.5f );
+            CHECK( stats.sum() == 0.75f );
+            CHECK( stats.min() == 1.0f );
+            CHECK( stats.max() == 2.0f );
+            CHECK( stats.mean() > 0.5f );
+            CHECK( stats.mode() == 2.0f );
+            CHECK( stats.minority() == 1.0f );
+            CHECK( stats.weighted_count() == stats.count() );
+            CHECK( stats.weighted_sum() == stats.sum() );
+            CHECK( stats.weighted_mean() == stats.mean() );
+        }
+
+        // No values defined, all weights defined
+        // Example: population-weighted temperature in dataset covered by pop but without temperature data
+        {
+            RasterStats<float> stats{true};
+            stats.process(areas, all_values_missing, all_values_defined);
+
+            CHECK( stats.count() == 0 );
+            CHECK( stats.sum() == 0 );
+            CHECK( std::isnan(stats.min()) );
+            CHECK( std::isnan(stats.max()) );
+            CHECK( std::isnan(stats.mean()) );
+            CHECK( stats.weighted_count() == stats.count() );
+            CHECK( stats.weighted_sum() == stats.sum() );
+            CHECK( std::isnan(stats.weighted_mean()) );
+        }
+
+        // All values defined, no weights defined
+        // Example: population-weighted temperature in polygon covered by temperature but without pop data
+        {
+            RasterStats<float> stats{true};
+            stats.process(areas, all_values_defined, all_values_missing);
+
+            CHECK( stats.count() == 1.0f );
+            CHECK( stats.sum() == 2.5f );
+            CHECK( stats.min() == 1.0f );
+            CHECK( stats.max() == 4.0f );
+            CHECK( stats.mean() == 2.5f );
+            CHECK( std::isnan(stats.weighted_count()) );
+            CHECK( std::isnan(stats.weighted_sum()) );
+            CHECK( std::isnan(stats.weighted_mean()) );
+        }
+
+        // All values defined, some weights defined
+        {
+            RasterStats<float> stats{true};
+            stats.process(areas, all_values_defined, some_values_defined);
+
+            CHECK( stats.count() == 1.0f );
+            CHECK( stats.sum() == 2.5f );
+            CHECK( stats.min() == 1.0f );
+            CHECK( stats.max() == 4.0f );
+            CHECK( stats.mean() == 2.5f );
+            CHECK( std::isnan(stats.weighted_count()) );
+            CHECK( std::isnan(stats.weighted_sum()) );
+            CHECK( std::isnan(stats.weighted_mean()) );
+        }
     }
 }
