@@ -153,7 +153,7 @@ namespace exactextract {
         CHECK( stats.variety() == 8 );
     }
 
-    TEST_CASE("Missing data handling") {
+    TEST_CASE("Missing data handling (float)") {
         GEOSContextHandle_t context = init_geos();
 
         Box extent{0, 0, 2, 2};
@@ -185,9 +185,8 @@ namespace exactextract {
             {NAN, NAN}
         }}, extent};
 
-        // All values missing, no weights provided
-        // Example application: land cover on an island not covered by dataset
-        {
+        SECTION("All values missing, no weights provided") {
+            // Example application: land cover on an island not covered by dataset
             RasterStats<float> stats(false);
             stats.process(areas, all_values_missing);
 
@@ -204,9 +203,8 @@ namespace exactextract {
             CHECK( std::isnan(stats.weighted_mean()) );
         }
 
-        // All values defined, no weights defined
-        // Example application: precipitation over polygon in the middle of continent
-        {
+        SECTION("All velues defined, no weights defined") {
+            // Example application: precipitation over polygon in the middle of continent
             RasterStats<float> stats{true};
             stats.process(areas, all_values_defined);
 
@@ -222,9 +220,8 @@ namespace exactextract {
             CHECK( stats.weighted_mean() == stats.mean() );
         }
 
-        // Some values defined, no weights provided
-        // Example application: precipitation at edge of continent
-        {
+        SECTION("Some values defined, no weights provided") {
+            // Example application: precipitation at edge of continent
             RasterStats<float> stats{true};
             stats.process(areas, some_values_defined);
 
@@ -240,9 +237,8 @@ namespace exactextract {
             CHECK( stats.weighted_mean() == stats.mean() );
         }
 
-        // No values defined, all weights defined
-        // Example: population-weighted temperature in dataset covered by pop but without temperature data
-        {
+        SECTION("No values defined, all weights defined") {
+            // Example: population-weighted temperature in dataset covered by pop but without temperature data
             RasterStats<float> stats{true};
             stats.process(areas, all_values_missing, all_values_defined);
 
@@ -256,9 +252,22 @@ namespace exactextract {
             CHECK( std::isnan(stats.weighted_mean()) );
         }
 
-        // All values defined, no weights defined
-        // Example: population-weighted temperature in polygon covered by temperature but without pop data
-        {
+        SECTION("No values defined, no weights defined") {
+            RasterStats<float> stats{true};
+            stats.process(areas, all_values_missing, all_values_missing);
+
+            CHECK( stats.count() == 0 );
+            CHECK( stats.sum() == 0 );
+            CHECK( std::isnan(stats.min()) );
+            CHECK( std::isnan(stats.max()) );
+            CHECK( std::isnan(stats.mean()) );
+            CHECK( stats.weighted_count() == 0 );
+            CHECK( stats.weighted_sum() == 0 );
+            CHECK( std::isnan(stats.weighted_mean()) );
+        }
+
+        SECTION("All values defined, no weights defined") {
+            // Example: population-weighted temperature in polygon covered by temperature but without pop data
             RasterStats<float> stats{true};
             stats.process(areas, all_values_defined, all_values_missing);
 
@@ -272,8 +281,7 @@ namespace exactextract {
             CHECK( std::isnan(stats.weighted_mean()) );
         }
 
-        // All values defined, some weights defined
-        {
+        SECTION("All values defined, some weights defined") {
             RasterStats<float> stats{true};
             stats.process(areas, all_values_defined, some_values_defined);
 
