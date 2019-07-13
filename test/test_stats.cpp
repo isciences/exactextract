@@ -32,7 +32,25 @@ namespace exactextract {
         }
     }
 
-    TEST_CASE("Basic float stats") {
+    template<typename T>
+    T nodata_test_value();
+
+    template<>
+    float nodata_test_value() {
+        return NAN;
+    }
+
+    template<>
+    double nodata_test_value() {
+        return -3.2e38;
+    }
+
+    template<>
+    int nodata_test_value() {
+        return -999;
+    }
+
+    TEMPLATE_TEST_CASE("Unweighted stats", "[stats]", float, double, int) {
         GEOSContextHandle_t context = init_geos();
 
         Box extent{-1, -1, 4, 4};
@@ -42,15 +60,17 @@ namespace exactextract {
 
         Raster<float> areas = raster_cell_intersection(ex, context, g.get());
 
-        Raster<float> values{Matrix<float>{{
+        auto NA = nodata_test_value<TestType>();
+        Raster<TestType> values{Matrix<TestType>{{
           {1, 1, 1, 1, 1},
           {1, 1, 2, 3, 1},
           {1, 4, 5, 6, 1},
-          {1, 0, NAN, 7, 1},
+          {1, 0, NA, 7, 1},
           {1, 1, 1, 1, 1}
         }}, extent};
+        values.set_nodata(NA);
 
-        RasterStats<float> stats{true};
+        RasterStats<TestType> stats{true};
         stats.process(areas, values);
 
         CHECK( stats.count() ==
@@ -76,7 +96,7 @@ namespace exactextract {
         CHECK( stats.variety() == 8 );
     }
 
-    TEST_CASE("Weighted multiresolution float stats") {
+    TEMPLATE_TEST_CASE("Weighted multiresolution stats", "[stats]", float, double, int) {
         GEOSContextHandle_t context = init_geos();
 
         Box extent { 0, 0, 8, 6 };
@@ -87,13 +107,13 @@ namespace exactextract {
         auto g = GEOSGeom_read_r(context, "POLYGON ((3.5 1.5, 6.5 1.5, 6.5 2.5, 3.5 2.5, 3.5 1.5))");
 
         Raster<float> areas = raster_cell_intersection(ex1.common_grid(ex2), context, g.get());
-        Raster<float> values{extent, 6, 8};
-        Raster<float> weights{extent, 3, 4};
+        Raster<TestType> values{extent, 6, 8};
+        Raster<TestType> weights{extent, 3, 4};
 
-        fill_by_row<float>(values, 1, 1);
-        fill_by_row<float>(weights, 5, 5);
+        fill_by_row<TestType>(values, 1, 1);
+        fill_by_row<TestType>(weights, 5, 5);
 
-        RasterStats<float> stats(false);
+        RasterStats<TestType> stats(false);
         stats.process(areas, values, weights);
 
         std::valarray<double> cov_values  = {   28,  29,  30,   31,   36,  37,  38,   39 };
@@ -104,66 +124,6 @@ namespace exactextract {
         CHECK( stats.mean() == Approx( (cov_values *  cov_fracs).sum() / cov_fracs.sum() ));
 
         CHECK( stats.weighted_fraction() == Approx( (cov_values*cov_weights*cov_fracs).sum() / (cov_values*cov_fracs).sum() ));
-    }
-
-    TEST_CASE("Basic integer stats") {
-        GEOSContextHandle_t context = init_geos();
-
-        Box extent{-1, -1, 4, 4};
-        Grid<bounded_extent> ex{extent, 1, 1}; // 4x5 grid
-
-        auto g = GEOSGeom_read_r(context, "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))");
-
-        Raster<float> areas = raster_cell_intersection(ex, context, g.get());
-
-        int NODATA = -999;
-
-        Raster<int> values{Matrix<int>{{
-            {1, 1,      1, 1, 1},
-            {1, 1,      2, 3, 1},
-            {1, 4,      5, 6, 1},
-            {1, 0, NODATA, 7, 1},
-            {1, 1,      1, 1, 1}
-        }}, extent};
-        values.set_nodata(NODATA);
-
-        RasterStats<int> stats{true};
-        stats.process(areas, values);
-
-        CHECK( stats.count() ==
-               (0.25 + 0.5 + 0.25 ) +
-               (0.50 + 1.0 + 0.50 ) +
-               (0.25 + 0.0 + 0.25)
-        );
-
-        CHECK( stats.sum() ==
-               (1*0.25 + 2*0.5 + 3*0.25) +
-               (4*0.50 + 5*1.0 + 6*0.50) +
-               (0*0.25 + 0*0.5 + 7*0.25)
-        );
-
-        CHECK( stats.mean() == 13.75f / 3.5f );
-
-        CHECK( stats.mode() == 5 );
-        CHECK( stats.minority() == 0 );
-
-        CHECK( stats.min() == 0 );
-        CHECK( stats.max() == 7 );
-
-        CHECK( stats.variety() == 8 );
-    }
-
-    template<typename T>
-    T nodata_test_value();
-
-    template<>
-    float nodata_test_value() {
-        return NAN;
-    }
-
-    template<>
-    double nodata_test_value() {
-        return -3.2e38;
     }
 
     TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double) {
