@@ -72,8 +72,12 @@ namespace exactextract {
                     T val;
 
                     if (pct_cov > 0 && rv.get(i, j, val)) {
-                        wv.get(i, j, weight);
-                        process_value(val, pct_cov, weight);
+                        if (wv.get(i, j, weight)) {
+                            process_value(val, pct_cov, weight);
+                        } else {
+                            // Weight is NODATA, convert to NAN
+                            process_value(val, pct_cov, std::numeric_limits<double>::quiet_NaN());
+                        }
                     }
                 }
             }

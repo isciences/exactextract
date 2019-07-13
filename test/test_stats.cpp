@@ -153,7 +153,20 @@ namespace exactextract {
         CHECK( stats.variety() == 8 );
     }
 
-    TEST_CASE("Missing data handling (float)") {
+    template<typename T>
+    T nodata_test_value();
+
+    template<>
+    float nodata_test_value() {
+        return NAN;
+    }
+
+    template<>
+    double nodata_test_value() {
+        return -3.2e38;
+    }
+
+    TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double) {
         GEOSContextHandle_t context = init_geos();
 
         Box extent{0, 0, 2, 2};
@@ -170,24 +183,29 @@ namespace exactextract {
             }
         }
 
-        Raster<float> all_values_missing{Matrix<float>{{
-            {NAN, NAN},
-            {NAN, NAN}
-        }}, extent};
+        auto NA = nodata_test_value<TestType>();
 
-        Raster<float> all_values_defined{Matrix<float>{{
+        Raster<TestType> all_values_missing{Matrix<TestType>{{
+            {NA, NA},
+            {NA, NA}
+        }}, extent};
+        all_values_missing.set_nodata(NA);
+
+        Raster<TestType> all_values_defined{Matrix<TestType>{{
             {1, 2},
             {3, 4},
         }}, extent};
+        all_values_defined.set_nodata(NA);
 
-        Raster<float> some_values_defined{Matrix<float>{{
-            {1,     2},
-            {NAN, NAN}
+        Raster<TestType> some_values_defined{Matrix<TestType>{{
+            {1,   2},
+            {NA, NA}
         }}, extent};
+        some_values_defined.set_nodata(NA);
 
         SECTION("All values missing, no weights provided") {
             // Example application: land cover on an island not covered by dataset
-            RasterStats<float> stats(false);
+            RasterStats<TestType> stats(false);
             stats.process(areas, all_values_missing);
 
             CHECK( stats.count() == 0 );
@@ -205,7 +223,7 @@ namespace exactextract {
 
         SECTION("All velues defined, no weights defined") {
             // Example application: precipitation over polygon in the middle of continent
-            RasterStats<float> stats{true};
+            RasterStats<TestType> stats{true};
             stats.process(areas, all_values_defined);
 
             CHECK( stats.count() == 1.0f );
@@ -222,7 +240,7 @@ namespace exactextract {
 
         SECTION("Some values defined, no weights provided") {
             // Example application: precipitation at edge of continent
-            RasterStats<float> stats{true};
+            RasterStats<TestType> stats{true};
             stats.process(areas, some_values_defined);
 
             CHECK( stats.count() == 0.5f );
@@ -239,7 +257,7 @@ namespace exactextract {
 
         SECTION("No values defined, all weights defined") {
             // Example: population-weighted temperature in dataset covered by pop but without temperature data
-            RasterStats<float> stats{true};
+            RasterStats<TestType> stats{true};
             stats.process(areas, all_values_missing, all_values_defined);
 
             CHECK( stats.count() == 0 );
@@ -253,7 +271,7 @@ namespace exactextract {
         }
 
         SECTION("No values defined, no weights defined") {
-            RasterStats<float> stats{true};
+            RasterStats<TestType> stats{true};
             stats.process(areas, all_values_missing, all_values_missing);
 
             CHECK( stats.count() == 0 );
@@ -268,7 +286,7 @@ namespace exactextract {
 
         SECTION("All values defined, no weights defined") {
             // Example: population-weighted temperature in polygon covered by temperature but without pop data
-            RasterStats<float> stats{true};
+            RasterStats<TestType> stats{true};
             stats.process(areas, all_values_defined, all_values_missing);
 
             CHECK( stats.count() == 1.0f );
@@ -282,7 +300,7 @@ namespace exactextract {
         }
 
         SECTION("All values defined, some weights defined") {
-            RasterStats<float> stats{true};
+            RasterStats<TestType> stats{true};
             stats.process(areas, all_values_defined, some_values_defined);
 
             CHECK( stats.count() == 1.0f );
