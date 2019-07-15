@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -19,6 +19,8 @@
 #include <unordered_map>
 
 #include "raster_cell_intersection.h"
+
+#include "../vend/optional.hpp"
 
 namespace exactextract {
 
@@ -71,8 +73,13 @@ namespace exactextract {
                     T weight;
                     T val;
 
-                    if (pct_cov > 0 && wv.get(i, j, weight) && rv.get(i, j, val)) {
-                        process_value(val, pct_cov, weight);
+                    if (pct_cov > 0 && rv.get(i, j, val)) {
+                        if (wv.get(i, j, weight)) {
+                            process_value(val, pct_cov, weight);
+                        } else {
+                            // Weight is NODATA, convert to NAN
+                            process_value(val, pct_cov, std::numeric_limits<double>::quiet_NaN());
+                        }
                     }
                 }
             }
@@ -90,6 +97,10 @@ namespace exactextract {
          * The mean value of cells covered by this polygon, weighted
          * by the percent of the cell that is covered and a secondary
          * weighting raster.
+         *
+         * If any weights are undefined, will return NAN. If this is undesirable,
+         * caller should replace undefined weights with a suitable default
+         * before computing statistics.
          */
          float weighted_mean() const {
              return weighted_sum() / weighted_count();
@@ -109,7 +120,11 @@ namespace exactextract {
          * cover the same number of cells, the greatest value will
          * be returned. Weights are not taken into account.
          */
-        T mode() const {
+        nonstd::optional<T> mode() const {
+            if (variety() == 0) {
+                return nonstd::nullopt;
+            }
+
             return std::max_element(m_freq.cbegin(),
                                     m_freq.cend(),
                                     [](const auto &a, const auto &b) {
@@ -121,7 +136,10 @@ namespace exactextract {
          * The minimum value in any raster cell wholly or partially covered
          * by the polygon. Weights are not taken into account.
          */
-        T min() const {
+        nonstd::optional<T> min() const {
+            if (m_sum_ci == 0) {
+                return nonstd::nullopt;
+            }
             return m_min;
         }
 
@@ -129,7 +147,10 @@ namespace exactextract {
          * The maximum value in any raster cell wholly or partially covered
          * by the polygon. Weights are not taken into account.
          */
-        T max() const {
+        nonstd::optional<T> max() const {
+            if (m_sum_ci == 0) {
+                return nonstd::nullopt;
+            }
             return m_max;
         }
 
@@ -144,6 +165,10 @@ namespace exactextract {
         /**
          * The sum of raster cells covered by the polygon, with each raster
          * value weighted by its coverage fraction and weighting raster value.
+         *
+         * If any weights are undefined, will return NAN. If this is undesirable,
+         * caller should replace undefined weights with a suitable default
+         * before computing statistics.
          */
         float weighted_sum() const {
             return (float) m_sum_xiciwi;
@@ -158,9 +183,14 @@ namespace exactextract {
             return (float) m_sum_ci;
         }
 
-        /** The sum of weights for each cell covered by the
-         *  polygon, with each weight multiplied by the coverage
-         *  coverage fraction of each cell.
+        /**
+         * The sum of weights for each cell covered by the
+         * polygon, with each weight multiplied by the coverage
+         * coverage fraction of each cell.
+         *
+         * If any weights are undefined, will return NAN. If this is undesirable,
+         * caller should replace undefined weights with a suitable default
+         * before computing statistics.
          */
         float weighted_count() const {
             return (float) m_sum_ciwi;
@@ -174,7 +204,11 @@ namespace exactextract {
          *
          * Cell weights are not taken into account.
          */
-        T minority() const {
+        nonstd::optional<T> minority() const {
+            if (variety() == 0) {
+                return nonstd::nullopt;
+            }
+
             return std::min_element(m_freq.cbegin(),
                                     m_freq.cend(),
                                     [](const auto &a, const auto &b) {
@@ -207,12 +241,12 @@ namespace exactextract {
         bool m_store_values;
 
         void process_value(const T& val, float coverage, double weight) {
-            double ciwi = static_cast<double>(coverage)*weight;
-
             m_sum_ci += static_cast<double>(coverage);
-            m_sum_ciwi += ciwi;
             m_sum_xici += val*static_cast<double>(coverage);
-            m_sum_xiciwi += val*ciwi;
+
+            double ciwi = static_cast<double>(coverage)*weight;
+            m_sum_ciwi += ciwi;
+            m_sum_xiciwi += val * ciwi;
 
             if (val < m_min) {
                 m_min = val;

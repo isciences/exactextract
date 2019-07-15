@@ -29,7 +29,7 @@ set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
 set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
 
 if (NOT EXISTS ${CATCH_INCLUDE})
-    file(DOWNLOAD https://github.com/catchorg/Catch2/releases/download/v2.2.2/catch.hpp
+    file(DOWNLOAD https://github.com/catchorg/Catch2/releases/download/v2.9.1/catch.hpp
          ${CATCH_INCLUDE}
          SHOW_PROGRESS)
 endif()
@@ -88,7 +88,8 @@ set(PROJECT_SOURCES
         src/operation.h
         src/stats_registry.h
         src/utils.h
-        src/utils.cpp)
+        src/utils.cpp
+        vend/optional.hpp)
 
 set(TEST_SOURCES
         test/test_box.cpp
