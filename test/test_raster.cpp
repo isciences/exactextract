@@ -18,6 +18,15 @@ void fill_with_squares(Raster<T> & r) {
 }
 
 template<typename T>
+void fill_sequential(Raster<T> & r) {
+    for (size_t i = 0; i < r.rows(); i++) {
+        for (size_t j = 0; j < r.cols(); j++) {
+            r(i, j) = i*r.cols() + j;
+        }
+    }
+}
+
+template<typename T>
 static void print(const AbstractRaster<T> & r) {
     for (size_t i = 0; i < r.rows(); i++) {
         for (size_t j = 0; j < r.cols(); j++) {
@@ -241,6 +250,21 @@ TEST_CASE("Creating a scaled and shifted view (greater extent)") {
     Raster<float> expected{std::move(expected_values), expanded};
 
     CHECK (rv == expected );
+}
+
+TEST_CASE("Creating a shifted view (robustness)") {
+    Box rast_box{-130.76666666666947, -25.083333333335318, -124.77500000000313, -23.916666666668718};
+    Box view_box{-130.75833333333614, -25.083333333335318, -124.77500000000313, -23.916666666668718};
+    // Extent of view starts cell of the right of the original raster, so column N in the view should
+    // correspond to column N+1 of the original.
+
+    double res = 0.0083333333333328596;
+    Raster<int8_t> rast{Grid<bounded_extent>{rast_box, res, res}};
+    fill_sequential(rast);
+
+    RasterView<int8_t> rv{rast, Grid<bounded_extent>{view_box, res, res}};
+
+    CHECK ( rv(5, 5) == rast(5, 6) );
 }
 
 TEST_CASE("Get method accesses value and tells us if it was defined") {
