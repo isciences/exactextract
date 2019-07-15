@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -19,6 +19,8 @@
 #include <unordered_map>
 
 #include "raster_cell_intersection.h"
+
+#include "../vend/optional.hpp"
 
 namespace exactextract {
 
@@ -118,9 +120,9 @@ namespace exactextract {
          * cover the same number of cells, the greatest value will
          * be returned. Weights are not taken into account.
          */
-        T mode() const {
+        nonstd::optional<T> mode() const {
             if (variety() == 0) {
-                return std::numeric_limits<T>::quiet_NaN();
+                return nonstd::nullopt;
             }
 
             return std::max_element(m_freq.cbegin(),
@@ -134,9 +136,9 @@ namespace exactextract {
          * The minimum value in any raster cell wholly or partially covered
          * by the polygon. Weights are not taken into account.
          */
-        T min() const {
+        nonstd::optional<T> min() const {
             if (m_sum_ci == 0) {
-                return std::numeric_limits<T>::quiet_NaN();
+                return nonstd::nullopt;
             }
             return m_min;
         }
@@ -145,9 +147,9 @@ namespace exactextract {
          * The maximum value in any raster cell wholly or partially covered
          * by the polygon. Weights are not taken into account.
          */
-        T max() const {
+        nonstd::optional<T> max() const {
             if (m_sum_ci == 0) {
-                return std::numeric_limits<T>::quiet_NaN();
+                return nonstd::nullopt;
             }
             return m_max;
         }
@@ -202,9 +204,9 @@ namespace exactextract {
          *
          * Cell weights are not taken into account.
          */
-        T minority() const {
+        nonstd::optional<T> minority() const {
             if (variety() == 0) {
-                return std::numeric_limits<T>::quiet_NaN();
+                return nonstd::nullopt;
             }
 
             return std::min_element(m_freq.cbegin(),

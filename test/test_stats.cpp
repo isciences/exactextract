@@ -126,7 +126,7 @@ namespace exactextract {
         CHECK( stats.weighted_fraction() == Approx( (cov_values*cov_weights*cov_fracs).sum() / (cov_values*cov_fracs).sum() ));
     }
 
-    TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double) {
+    TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int) {
         GEOSContextHandle_t context = init_geos();
 
         Box extent{0, 0, 2, 2};
@@ -170,11 +170,11 @@ namespace exactextract {
 
             CHECK( stats.count() == 0 );
             CHECK( stats.sum() == 0 );
-            CHECK( std::isnan(stats.min()) );
-            CHECK( std::isnan(stats.max()) );
+            CHECK( !stats.min().has_value() );
+            CHECK( !stats.max().has_value() );
             CHECK( std::isnan(stats.mean()) );
-            CHECK( std::isnan(stats.mode()) );
-            CHECK( std::isnan(stats.minority()) );
+            CHECK( !stats.mode().has_value() );
+            CHECK( !stats.minority().has_value() );
             CHECK( stats.variety() == 0 );
             CHECK( stats.weighted_count() == stats.count() );
             CHECK( stats.weighted_sum() == stats.sum() );
@@ -222,8 +222,8 @@ namespace exactextract {
 
             CHECK( stats.count() == 0 );
             CHECK( stats.sum() == 0 );
-            CHECK( std::isnan(stats.min()) );
-            CHECK( std::isnan(stats.max()) );
+            CHECK( !stats.min().has_value() );
+            CHECK( !stats.max().has_value() );
             CHECK( std::isnan(stats.mean()) );
             CHECK( stats.weighted_count() == stats.count() );
             CHECK( stats.weighted_sum() == stats.sum() );
@@ -236,8 +236,8 @@ namespace exactextract {
 
             CHECK( stats.count() == 0 );
             CHECK( stats.sum() == 0 );
-            CHECK( std::isnan(stats.min()) );
-            CHECK( std::isnan(stats.max()) );
+            CHECK( !stats.min().has_value() );
+            CHECK( !stats.max().has_value() );
             CHECK( std::isnan(stats.mean()) );
             CHECK( stats.weighted_count() == 0 );
             CHECK( stats.weighted_sum() == 0 );

@@ -88,7 +88,8 @@ set(PROJECT_SOURCES
         src/operation.h
         src/stats_registry.h
         src/utils.h
-        src/utils.cpp)
+        src/utils.cpp
+        vend/optional.hpp)
 
 set(TEST_SOURCES
         test/test_box.cpp
