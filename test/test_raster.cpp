@@ -107,6 +107,9 @@ TEST_CASE("Rasters are equal if their NODATA values differ, only long as the NOD
     fill_with_squares(r1);
     fill_with_squares(r2);
 
+    CHECK( r1.has_nodata() );
+    CHECK( !r2.has_nodata() );
+
     CHECK( r1 == r2);
 
     r1.set_nodata(25);
