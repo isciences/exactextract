@@ -77,6 +77,17 @@ TEST_CASE("Rasters are unequal when their values differ") {
     CHECK( r1 != r2 );
 }
 
+TEST_CASE("Can access raster cells by value or by reference") {
+    Raster<float> r{{0, 0, 1, 1}, 10, 10};
+    fill_sequential(r);
+
+    float orig = r(2, 2);
+    float& cell = r(2, 2);
+    cell *= 2;
+
+    CHECK( r(2, 2) == orig*2 );
+}
+
 TEST_CASE("Rasters are unequal when their extents differ") {
     Raster<float> r1{{0, 0, 1, 1}, 10, 10};
     Raster<float> r2{{0, 0, 1, 10}, 10, 10};
