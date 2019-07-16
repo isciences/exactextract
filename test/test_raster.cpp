@@ -269,16 +269,59 @@ TEST_CASE("Creating a scaled and shifted view (greater extent)") {
 TEST_CASE("Creating a shifted view (robustness)") {
     Box rast_box{-130.76666666666947, -25.083333333335318, -124.77500000000313, -23.916666666668718};
     Box view_box{-130.75833333333614, -25.083333333335318, -124.77500000000313, -23.916666666668718};
-    // Extent of view starts cell of the right of the original raster, so column N in the view should
+    // Extent of view starts one cell of the right of the original raster, so column N in the view should
     // correspond to column N+1 of the original.
 
     double res = 0.0083333333333328596;
-    Raster<int8_t> rast{Grid<bounded_extent>{rast_box, res, res}};
+    Raster<int> rast{Grid<bounded_extent>{rast_box, res, res}};
     fill_sequential(rast);
 
-    RasterView<int8_t> rv{rast, Grid<bounded_extent>{view_box, res, res}};
+    RasterView<int> rv{rast, Grid<bounded_extent>{view_box, res, res}};
 
     CHECK ( rv(5, 5) == rast(5, 6) );
+}
+
+TEST_CASE("Expanded view") {
+    Box rast_box{5, 10, 20, 20};
+    Box view_box{0, 0, 30, 30};
+
+    double res = 1;
+    Raster<double> rast{Grid<bounded_extent>{rast_box, res, res}};
+    fill_sequential(rast);
+
+    RasterView<double> rv{rast, Grid<bounded_extent>{view_box, res, res}};
+
+    // Check 3 points outside UL corner
+    CHECK( std::isnan(rv(9, 4)) );
+    CHECK( std::isnan(rv(10, 4)) );
+    CHECK( std::isnan(rv(9, 5)) );
+
+    // Check point just inside UL corner
+    CHECK( rv(10, 5) == rast(0, 0) );
+
+    // Check 3 points outside UR corner
+    CHECK( std::isnan(rv(9, 19)) );
+    CHECK( std::isnan(rv(10, 20)) );
+    CHECK( std::isnan(rv(9, 20)) );
+
+    // Check point just inside UR corner
+    CHECK( rv(10, 19) == rast(0, 14) );
+
+    // Check 3 points just outside LL corner
+    CHECK( std::isnan(rv(19, 4)) );
+    CHECK( std::isnan(rv(20, 4)) );
+    CHECK( std::isnan(rv(20, 5)) );
+
+    // Check point just inside LL corner
+    CHECK( rv(19, 5) == rast(9, 0) );
+
+    // Check 3 points just outside LR corner
+    CHECK( std::isnan(rv(20, 20)) );
+    CHECK( std::isnan(rv(20, 19)) );
+    CHECK( std::isnan(rv(19, 20)) );
+
+    // Check point just inside LR corner
+    CHECK( rv(19, 19) == rast(9, 14) );
 }
 
 TEST_CASE("Get method accesses value and tells us if it was defined") {
