@@ -24,8 +24,13 @@ namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
-        explicit AbstractRaster(const Grid<bounded_extent> & ex) : m_grid{ex}, m_has_nodata{false}, m_nodata{std::numeric_limits<T>::min()} {}
-        AbstractRaster(const Grid<bounded_extent> & ex, const T& nodata_val) : m_grid{ex}, m_has_nodata{true}, m_nodata{nodata_val} {}
+        explicit AbstractRaster(const Grid<bounded_extent> & ex) :
+            m_grid{ex},
+            m_nodata{std::is_floating_point<T>::value ? std::numeric_limits<T>::quiet_NaN() : std::numeric_limits<T>::min()},
+            m_has_nodata{false}
+            {}
+
+        AbstractRaster(const Grid<bounded_extent> & ex, const T& nodata_val) : m_grid{ex}, m_nodata{nodata_val}, m_has_nodata{true}  {}
 
         size_t rows() const {
             return m_grid.rows();
@@ -135,8 +140,8 @@ namespace exactextract {
         }
     private:
         Grid<bounded_extent> m_grid;
-        bool m_has_nodata;
         T m_nodata;
+        bool m_has_nodata;
     };
 
     template<typename T>
@@ -184,7 +189,7 @@ namespace exactextract {
     public:
         // Construct a view of a raster r at an extent ex that is larger
         // and/or of finer resolution than r
-        RasterView(const AbstractRaster<T> & r, Grid<bounded_extent> ex) : AbstractRaster<T>(ex), m_raster{r}, expanded{false} {
+        RasterView(const AbstractRaster<T> & r, Grid<bounded_extent> ex) : AbstractRaster<T>(ex), m_raster{r} {
             double disaggregation_factor_x = r.xres() / ex.dx();
             double disaggregation_factor_y = r.yres() / ex.dy();
 
@@ -195,12 +200,6 @@ namespace exactextract {
 
             if (disaggregation_factor_x < 0 || disaggregation_factor_y < 0) {
                 throw std::runtime_error("Must construct view at equal or higher resolution than original.");
-            }
-
-            if (ex.xmin() < r.xmin() || ex.xmax() > r.xmax() || ex.ymin() < r.ymin() || ex.ymax() > r.ymax()) {
-                expanded = true;
-                //throw std::runtime_error("Constructed view must be smaller or same extent as original.");
-
             }
 
             m_x_off = static_cast<long>(std::round((ex.xmin() - r.xmin()) / ex.dx()));
@@ -214,22 +213,18 @@ namespace exactextract {
         }
 
         T operator()(size_t row, size_t col) const override {
-            if (expanded) {
-                if (row + m_y_off < 0) {
-                    return std::numeric_limits<T>::quiet_NaN();
-                }
-                if (col + m_x_off < 0) {
-                    return std::numeric_limits<T>::quiet_NaN();
-                }
+            if (m_x_off < 0 && static_cast<size_t>(-m_x_off) > col) {
+                return this->nodata();
+            }
+            if (m_y_off < 0 && static_cast<size_t>(-m_y_off) > row) {
+                return this->nodata();
             }
 
             size_t i0 = (row + m_y_off) / m_ry;
             size_t j0 = (col + m_x_off) / m_rx;
 
-            if (expanded) {
-                if (i0 > m_raster.rows() - 1 || j0 > m_raster.cols() - 1) {
-                    return std::numeric_limits<T>::quiet_NaN();
-                }
+            if (i0 > m_raster.rows() - 1 || j0 > m_raster.cols() - 1) {
+                return this->nodata();
             }
 
             return m_raster(i0, j0);
@@ -237,7 +232,6 @@ namespace exactextract {
 
     private:
         const AbstractRaster<T>& m_raster;
-        bool expanded;
 
         long m_x_off;
         long m_y_off;
