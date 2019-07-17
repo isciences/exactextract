@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -48,7 +48,7 @@ namespace exactextract {
     };
 
     Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, GEOSContextHandle_t context, const GEOSGeometry* g);
-
+    Box processing_region(const Box & raster_extent, const std::vector<Box> & component_boxes);
 }
 
 #endif

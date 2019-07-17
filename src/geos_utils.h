@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -90,6 +90,8 @@ namespace exactextract {
     geom_ptr_r geos_make_box_polygon(GEOSContextHandle_t context, const Box & b);
 
     Box geos_get_box(GEOSContextHandle_t context, const GEOSGeometry* g);
+
+    std::vector<Box> geos_get_component_boxes(GEOSContextHandle_t context, const GEOSGeometry* g);
 
     bool segment_intersection(GEOSContextHandle_t context, const Coordinate &a0, const Coordinate &a1, const Coordinate &b0, const Coordinate &b1,
                               Coordinate &result);

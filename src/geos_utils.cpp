@@ -128,6 +128,18 @@ namespace exactextract {
         return {xmin, ymin, xmax, ymax};
     }
 
+    std::vector<Box> geos_get_component_boxes(GEOSContextHandle_t context, const GEOSGeometry* g) {
+        size_t n = static_cast<size_t>(GEOSGetNumGeometries_r(context, g));
+        std::vector<Box> boxes;
+        boxes.reserve(n);
+
+        for (size_t i = 0; i < n; i++) {
+            boxes.push_back(geos_get_box(context, GEOSGetGeometryN_r(context, g, i)));
+        }
+
+        return boxes;
+    }
+
     bool geos_is_ccw(GEOSContextHandle_t context, const GEOSCoordSequence *s) {
 #if HAVE_370
         char result;
