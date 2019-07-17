@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -41,6 +41,10 @@ namespace exactextract {
                 std::numeric_limits<double>::max(),
                 std::numeric_limits<double>::max()
             };
+        }
+
+        static Box make_empty() {
+            return {0, 0, 0, 0};
         }
 
         double width() const {
@@ -109,6 +113,25 @@ namespace exactextract {
         Side side(const Coordinate &c) const;
 
         Crossing crossing(const Coordinate &c1, const Coordinate &c2) const;
+
+        bool empty() const {
+            return xmin >= xmax || ymin >= ymax;
+        }
+
+        Box expand_to_include(const Box & other) const {
+            if (empty()) {
+                return other;
+            }
+
+            if (other.empty()) {
+                return *this;
+            }
+
+            return { std::min(xmin, other.xmin),
+                     std::min(ymin, other.ymin),
+                     std::max(xmax, other.xmax),
+                     std::max(ymax, other.ymax) };
+        }
 
         bool contains(const Box &b) const;
 

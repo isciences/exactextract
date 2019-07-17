@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2019 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -40,16 +40,38 @@ namespace exactextract {
         return cells(row, col).get();
     }
 
+    Box processing_region(const Box & raster_extent, const std::vector<Box> & component_boxes) {
+        Box ret = Box::make_empty();
+        for (const auto& box : component_boxes) {
+            if (ret == raster_extent) {
+                // No more expansion is possible
+                return ret;
+            }
+
+            if (!box.intersects(raster_extent)) {
+                continue;
+            }
+
+            Box isect = raster_extent.intersection(box);
+            if (ret.empty()) {
+                ret = isect;
+            } else if (!ret.contains(isect)) {
+                ret = ret.expand_to_include(isect);
+            }
+        }
+
+        return ret;
+    }
 
     static Grid<infinite_extent> get_geometry_grid(const Grid<bounded_extent> &raster_grid, GEOSContextHandle_t context, const GEOSGeometry* g) {
         if (GEOSisEmpty_r(context, g)) {
             throw std::invalid_argument("Can't get statistics for empty geometry");
         }
 
-        Box cropped_geometry_extent = raster_grid.extent().intersection(geos_get_box(context, g));
+        Box region = processing_region(raster_grid.extent(), geos_get_component_boxes(context, g));
 
-        if (cropped_geometry_extent.intersects(raster_grid.extent())) {
-            return make_infinite(raster_grid.shrink_to_fit(cropped_geometry_extent));
+        if (!region.empty()) {
+            return make_infinite(raster_grid.shrink_to_fit(region));
         } else {
             return Grid<infinite_extent>::make_empty();
         }
@@ -86,6 +108,10 @@ namespace exactextract {
     }
 
     void RasterCellIntersection::process_ring(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring) {
+        if (!geos_get_box(context, ls).intersects(m_geometry_grid.extent())) {
+            return;
+        }
+
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, ls);
         bool is_ccw = geos_is_ccw(context, seq);
 

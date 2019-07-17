@@ -420,3 +420,44 @@ TEST_CASE("Robustness regression test #5", "[raster-cell-intersection]") {
 
     CHECK_NOTHROW( raster_cell_intersection(ex, context, g.get()) );
 }
+
+TEST_CASE("Processing region is empty when there are no polygons") {
+    Box raster_extent{0, 0, 10, 10};
+    std::vector<Box> component_boxes;
+
+    CHECK( processing_region(raster_extent, component_boxes).empty() );
+}
+
+TEST_CASE("Processing region is empty when all polygons are outside of it") {
+    Box raster_extent{40, 40, 50, 50};
+    std::vector<Box> component_boxes;
+    component_boxes.emplace_back(60, 60, 70, 70);
+    component_boxes.emplace_back(20, 20, 30, 30);
+
+    CHECK( processing_region(raster_extent, component_boxes).empty() );
+}
+
+TEST_CASE("Processing region incorporates overlapping area of all component boxes") {
+    Box raster_extent{40, 40, 50, 50};
+    std::vector<Box> component_boxes;
+
+    component_boxes.emplace_back(41, 42, 43, 44);
+
+    CHECK( processing_region(raster_extent, component_boxes) == component_boxes[0] );
+
+    component_boxes.emplace_back(30, 30, 45, 46);
+
+    CHECK( processing_region(raster_extent, component_boxes) == Box{40, 40, 45, 46});
+
+    component_boxes.emplace_back(47, 0, 48, 100);
+
+    CHECK( processing_region(raster_extent, component_boxes) == Box{40, 40, 48, 50} );
+
+    component_boxes.emplace_back(49, 49, 100, 100);
+
+    CHECK( processing_region(raster_extent, component_boxes) == raster_extent );
+
+    component_boxes.emplace_back(30, 30, 80, 80);
+
+    CHECK( processing_region(raster_extent, component_boxes) == raster_extent );
+}
