@@ -43,7 +43,7 @@ namespace exactextract {
             }
         }
 
-        std::function<double(RasterStats<double>)> result_fetcher() const {
+        std::function<nonstd::optional<double>(RasterStats<double>)> result_fetcher() const {
             if (stat == "mean") {
                 return [](const RasterStats<double> & s) { return s.mean(); };
             } else if (stat == "sum") {
@@ -54,6 +54,16 @@ namespace exactextract {
                 return [](const RasterStats<double> & s) { return s.weighted_mean(); };
             } else if (stat == "weighted_sum") {
                 return [](const RasterStats<double> & s) { return s.weighted_sum(); };
+            } else if (stat == "min") {
+                return [](const RasterStats<double> & s) { return s.min(); };
+            } else if (stat == "max") {
+                return [](const RasterStats<double> & s) { return s.max(); };
+            } else if (stat == "majority" || stat == "mode") {
+                return [](const RasterStats<double> & s) { return s.mode(); };
+            } else if (stat == "minority") {
+                return [](const RasterStats<double> & s) { return s.minority(); };
+            } else if (stat == "variety") {
+                return [](const RasterStats<double> & s) { return s.variety(); };
             } else {
                 throw std::runtime_error("Unknown stat: '" + stat + "'");
             }

@@ -113,7 +113,12 @@ namespace exactextract {
                 // TODO store between features
                 auto fetcher = op->result_fetcher();
 
-                OGR_F_SetFieldDouble(feature, field_pos, fetcher(stats));
+                auto val = fetcher(stats);
+                if (val.has_value()) {
+                    OGR_F_SetFieldDouble(feature, field_pos, val.value());
+                } else {
+                    OGR_F_SetFieldDouble(feature, field_pos, std::numeric_limits<double>::quiet_NaN());
+                }
             }
         }
 
