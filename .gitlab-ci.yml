@@ -39,6 +39,11 @@ test:geos37:
   image: isciences/exactextract-test-env:geos37
   <<: *unittest_definition
 
+test:geos38:
+  stage: test
+  image: isciences/exactextract-test-env:geos38
+  <<: *unittest_definition
+
 build:
   stage: build
   script:
