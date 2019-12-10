@@ -1,6 +1,6 @@
 # exactextract
 
-[![Build Status](https://gitlab.com/isciences/exactextract/badges/master/build.svg)](https://gitlab.com/isciences/exactextract/pipelines)
+[![Build Status](https://gitlab.com/isciences/exactextract/badges/master/pipeline.svg)](https://gitlab.com/isciences/exactextract/pipelines)
 [![codecov](https://codecov.io/gl/isciences/exactextract/branch/master/graph/badge.svg)](https://codecov.io/gl/isciences/exactextract)
 [![Doxygen](https://img.shields.io/badge/Doxygen-documentation-brightgreen.svg)](https://isciences.gitlab.io/exactextract)
 
