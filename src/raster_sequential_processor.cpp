@@ -1,6 +1,4 @@
-#include <memory>
-
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -16,6 +14,7 @@
 #include "raster_sequential_processor.h"
 
 #include <map>
+#include <memory>
 #include <set>
 
 namespace exactextract {
@@ -58,11 +57,11 @@ namespace exactextract {
                 vec->push_back(feature);
             }, &hits);
 
-            std::map<GDALRasterWrapper*, std::unique_ptr<Raster<double>>> raster_values;
+            std::map<RasterSource*, std::unique_ptr<AbstractRaster<double>>> raster_values;
 
             for (const auto &f : hits) {
                 std::unique_ptr<Raster<float>> coverage;
-                std::set<std::pair<GDALRasterWrapper*, GDALRasterWrapper*>> processed;
+                std::set<std::pair<RasterSource*, RasterSource*>> processed;
 
                 for (const auto &op : m_operations) {
                     // Avoid processing same values/weights for different stats
@@ -91,14 +90,14 @@ namespace exactextract {
                     // This may be possible when reading box is expanded slightly from floating-point roundoff problems.
                     auto values = raster_values[op.values].get();
                     if (values == nullptr) {
-                        raster_values[op.values] = std::make_unique<Raster<double>>(op.values->read_box(subgrid.extent().intersection(op.values->grid().extent())));
+                        raster_values[op.values] = op.values->read_box(subgrid.extent().intersection(op.values->grid().extent()));
                         values = raster_values[op.values].get();
                     }
 
                     if (op.weighted()) {
                         auto weights = raster_values[op.weights].get();
                         if (weights == nullptr) {
-                            raster_values[op.weights] = std::make_unique<Raster<double>>(op.weights->read_box(subgrid.extent().intersection(op.weights->grid().extent())));
+                            raster_values[op.weights] = op.weights->read_box(subgrid.extent().intersection(op.weights->grid().extent()));
                             weights = raster_values[op.weights].get();
                         }
 

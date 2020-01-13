@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -238,6 +238,24 @@ namespace exactextract {
         size_t m_rx;
         size_t m_ry;
     };
+
+
+    template<typename T>
+    std::ostream& operator<<(std::ostream & os, const AbstractRaster<T> & m) {
+        for (size_t i = 0; i < m.rows(); i++) {
+            for (size_t j = 0; j < m.cols(); j++) {
+                if (m(i, j) != 0) {
+                    os << std::right << std::fixed << std::setw(10) << std::setprecision(6) <<
+                       m(i, j) << " ";
+                } else {
+                    os << "           ";
+                }
+            }
+            os << std::endl;
+        }
+
+        return os;
+    }
 }
 
 #endif //EXACTEXTRACT_RASTER_H
