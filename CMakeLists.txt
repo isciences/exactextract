@@ -86,6 +86,7 @@ set(PROJECT_SOURCES
         src/output_writer.h
         src/output_writer.cpp
         src/operation.h
+        src/raster_source.h
         src/stats_registry.h
         src/utils.h
         src/utils.cpp

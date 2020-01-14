@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -25,7 +25,7 @@ namespace exactextract {
 
     class Operation {
     public:
-        Operation(std::string p_stat, std::string p_name, GDALRasterWrapper* p_values, GDALRasterWrapper* p_weights = nullptr) :
+        Operation(std::string p_stat, std::string p_name, RasterSource* p_values, RasterSource* p_weights = nullptr) :
                 stat{std::move(p_stat)},
                 name{std::move(p_name)},
                 values{p_values},
@@ -71,8 +71,8 @@ namespace exactextract {
 
         std::string stat;
         std::string name;
-        GDALRasterWrapper* values;
-        GDALRasterWrapper* weights;
+        RasterSource* values;
+        RasterSource* weights;
     };
 
 }

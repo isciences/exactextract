@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -33,7 +33,7 @@ namespace exactextract {
         m_band = band;
         m_nodata_value = nodata_value;
         m_has_nodata = static_cast<bool>(has_nodata);
-        m_name = filename;
+        set_name(filename);
         compute_raster_grid();
     }
     
@@ -44,11 +44,12 @@ namespace exactextract {
             GDALClose(m_rast);
     }
 
-    Raster<double> GDALRasterWrapper::read_box(const Box &box) {
+    std::unique_ptr<AbstractRaster<double>> GDALRasterWrapper::read_box(const Box &box) {
         auto cropped_grid = m_grid.shrink_to_fit(box);
-        Raster<double> vals(cropped_grid);
+        auto vals = std::make_unique<Raster<double>>(cropped_grid);
+
         if (m_has_nodata) {
-            vals.set_nodata(m_nodata_value);
+            vals->set_nodata(m_nodata_value);
         }
 
         auto error = GDALRasterIO(m_band,
@@ -57,7 +58,7 @@ namespace exactextract {
                                   (int) cropped_grid.row_offset(m_grid),
                                   (int) cropped_grid.cols(),
                                   (int) cropped_grid.rows(),
-                                  vals.data().data(),
+                                  vals->data().data(),
                                   (int) cropped_grid.cols(),
                                   (int) cropped_grid.rows(),
                                   GDT_Float64,

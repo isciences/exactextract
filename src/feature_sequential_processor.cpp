@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -43,7 +43,7 @@ namespace exactextract {
                 for (const auto &subgrid : subdivide(cropped_grid, m_max_cells_in_memory)) {
                     std::unique_ptr<Raster<float>> coverage;
 
-                    std::set<std::pair<GDALRasterWrapper*, GDALRasterWrapper*>> processed;
+                    std::set<std::pair<RasterSource*, RasterSource*>> processed;
 
                     for (const auto &op : m_operations) {
                         // TODO avoid reading same values/weights multiple times. Just use a map?
@@ -70,14 +70,14 @@ namespace exactextract {
                                     raster_cell_intersection(subgrid, m_geos_context, geom.get()));
                         }
 
-                        Raster<double> values = op.values->read_box(subgrid.extent().intersection(op.values->grid().extent()));
+                        auto values = op.values->read_box(subgrid.extent().intersection(op.values->grid().extent()));
 
                         if (op.weighted()) {
-                            Raster<double> weights = op.weights->read_box(subgrid.extent().intersection(op.weights->grid().extent()));
+                            auto weights = op.weights->read_box(subgrid.extent().intersection(op.weights->grid().extent()));
 
-                            m_reg.stats(name, op).process(*coverage, values, weights);
+                            m_reg.stats(name, op).process(*coverage, *values, *weights);
                         } else {
-                            m_reg.stats(name, op).process(*coverage, values);
+                            m_reg.stats(name, op).process(*coverage, *values);
                         }
 
                         progress();

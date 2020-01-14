@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -18,28 +18,22 @@
 #include "grid.h"
 #include "raster.h"
 
+#include "raster_source.h"
+
 namespace exactextract {
 
-    class GDALRasterWrapper {
+    class GDALRasterWrapper : public RasterSource {
 
     public:
         GDALRasterWrapper(const std::string &filename, int bandnum);
 
-        const Grid<bounded_extent> &grid() const {
+        const Grid<bounded_extent> &grid() const override {
             return m_grid;
         }
 
-        void set_name(const std::string & name) {
-            m_name = name;
-        }
+        std::unique_ptr<AbstractRaster<double>> read_box(const Box &box) override;
 
-        std::string name() const {
-            return m_name;
-        }
-
-        Raster<double> read_box(const Box &box);
-
-        ~GDALRasterWrapper();
+        ~GDALRasterWrapper() override;
 
         GDALRasterWrapper(const GDALRasterWrapper &) = delete;
         GDALRasterWrapper(GDALRasterWrapper &&) noexcept;
@@ -52,7 +46,6 @@ namespace exactextract {
         double m_nodata_value;
         bool m_has_nodata;
         Grid<bounded_extent> m_grid;
-        std::string m_name;
 
         void compute_raster_grid();
     };
