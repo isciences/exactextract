@@ -32,6 +32,8 @@ namespace exactextract {
 
         AbstractRaster(const Grid<bounded_extent> & ex, const T& nodata_val) : m_grid{ex}, m_nodata{nodata_val}, m_has_nodata{true}  {}
 
+        virtual ~AbstractRaster() = default;
+
         size_t rows() const {
             return m_grid.rows();
         }
