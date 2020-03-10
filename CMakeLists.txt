@@ -177,8 +177,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(PROJECT_SOURCES
-        src/area.cpp
-        src/area.h
+        src/measures.cpp
+        src/measures.h
         src/box.h
         src/box.cpp
         src/cell.cpp

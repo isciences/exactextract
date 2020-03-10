@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -31,24 +31,27 @@ namespace exactextract {
 
         RasterCellIntersection(const Grid<bounded_extent> &raster_grid, const Box & box);
 
-        size_t rows() const { return m_overlap_areas->rows(); }
+        size_t rows() const { return m_results->rows(); }
 
-        size_t cols() const { return m_overlap_areas->cols(); }
+        size_t cols() const { return m_results->cols(); }
 
-        const Matrix<float> &overlap_areas() const { return *m_overlap_areas; }
+        const Matrix<float> &results() const { return *m_results; }
 
         Grid<infinite_extent> m_geometry_grid;
     private:
         void process(GEOSContextHandle_t context, const GEOSGeometry *g);
 
-        void process_ring(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring);
+        void process_line(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring);
 
         void process_rectangular_ring(const Box & box, bool exterior_ring);
 
-        void add_ring_areas(size_t i0, size_t j0, const Matrix<float> &areas, bool exterior_ring);
+        void add_ring_results(size_t i0, size_t j0, const Matrix<float> &areas, bool exterior_ring);
 
-        std::unique_ptr<Matrix<float>> m_overlap_areas;
+        void set_areal(bool areal);
 
+        std::unique_ptr<Matrix<float>> m_results;
+        bool m_first_geom;
+        bool m_areal;
     };
 
     Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, GEOSContextHandle_t context, const GEOSGeometry* g);

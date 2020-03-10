@@ -14,6 +14,21 @@ void check_cell_intersections(Raster<float> & rci, const std::vector<std::vector
     REQUIRE( expected.rows() == actual.rows() );
     REQUIRE( expected.cols() == actual.cols() );
 
+    bool cell_values_match = true;
+
+    for (size_t i = 0; i < expected.rows(); i++) {
+        for (size_t j = 0; j < expected.cols(); j++) {
+            cell_values_match = cell_values_match && actual(i, j) == expected(i, j);
+        }
+    }
+
+    if (!cell_values_match) {
+        std::cerr << "Expected: " << std::endl;
+        std::cerr << expected;
+        std::cerr << "Actual: " << std::endl;
+        std::cerr << actual;
+    }
+
     for (size_t i = 0; i < expected.rows(); i++) {
         for (size_t j = 0; j < expected.cols(); j++) {
             CHECK ( actual(i, j) == expected(i, j) );
@@ -52,6 +67,22 @@ TEST_CASE("Basic rectangle", "[raster-cell-intersection]" ) {
     CHECK( rci == rci2 );
 }
 
+TEST_CASE("Basic rectangular line", "[raster-cell-intersection]" ) {
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
+
+    auto g = GEOSGeom_read_r(context, "LINESTRING (0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5)");
+
+    Raster<float> rci = raster_cell_intersection(ex, context, g.get());
+
+    check_cell_intersections(rci, {
+            {1.00, 1.00, 1.00},
+            {1.00,    0, 1.00},
+            {1.00, 1.00, 1.00}
+    });
+}
+
 TEST_CASE("Basic rectangle with GeometryCollection", "[raster-cell-intersection]" ) {
     GEOSContextHandle_t context = init_geos();
 
@@ -73,12 +104,12 @@ TEST_CASE("Basic rectangle with GeometryCollection", "[raster-cell-intersection]
     });
 }
 
-TEST_CASE("Non-polygonal geometry", "[raster-cell-intersection]") {
+TEST_CASE("Unsupported geometry", "[raster-cell-intersection]") {
     GEOSContextHandle_t context = init_geos();
 
     Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
 
-    auto g = GEOSGeom_read_r(context, "LINESTRING (0 0, 3 3)");
+    auto g = GEOSGeom_read_r(context, "POINT (0 0)");
 
     CHECK_THROWS_WITH(raster_cell_intersection(ex, context, g.get()),
                       "Unsupported geometry type.");
@@ -121,6 +152,43 @@ TEST_CASE("Small polygon optimization", "[raster-cell-intersection]") {
     CHECK( rci.ymax() == 1 );
 }
 
+TEST_CASE("Small line optimization", "[raster-cell-intersection]") {
+    auto context = init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
+
+    // small line entirely contained in a single cell
+    auto g = GEOSGeom_read_r(context, "LINESTRING (0.5 0.5, 0.6 0.5, 0.6 0.6, 0.5 0.5)");
+    double g_length;
+    CHECK( GEOSLength_r(context, g.get(), &g_length) );
+
+    auto rci = raster_cell_intersection(ex, context, g.get());
+
+    CHECK( rci.rows() == 1 );
+    CHECK( rci.cols() == 1 );
+    CHECK( rci(0, 0) == static_cast<float>(g_length) );
+    CHECK( rci.xmin() == 0 );
+    CHECK( rci.xmax() == 1 );
+    CHECK( rci.ymin() == 0 );
+    CHECK( rci.ymax() == 1 );
+}
+
+
+TEST_CASE("Basic line", "[raster-cell-intersection]") {
+    auto context = init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 3, 3, }, 1, 1}; //3x3 grid
+
+    auto g = GEOSGeom_read_r(context, "LINESTRING (0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5)");
+
+    Raster<float> rci = raster_cell_intersection(ex, context, g.get());
+
+    check_cell_intersections(rci, {
+        {0.50, 1.00, 1.00},
+        {   0, 0,    1.00},
+        {0.50, 1.00, 1.00}
+    });
+}
 
 TEST_CASE("Geometry extent larger than raster", "[raster-cell-intersection]") {
     GEOSContextHandle_t context = init_geos();

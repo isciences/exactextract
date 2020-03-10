@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 ISciences, LLC.
+// Copyright (c) 2018-2022 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -15,7 +15,7 @@
 
 #include <geos_c.h>
 
-#include "area.h"
+#include "measures.h"
 #include "cell.h"
 #include "floodfill.h"
 #include "geos_utils.h"
@@ -26,14 +26,14 @@ namespace exactextract {
     Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, GEOSContextHandle_t context, const GEOSGeometry* g) {
         RasterCellIntersection rci(raster_grid, context, g);
 
-        return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
+        return { std::move(const_cast<Matrix<float>&>(rci.results())),
                  make_finite(rci.m_geometry_grid) };
     }
 
     Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, const Box & box) {
         RasterCellIntersection rci(raster_grid, box);
 
-        return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
+        return { std::move(const_cast<Matrix<float>&>(rci.results())),
                  make_finite(rci.m_geometry_grid) };
     }
 
@@ -97,15 +97,22 @@ namespace exactextract {
 
     RasterCellIntersection::RasterCellIntersection(const Grid<bounded_extent> &raster_grid, GEOSContextHandle_t context, const GEOSGeometry *g)
         : m_geometry_grid{get_geometry_grid(raster_grid, context, g)},
-          m_overlap_areas{std::make_unique<Matrix<float>>(m_geometry_grid.rows() - 2, m_geometry_grid.cols() - 2)}
+          m_results{std::make_unique<Matrix<float>>(m_geometry_grid.rows() - 2, m_geometry_grid.cols() - 2)},
+          m_first_geom{true},
+          m_areal{false}
     {
-        if (!m_geometry_grid.empty())
+        if (GEOSGeom_getDimensions_r(context, g) == 0) {
+            throw std::invalid_argument("Unsupported geometry type.");
+        }
+
+        if (!m_geometry_grid.empty()) {
             process(context, g);
+        }
     }
 
     RasterCellIntersection::RasterCellIntersection(const Grid<bounded_extent> & raster_grid, const Box & box)
         : m_geometry_grid{get_geometry_grid(raster_grid, box)},
-          m_overlap_areas{std::make_unique<Matrix<float>>(m_geometry_grid.rows() - 2, m_geometry_grid.cols() - 2)} {
+          m_results{std::make_unique<Matrix<float>>(m_geometry_grid.rows() - 2, m_geometry_grid.cols() - 2)} {
         if (!m_geometry_grid.empty()) {
             process_rectangular_ring(box, true);
         }
@@ -115,12 +122,17 @@ namespace exactextract {
         auto type = GEOSGeomTypeId_r(context, g);
 
         if (type == GEOS_POLYGON) {
-            process_ring(context, GEOSGetExteriorRing_r(context, g), true);
+            set_areal(true);
 
+            process_line(context, GEOSGetExteriorRing_r(context, g), true);
             for (int i = 0; i < GEOSGetNumInteriorRings_r(context, g); i++) {
-                process_ring(context, GEOSGetInteriorRingN_r(context, g, i), false);
+                process_line(context, GEOSGetInteriorRingN_r(context, g, i), false);
             }
-        } else if (type == GEOS_MULTIPOLYGON || type == GEOS_GEOMETRYCOLLECTION) {
+        } else if (type == GEOS_LINESTRING || type == GEOS_LINEARRING) {
+            set_areal(false);
+
+            process_line(context, g, true);
+        } else if (type == GEOS_GEOMETRYCOLLECTION || type == GEOS_MULTILINESTRING || type == GEOS_MULTIPOLYGON) {
             for (int i = 0; i < GEOSGetNumGeometries_r(context, g); i++) {
                 process(context, GEOSGetGeometryN_r(context, g, i));
             }
@@ -137,6 +149,14 @@ namespace exactextract {
     static Grid<infinite_extent> get_ring_grid(GEOSContextHandle_t context, const GEOSGeometry* ls, const Grid<infinite_extent> & geometry_grid) {
         return get_box_grid(geos_get_box(context, ls), geometry_grid);
     }
+
+#if 0
+    static Grid<infinite_extent> get_ring_grid(GEOSContextHandle_t context, const GEOSGeometry* ls, const Grid<infinite_extent> & geometry_grid) {
+        Box cropped_ring_extent = geometry_grid.extent().intersection(geos_get_box(context, ls));
+        return geometry_grid.shrink_to_fit(cropped_ring_extent);
+    }
+#endif
+
 
     void RasterCellIntersection::process_rectangular_ring(const Box& box, bool exterior_ring) {
         if (!box.intersects(m_geometry_grid.extent())) {
@@ -224,10 +244,21 @@ namespace exactextract {
         size_t i0 = ring_grid.row_offset(m_geometry_grid);
         size_t j0 = ring_grid.col_offset(m_geometry_grid);
 
-        add_ring_areas(i0, j0, areas, exterior_ring);
+        add_ring_results(i0, j0, areas, exterior_ring);
     }
 
-    void RasterCellIntersection::process_ring(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring) {
+    void RasterCellIntersection::set_areal(bool areal) {
+        if (m_first_geom) {
+            m_first_geom = false;
+            m_areal = areal;
+        } else {
+            if (m_areal != areal) {
+                throw std::runtime_error("Mixed-type geometries not supported.");
+            }
+        }
+    }
+
+    void RasterCellIntersection::process_line(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring) {
         auto geom_box = geos_get_box(context, ls);
 
         if (!geom_box.intersects(m_geometry_grid.extent())) {
@@ -237,7 +268,7 @@ namespace exactextract {
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, ls);
         auto coords = read(context, seq);
 
-        if (coords.size() == 5) {
+        if (m_areal && coords.size() == 5) {
             if (area(coords) == geom_box.area()) {
                 process_rectangular_ring(geom_box, exterior_ring);
                 return;
@@ -249,30 +280,32 @@ namespace exactextract {
         size_t rows = ring_grid.rows();
         size_t cols = ring_grid.cols();
 
-        // Short circuit for small rings that are entirely contained
-        // within a single grid cell.
+        // Short circuit for small geometries that are entirely contained within a single grid cell.
         if (rows == (1 + 2*infinite_extent::padding) &&
             cols == (1 + 2*infinite_extent::padding) &&
             grid_cell(ring_grid, 1, 1).contains(geom_box)) {
 
-            auto ring_area = area(coords) / grid_cell(ring_grid, 1, 1).area();
-
             size_t i0 = ring_grid.row_offset(m_geometry_grid);
             size_t j0 = ring_grid.col_offset(m_geometry_grid);
 
-            if (exterior_ring) {
-                m_overlap_areas->increment(i0, j0, ring_area);
+            if (m_areal) {
+                auto ring_area = area(coords) / grid_cell(ring_grid, 1, 1).area();
+
+                if (exterior_ring) {
+                    m_results->increment(i0, j0, ring_area);
+                } else {
+                    m_results->increment(i0, j0, -1 * ring_area);
+                }
             } else {
-                m_overlap_areas->increment(i0, j0, -1 * ring_area);
+                m_results->increment(i0, j0, length(coords));
             }
 
             return;
         }
 
-        bool is_ccw = geos_is_ccw(context, seq);
         Matrix<std::unique_ptr<Cell>> cells(rows, cols);
 
-        if (!is_ccw) {
+        if (m_areal && !geos_is_ccw(context, seq)) {
             std::reverse(coords.begin(), coords.end());
         }
 
@@ -312,11 +345,11 @@ namespace exactextract {
             cell.force_exit();
 
             if (cell.last_traversal().exited()) {
-                // When we start in the middle of a cell, we need to save the coordinates
-                // from our incomplete traversal and reprocess them at the end of the line.
-                // The effect is just to restructure the polygon so that the start/end
-                // coordinate falls on a cell boundary.
-                if (!cell.last_traversal().traversed()) {
+                // When we start in the middle of a cell, for a polygon (areal) calculation,
+                // we need to save the coordinates from our incomplete traversal and reprocess
+                // them at the end of the line. The effect is just to restructure the polygon
+                // so that the start/end coordinate falls on a cell boundary.
+                if (m_areal && !cell.last_traversal().traversed()) {
                     for (const auto &coord : cell.last_traversal().coords()) {
                         coords.push_back(coord);
                     }
@@ -344,43 +377,55 @@ namespace exactextract {
         // Compute the fraction covered for all cells and assign it to
         // the area matrix
         // TODO avoid copying matrix when geometry has only one polygon, and polygon has only one ring
-        Matrix<float> areas(rows - 2, cols - 2, fill_values<float>::FILLABLE);
+        Matrix<float> areas(rows - 2, cols - 2, m_areal ? fill_values<float>::FILLABLE : fill_values<float>::EXTERIOR);
 
-        FloodFill ff(context, ls, make_finite(ring_grid));
+        if (m_areal) {
+            FloodFill ff(context, ls, make_finite(ring_grid));
 
-        for (size_t i = 1; i <= areas.rows(); i++) {
-            for (size_t j = 1; j <= areas.cols(); j++) {
-                if (cells(i, j) != nullptr) {
-                    // When we encounter a cell that has been processed (ie, it is not nullptr)
-                    // but has zero covered fraction, we have no way to know if that cell is on
-                    // the inside of the polygon. So we perform point-in-polygon test and set
-                    // the covered fraction to 1.0 if needed.
+            for (size_t i = 1; i <= areas.rows(); i++) {
+                for (size_t j = 1; j <= areas.cols(); j++) {
+                    if (cells(i, j) != nullptr) {
+                        // When we encounter a cell that has been processed (ie, it is not nullptr)
+                        // but has zero covered fraction, we have no way to know if that cell is on
+                        // the inside of the polygon. So we perform point-in-polygon test and set
+                        // the covered fraction to 1.0 if needed.
+                        auto frac = static_cast<float>(cells(i, j)->covered_fraction());
 
-                    auto frac = static_cast<float>(cells(i, j)->covered_fraction());
-                    if (frac == 0) {
-                        areas(i-1, j-1) = ff.cell_is_inside(i-1, j-1) ? fill_values<float>::INTERIOR : fill_values<float>::EXTERIOR;
-                    } else {
-                        areas(i-1, j-1) = frac;
+                        if (frac == 0) {
+                            areas(i-1, j-1) = ff.cell_is_inside(i-1, j-1) ? fill_values<float>::INTERIOR : fill_values<float>::EXTERIOR;
+                        } else {
+                            areas(i - 1, j - 1) = frac;
+                        }
+                    }
+                }
+            }
+
+            ff.flood(areas);
+        } else {
+            for (size_t i = 1; i <= areas.rows(); i++) {
+                for (size_t j = 1; j <= areas.cols(); j++) {
+                    if (cells(i, j) != nullptr) {
+                        areas(i - 1, j - 1) = static_cast<float>(cells(i, j)->traversal_length());
                     }
                 }
             }
         }
 
-        ff.flood(areas);
+
 
         // Transfer these areas to our global set
         size_t i0 = ring_grid.row_offset(m_geometry_grid);
         size_t j0 = ring_grid.col_offset(m_geometry_grid);
 
-        add_ring_areas(i0, j0, areas, exterior_ring);
+        add_ring_results(i0, j0, areas, exterior_ring || !m_areal);
     }
 
-    void RasterCellIntersection::add_ring_areas(size_t i0, size_t j0, const Matrix<float> &areas, bool exterior_ring) {
+    void RasterCellIntersection::add_ring_results(size_t i0, size_t j0, const Matrix<float> &areas, bool exterior_ring) {
         int factor = exterior_ring ? 1 : -1;
 
         for (size_t i = 0; i < areas.rows(); i++) {
             for (size_t j = 0; j < areas.cols(); j++) {
-                m_overlap_areas->increment(i0 + i, j0 + j, factor * areas(i, j));
+                m_results->increment(i0 + i, j0 + j, factor * areas(i, j));
             }
         }
     }
