@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -231,17 +231,30 @@ namespace exactextract {
         // Compute the fraction covered for all cells and assign it to
         // the area matrix
         // TODO avoid copying matrix when geometry has only one polygon, and polygon has only one ring
-        Matrix<float> areas(rows - 2, cols - 2);
+        Matrix<float> areas(rows - 2, cols - 2, fill_values<float>::FILLABLE);
+
+        FloodFill ff(context, ls, make_finite(ring_grid));
 
         for (size_t i = 1; i <= areas.rows(); i++) {
             for (size_t j = 1; j <= areas.cols(); j++) {
                 if (cells(i, j) != nullptr) {
-                    areas(i-1, j-1) = (float) cells(i, j)->covered_fraction();
+                    // When we encounter a cell that has been processed (ie, it is not nullptr)
+                    // but has zero covered fraction, we have no way to know if that cell is on
+                    // the inside of the polygon. However, we do know that it is on the boundary
+                    // of the polygon, and we cannot allow a flood fill to pass through it. So
+                    // we set the value to UNKNOWN, which will both force a point-in-polygon
+                    // test and block a flood fill.
+
+                    auto frac = static_cast<float>(cells(i, j)->covered_fraction());
+                    if (frac == 0) {
+                        areas(i-1, j-1) = ff.cell_is_inside(i-1, j-1) ? fill_values<float>::INTERIOR : fill_values<float>::EXTERIOR;
+                    } else {
+                        areas(i-1, j-1) = frac;
+                    }
                 }
             }
         }
 
-        FloodFill ff(context, ls, make_finite(ring_grid));
         ff.flood(areas);
 
         // Transfer these areas to our global set

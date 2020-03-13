@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -33,8 +33,21 @@ class Matrix {
             m_cols{cols}
         {
             if (m_rows > 0 && m_cols > 0) {
+                // new T[]() initializes to zero
                 m_data = std::unique_ptr<T[]>(new T[m_rows * m_cols]());
             }
+        }
+
+        Matrix(size_t rows, size_t cols, T value) :
+                m_rows{rows},
+                m_cols{cols}
+        {
+            if (m_rows > 0 && m_cols > 0) {
+                // new T[] does not initialize
+                m_data = std::unique_ptr<T[]>(new T[m_rows * m_cols]);
+            }
+
+            std::fill(m_data.get(), m_data.get() + m_rows*m_cols, value);
         }
 
         explicit Matrix(const std::vector<std::vector<T>> & data) :
