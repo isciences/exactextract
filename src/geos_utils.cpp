@@ -216,45 +216,4 @@ namespace exactextract {
         return coords;
     }
 
-    SegmentOrientation initial_segment_orientation(GEOSContextHandle_t context, const GEOSCoordSequence *s) {
-        double x0, y0;
-        double xn, yn;
-        unsigned int size;
-
-        if (!GEOSCoordSeq_getSize_r(context, s, &size)) {
-            throw std::runtime_error("Error calling GEOSCoordSeq_getSize.");
-        }
-
-        if (!GEOSCoordSeq_getX_r(context, s, 0, &x0) || !GEOSCoordSeq_getY_r(context, s, 0, &y0)) {
-            throw std::runtime_error("Error reading coordinates.");
-        }
-
-        for (unsigned int i = 1; i < size; i++) {
-            if (!GEOSCoordSeq_getX_r(context, s, i, &xn) || !GEOSCoordSeq_getY_r(context, s, i, &yn)) {
-                throw std::runtime_error("Error reading coordinates.");
-            }
-
-            if (xn != x0 || yn != y0) {
-                if (xn == x0) {
-                    if (yn > y0) {
-                        return SegmentOrientation::VERTICAL_UP;
-                    } else {
-                        return SegmentOrientation::VERTICAL_DOWN;
-                    }
-                }
-                if (yn == y0) {
-                    if (xn > x0) {
-                        return SegmentOrientation::HORIZONTAL_RIGHT;
-                    } else {
-                        return SegmentOrientation::HORIZONTAL_LEFT;
-                    }
-                }
-
-                return SegmentOrientation::ANGLED;
-            }
-        }
-
-        throw std::runtime_error("Couldn't find segment orientation.");
-    }
-
 }

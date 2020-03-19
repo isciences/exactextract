@@ -19,7 +19,6 @@
 #include "floodfill.h"
 #include "geos_utils.h"
 #include "raster_cell_intersection.h"
-#include "segment_orientation.h"
 
 namespace exactextract {
 
@@ -143,38 +142,6 @@ namespace exactextract {
         size_t row = ring_grid.get_row(stk.front().y);
         size_t col = ring_grid.get_column(stk.front().x);
 
-        // A point lying exactly on a cell boundary could be considered to be
-        // within either of the adjoining cells. This is fine unless the initial
-        // segment of the ring is horizontal or vertical. In this case, we need
-        // to nudge the point into the "inward" cell so that, if the initial segment
-        // completely traverses the cell, we will have a traversal with a filled fraction
-        // of 1.0 rather than a traversal with a filled fraction of 0.0. Leaving a traversal
-        // with a filled fraction of 0.0 could allow a subsequent flood fill to penetrate
-        // the interior of our polygon. If we are already at the edge of a grid, it's not possible
-        // to nudge the point into the next cell, but we don't need to since there's no
-        // possibility of a flood fill penetrating from this direction.
-        SegmentOrientation iso = initial_segment_orientation(context, seq);
-        if (iso != SegmentOrientation::ANGLED) {
-            Box b = grid_cell(ring_grid, row, col);
-
-            if (iso == SegmentOrientation::HORIZONTAL_RIGHT && stk.front().y == b.ymax && row > 0) {
-                // Move up
-                row--;
-            }
-            if (iso == SegmentOrientation::HORIZONTAL_LEFT && stk.front().y == b.ymin && (row + 1) < rows) {
-                // Move down
-                row++;
-            }
-            if (iso == SegmentOrientation::VERTICAL_DOWN && stk.front().x == b.xmax && (col + 1) < cols) {
-                // Move right
-                col++;
-            }
-            if (iso == SegmentOrientation::VERTICAL_UP && stk.front().x == b.xmin && col > 0) {
-                // Move left
-                col--;
-            }
-        }
-
         while (!stk.empty()) {
             Cell &cell = *get_cell(cells, ring_grid, row, col);
 
@@ -240,10 +207,8 @@ namespace exactextract {
                 if (cells(i, j) != nullptr) {
                     // When we encounter a cell that has been processed (ie, it is not nullptr)
                     // but has zero covered fraction, we have no way to know if that cell is on
-                    // the inside of the polygon. However, we do know that it is on the boundary
-                    // of the polygon, and we cannot allow a flood fill to pass through it. So
-                    // we set the value to UNKNOWN, which will both force a point-in-polygon
-                    // test and block a flood fill.
+                    // the inside of the polygon. So we perform point-in-polygon test and set
+                    // the covered fraction to 1.0 if needed.
 
                     auto frac = static_cast<float>(cells(i, j)->covered_fraction());
                     if (frac == 0) {

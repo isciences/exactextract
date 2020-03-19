@@ -76,7 +76,6 @@ set(PROJECT_SOURCES
         src/raster_cell_intersection.cpp
         src/raster_cell_intersection.h
         src/raster_stats.h
-        src/segment_orientation.h
         src/side.cpp
         src/side.h
         src/traversal.cpp
