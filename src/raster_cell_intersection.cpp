@@ -127,9 +127,15 @@ namespace exactextract {
 
             for (unsigned int i = 0; i < npoints; i++) {
                 double x, y;
+#if HAVE_380
+                if (!GEOSCoordSeq_getXY_r(context, seq, i, &x, &y)) {
+                    throw std::runtime_error("Error reading coordinates.");
+                }
+#else
                 if (!GEOSCoordSeq_getX_r(context, seq, i, &x) || !GEOSCoordSeq_getY_r(context, seq, i, &y)) {
                     throw std::runtime_error("Error reading coordinates.");
                 }
+#endif
 
                 if (is_ccw) {
                     stk.emplace_back(x, y);

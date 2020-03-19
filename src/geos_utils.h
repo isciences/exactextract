@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -24,6 +24,7 @@
 #include <geos_c.h>
 
 #define HAVE_370 (GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 7)
+#define HAVE_380 (GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8)
 
 #include "box.h"
 #include "coordinate.h"
@@ -63,10 +64,14 @@ namespace exactextract {
 
     inline geom_ptr_r
     GEOSGeom_createPoint_ptr(GEOSContextHandle_t context, double x, double y) {
+#if HAVE_380
+        return geos_ptr(context, GEOSGeom_createPointFromXY_r(context, x, y));
+#else
         auto seq = GEOSCoordSeq_create_ptr(context, 1, 2);
         GEOSCoordSeq_setX_r(context, seq.get(), 0, x);
         GEOSCoordSeq_setY_r(context, seq.get(), 0, y);
         return geos_ptr(context, GEOSGeom_createPoint_r(context, seq.release()));
+#endif
     }
 
     inline geom_ptr_r
