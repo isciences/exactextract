@@ -27,7 +27,6 @@
 
 #include "box.h"
 #include "coordinate.h"
-#include "segment_orientation.h"
 
 namespace exactextract {
 
@@ -99,8 +98,6 @@ namespace exactextract {
     bool geos_is_ccw(GEOSContextHandle_t context, const GEOSCoordSequence *s);
 
     std::vector<Coordinate> read(GEOSContextHandle_t context, const GEOSCoordSequence *s);
-
-    SegmentOrientation initial_segment_orientation(GEOSContextHandle_t context, const GEOSCoordSequence *s);
 
 }
 

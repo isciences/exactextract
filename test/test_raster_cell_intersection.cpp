@@ -369,7 +369,6 @@ TEST_CASE("Robustness regression test #1", "[raster-cell-intersection]") {
     auto g = GEOSGeom_read_r(context,
 #include "resources/antarctica.wkt"
             );
-
     CHECK_NOTHROW( RasterCellIntersection(ex, context, g.get()) );
 }
 
@@ -419,6 +418,30 @@ TEST_CASE("Robustness regression test #5", "[raster-cell-intersection]") {
     g.reset(GEOSBuffer_r(context, g.get(), 1, 30));
 
     CHECK_NOTHROW( raster_cell_intersection(ex, context, g.get()) );
+}
+
+TEST_CASE("Robustness regression test #6", "[raster-cell-intersection]") {
+    auto context = init_geos();
+
+    Grid<bounded_extent> ex{{145.925, -35.525, 147.375, -33.475}, 0.05, 0.05};
+
+    auto g = GEOSGeom_read_r(context,
+#include "resources/regression6.wkt"
+    );
+    auto result = raster_cell_intersection(ex, context, g.get());
+
+    decltype(result)::value_type tot = 0;
+
+    for (size_t i = 0; i < result.rows(); i++) {
+        for (size_t j = 0; j < result.cols(); j++) {
+            tot += result(i, j);
+            if (result(i, j) < 0 || result(i, j) > 1) {
+                FAIL();
+            }
+        }
+    }
+
+    CHECK( tot == 823.0 );
 }
 
 TEST_CASE("Processing region is empty when there are no polygons") {

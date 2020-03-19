@@ -48,33 +48,3 @@ TEST_CASE("Segment intersection", "[geos]") {
     finishGEOS_r(context);
 }
 
-TEST_CASE("Segment orientation", "[geos]") {
-    GEOSContextHandle_t context = initGEOS_r(nullptr, nullptr);
-
-    auto right = GEOSGeom_read_r(context, "LINESTRING (0 0, 1 0, 1 1)");
-    auto left = GEOSGeom_read_r(context, "LINESTRING (1 0, 0 0, 1 1)");
-    auto up = GEOSGeom_read_r(context, "LINESTRING (0 0, 0 1, 1 1)");
-    auto down = GEOSGeom_read_r(context, "LINESTRING (0 0, 0 -1, 1 1)");
-    auto repeated = GEOSGeom_read_r(context, "LINESTRING (0 0, 0 0, 0 1, 1 1)");
-    auto angled = GEOSGeom_read_r(context, "LINESTRING (0 0, 1 1, 1 2)");
-
-    CHECK( initial_segment_orientation(context, GEOSGeom_getCoordSeq_r(context, right.get()))
-           == SegmentOrientation::HORIZONTAL_RIGHT );
-
-    CHECK( initial_segment_orientation(context, GEOSGeom_getCoordSeq_r(context, left.get()))
-           == SegmentOrientation::HORIZONTAL_LEFT );
-
-    CHECK( initial_segment_orientation(context, GEOSGeom_getCoordSeq_r(context, up.get()))
-           == SegmentOrientation::VERTICAL_UP );
-
-    CHECK( initial_segment_orientation(context, GEOSGeom_getCoordSeq_r(context, down.get()))
-           == SegmentOrientation::VERTICAL_DOWN );
-
-    CHECK( initial_segment_orientation(context, GEOSGeom_getCoordSeq_r(context, repeated.get()))
-           == SegmentOrientation::VERTICAL_UP );
-
-    CHECK( initial_segment_orientation(context, GEOSGeom_getCoordSeq_r(context, angled.get()))
-           == SegmentOrientation::ANGLED );
-
-    finishGEOS_r(context);
-}

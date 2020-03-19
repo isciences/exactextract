@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -19,7 +19,6 @@
 #include "floodfill.h"
 #include "geos_utils.h"
 #include "raster_cell_intersection.h"
-#include "segment_orientation.h"
 
 namespace exactextract {
 
@@ -143,38 +142,6 @@ namespace exactextract {
         size_t row = ring_grid.get_row(stk.front().y);
         size_t col = ring_grid.get_column(stk.front().x);
 
-        // A point lying exactly on a cell boundary could be considered to be
-        // within either of the adjoining cells. This is fine unless the initial
-        // segment of the ring is horizontal or vertical. In this case, we need
-        // to nudge the point into the "inward" cell so that, if the initial segment
-        // completely traverses the cell, we will have a traversal with a filled fraction
-        // of 1.0 rather than a traversal with a filled fraction of 0.0. Leaving a traversal
-        // with a filled fraction of 0.0 could allow a subsequent flood fill to penetrate
-        // the interior of our polygon. If we are already at the edge of a grid, it's not possible
-        // to nudge the point into the next cell, but we don't need to since there's no
-        // possibility of a flood fill penetrating from this direction.
-        SegmentOrientation iso = initial_segment_orientation(context, seq);
-        if (iso != SegmentOrientation::ANGLED) {
-            Box b = grid_cell(ring_grid, row, col);
-
-            if (iso == SegmentOrientation::HORIZONTAL_RIGHT && stk.front().y == b.ymax && row > 0) {
-                // Move up
-                row--;
-            }
-            if (iso == SegmentOrientation::HORIZONTAL_LEFT && stk.front().y == b.ymin && (row + 1) < rows) {
-                // Move down
-                row++;
-            }
-            if (iso == SegmentOrientation::VERTICAL_DOWN && stk.front().x == b.xmax && (col + 1) < cols) {
-                // Move right
-                col++;
-            }
-            if (iso == SegmentOrientation::VERTICAL_UP && stk.front().x == b.xmin && col > 0) {
-                // Move left
-                col--;
-            }
-        }
-
         while (!stk.empty()) {
             Cell &cell = *get_cell(cells, ring_grid, row, col);
 
@@ -231,17 +198,28 @@ namespace exactextract {
         // Compute the fraction covered for all cells and assign it to
         // the area matrix
         // TODO avoid copying matrix when geometry has only one polygon, and polygon has only one ring
-        Matrix<float> areas(rows - 2, cols - 2);
+        Matrix<float> areas(rows - 2, cols - 2, fill_values<float>::FILLABLE);
+
+        FloodFill ff(context, ls, make_finite(ring_grid));
 
         for (size_t i = 1; i <= areas.rows(); i++) {
             for (size_t j = 1; j <= areas.cols(); j++) {
                 if (cells(i, j) != nullptr) {
-                    areas(i-1, j-1) = (float) cells(i, j)->covered_fraction();
+                    // When we encounter a cell that has been processed (ie, it is not nullptr)
+                    // but has zero covered fraction, we have no way to know if that cell is on
+                    // the inside of the polygon. So we perform point-in-polygon test and set
+                    // the covered fraction to 1.0 if needed.
+
+                    auto frac = static_cast<float>(cells(i, j)->covered_fraction());
+                    if (frac == 0) {
+                        areas(i-1, j-1) = ff.cell_is_inside(i-1, j-1) ? fill_values<float>::INTERIOR : fill_values<float>::EXTERIOR;
+                    } else {
+                        areas(i-1, j-1) = frac;
+                    }
                 }
             }
         }
 
-        FloodFill ff(context, ls, make_finite(ring_grid));
         ff.flood(areas);
 
         // Transfer these areas to our global set

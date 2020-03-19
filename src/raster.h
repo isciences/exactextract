@@ -24,6 +24,8 @@ namespace exactextract {
     template<typename T>
     class AbstractRaster {
     public:
+        using value_type = T;
+
         explicit AbstractRaster(const Grid<bounded_extent> & ex) :
             m_grid{ex},
             m_nodata{std::is_floating_point<T>::value ? std::numeric_limits<T>::quiet_NaN() : std::numeric_limits<T>::min()},
