@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -57,8 +57,11 @@ namespace exactextract {
         }
 
         void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const AbstractRaster<T> & weights) {
-            auto common = rast.grid().overlapping_grid(weights.grid());
-            common = common.overlapping_grid(intersection_percentages.grid());
+            // Process the entire intersection_percentages grid, even though it may
+            // be outside the extent of the weighting raster. Although we've been
+            // provided a weighting raster, we still need to calculate correct values
+            // for unweighted stats.
+            auto& common = intersection_percentages.grid();
 
             if (common.empty())
                 return;

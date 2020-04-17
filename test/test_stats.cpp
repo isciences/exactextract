@@ -181,7 +181,7 @@ namespace exactextract {
             CHECK( std::isnan(stats.weighted_mean()) );
         }
 
-        SECTION("All velues defined, no weights defined") {
+        SECTION("All values defined, no weights defined") {
             // Example application: precipitation over polygon in the middle of continent
             RasterStats<TestType> stats{true};
             stats.process(areas, all_values_defined);
@@ -272,5 +272,34 @@ namespace exactextract {
             CHECK( std::isnan(stats.weighted_sum()) );
             CHECK( std::isnan(stats.weighted_mean()) );
         }
+    }
+
+    TEST_CASE("Unweighted stats consider all values when part of polygon is inside value raster but outside weighting raster") {
+        GEOSContextHandle_t context = init_geos();
+
+        RasterStats<double> weighted_stats{true};
+        RasterStats<double> unweighted_stats{true};
+
+        Grid<bounded_extent> values_grid{{0, 0, 5, 5}, 1, 1}; // 5x5 grid
+        Grid<bounded_extent> weights_grid{{0, 2, 5, 5}, 1, 1}; // 3x3 grid
+
+        auto g = GEOSGeom_read_r(context, "POLYGON ((0.5 0.5, 3.5 0.5, 3.5 3.5, 0.5 3.5, 0.5 0.5))");
+
+        auto common_grid = values_grid.common_grid(weights_grid);
+
+        Raster<float> areas = raster_cell_intersection(common_grid, context, g.get());
+        Raster<double> values(values_grid);
+        Raster<double> weights(weights_grid);
+        fill_by_row(values, 1.0, 1.0);
+        fill_by_row(weights, 0.1, 0.05);
+
+        weighted_stats.process(areas, values, weights);
+        unweighted_stats.process(areas, values);
+
+        CHECK( weighted_stats.count() == unweighted_stats.count() );
+        CHECK( weighted_stats.max() == unweighted_stats.max() );
+        CHECK( weighted_stats.mean() == unweighted_stats.mean() );
+        CHECK( weighted_stats.min() == unweighted_stats.min() );
+        CHECK( weighted_stats.sum() == unweighted_stats.sum() );
     }
 }
