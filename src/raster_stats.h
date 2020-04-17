@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -15,6 +15,7 @@
 #define EXACTEXTRACT_RASTER_STATS_H
 
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <unordered_map>
 
@@ -57,8 +58,11 @@ namespace exactextract {
         }
 
         void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast, const AbstractRaster<T> & weights) {
-            auto common = rast.grid().overlapping_grid(weights.grid());
-            common = common.overlapping_grid(intersection_percentages.grid());
+            // Process the entire intersection_percentages grid, even though it may
+            // be outside the extent of the weighting raster. Although we've been
+            // provided a weighting raster, we still need to calculate correct values
+            // for unweighted stats.
+            auto& common = intersection_percentages.grid();
 
             if (common.empty())
                 return;
@@ -224,6 +228,10 @@ namespace exactextract {
             return m_freq.size();
         }
 
+        bool stores_values() const {
+            return m_store_values;
+        }
+
     private:
         T m_min;
         T m_max;
@@ -261,6 +269,57 @@ namespace exactextract {
                 m_freq[val] += coverage;
         }
     };
+
+    template<typename T>
+    std::ostream& operator<<(std::ostream& os, const RasterStats<T> & stats) {
+        os << "{" << std::endl;
+        os << "  \"count\" : " << stats.count() << "," << std::endl;
+
+        os << "  \"min\" : ";
+        if (stats.min().has_value()) {
+            os << stats.min().value();
+        } else {
+            os << "null";
+        }
+        os << "," << std::endl;
+
+        os << "  \"max\" : ";
+        if (stats.max().has_value()) {
+            os << stats.max().value();
+        } else {
+            os << "null";
+        }
+        os << "," << std::endl;
+
+        os << "  \"mean\" : " << stats.mean() << "," << std::endl;
+        os << "  \"sum\" : " << stats.sum() << "," << std::endl;
+        os << "  \"weighted_mean\" : " << stats.weighted_mean() << "," << std::endl;
+        os << "  \"weighted_sum\" : " << stats.weighted_sum();
+        if (stats.stores_values()) {
+            os << "," << std::endl;
+            os << "  \"mode\" : ";
+            if (stats.mode().has_value()) {
+                os << stats.mode().value();
+            } else {
+                os << "null";
+            }
+            os << "," << std::endl;
+
+            os << "  \"minority\" : ";
+            if (stats.minority().has_value()) {
+                os << stats.minority().value();
+            } else {
+                os << "null";
+            }
+            os << "," << std::endl;
+
+            os << "  \"variety\" : " << stats.variety() << std::endl;
+        } else {
+            os << std::endl;
+        }
+        os << "}" << std::endl;
+        return os;
+    }
 
 }
 
