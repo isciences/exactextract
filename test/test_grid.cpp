@@ -158,6 +158,10 @@ TEST_CASE("Cropping", "[grid]") {
 
     // The cropping code hits a special case when the new xmax/ymin falls exactly on a cell boundary
     CHECK( grid.crop({2, 2, 8, 8}) == Grid<bounded_extent>{{2, 2, 8, 8}, 0.5, 0.5} );
+
+    // Cropping to a box outside the extent of the grid produces an empty grid
+    CHECK( grid.crop({200, 200, 300, 300}) == Grid<bounded_extent>::make_empty() );
+    CHECK( grid.crop({100, 100, 200, 100}) == Grid<bounded_extent>::make_empty() );
 }
 
 TEST_CASE("Cropping robustness", "[grid]") {

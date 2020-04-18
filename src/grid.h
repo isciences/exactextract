@@ -107,7 +107,7 @@ namespace exactextract {
 
         double dy() const { return m_dy; }
 
-        Box extent() const { return m_extent; }
+        const Box& extent() const { return m_extent; }
 
         size_t row_offset(const Grid & other) const { return static_cast<size_t>(std::round(std::abs(other.m_extent.ymax - m_extent.ymax) / m_dy)); }
 
@@ -118,7 +118,11 @@ namespace exactextract {
         double y_for_row(size_t row) const { return m_extent.ymax - ((row - extent_tag::padding) + 0.5) * m_dy; }
 
         Grid<extent_tag> crop(const Box & b) const {
-            return shrink_to_fit(b.intersection(extent()));
+            if (extent().intersects(b)) {
+                return shrink_to_fit(b.intersection(extent()));
+            } else {
+                return make_empty();
+            }
         }
 
         Grid<extent_tag> shrink_to_fit(const Box & b) const {
