@@ -12,4 +12,4 @@ RUN mkdir /cmake-build-release && \
     make install && \
     rm -rf /cmake-build-release
 
-ENTRYPOINT exactextract
+ENTRYPOINT ["exactextract"]
