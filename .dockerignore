@@ -1,1 +1,7 @@
+*.swo
+*.swp
+.dockerignore
+.git
+.gitignore
+callgrind.out.*
 cmake-build-*
