@@ -89,6 +89,7 @@ set(PROJECT_SOURCES
         src/stats_registry.h
         src/utils.h
         src/utils.cpp
+        src/variance.h
         vend/optional.hpp)
 
 set(TEST_SOURCES

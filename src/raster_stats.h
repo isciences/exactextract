@@ -20,6 +20,7 @@
 #include <unordered_map>
 
 #include "raster_cell_intersection.h"
+#include "variance.h"
 
 #include "../vend/optional.hpp"
 
@@ -188,6 +189,35 @@ namespace exactextract {
         }
 
         /**
+         * The population variance of raster cells touched
+         * by the polygon. Cell coverage fractions are taken
+         * into account; values of a weighting raster are not.
+         */
+        float variance() const {
+            return static_cast<float>(m_variance.variance());
+        }
+
+        /**
+         * The population standard deviation of raster cells
+         * touched by the polygon. Cell coverage fractions
+         * are taken into account; values of a weighting
+         * raster are not.
+         */
+        float stdev() const {
+            return static_cast<float>(m_variance.stdev());
+        }
+
+        /**
+         * The population coefficient of variation of raster
+         * cells touched by the polygon. Cell coverage fractions
+         * are taken into account; values of a weighting
+         * raster are not.
+         */
+        float coefficient_of_variation() const {
+            return static_cast<float>(m_variance.coefficent_of_variation());
+        }
+
+        /**
          * The sum of weights for each cell covered by the
          * polygon, with each weight multiplied by the coverage
          * coverage fraction of each cell.
@@ -243,6 +273,7 @@ namespace exactextract {
         double m_sum_ci;
         double m_sum_xici;
         double m_sum_xiciwi;
+        WestVariance m_variance;
 
         std::unordered_map<T, float> m_freq;
 
@@ -251,6 +282,8 @@ namespace exactextract {
         void process_value(const T& val, float coverage, double weight) {
             m_sum_ci += static_cast<double>(coverage);
             m_sum_xici += val*static_cast<double>(coverage);
+
+            m_variance.process(val, coverage);
 
             double ciwi = static_cast<double>(coverage)*weight;
             m_sum_ciwi += ciwi;
@@ -320,6 +353,7 @@ namespace exactextract {
         os << "}" << std::endl;
         return os;
     }
+
 
 }
 
