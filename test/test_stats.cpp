@@ -6,6 +6,7 @@
 #include "grid.h"
 #include "raster_cell_intersection.h"
 #include "raster_stats.h"
+#include "variance.h"
 #include "geos_utils.h"
 
 using Catch::Detail::Approx;
@@ -173,6 +174,9 @@ namespace exactextract {
             CHECK( !stats.min().has_value() );
             CHECK( !stats.max().has_value() );
             CHECK( std::isnan(stats.mean()) );
+            CHECK( std::isnan(stats.variance()) );
+            CHECK( std::isnan(stats.stdev()) );
+            CHECK( std::isnan(stats.coefficient_of_variation()) );
             CHECK( !stats.mode().has_value() );
             CHECK( !stats.minority().has_value() );
             CHECK( stats.variety() == 0 );
@@ -193,6 +197,9 @@ namespace exactextract {
             CHECK( stats.mean() == 2.5f );
             CHECK( stats.mode() == 4.0f );
             CHECK( stats.minority() == 1.0f );
+            CHECK( stats.variance() == 1.25f );
+            CHECK( stats.stdev() == 1.118034f );
+            CHECK( stats.coefficient_of_variation() == 0.4472136f );
             CHECK( stats.weighted_count() == stats.count() );
             CHECK( stats.weighted_sum() == stats.sum() );
             CHECK( stats.weighted_mean() == stats.mean() );
@@ -207,9 +214,12 @@ namespace exactextract {
             CHECK( stats.sum() == 0.75f );
             CHECK( stats.min() == 1.0f );
             CHECK( stats.max() == 2.0f );
-            CHECK( stats.mean() > 0.5f );
+            CHECK( stats.mean() == 1.5f );
             CHECK( stats.mode() == 2.0f );
             CHECK( stats.minority() == 1.0f );
+            CHECK( stats.variance() == 0.25f );
+            CHECK( stats.stdev() == 0.5f );
+            CHECK( stats.coefficient_of_variation() == Approx(0.333333f) );
             CHECK( stats.weighted_count() == stats.count() );
             CHECK( stats.weighted_sum() == stats.sum() );
             CHECK( stats.weighted_mean() == stats.mean() );
@@ -225,6 +235,9 @@ namespace exactextract {
             CHECK( !stats.min().has_value() );
             CHECK( !stats.max().has_value() );
             CHECK( std::isnan(stats.mean()) );
+            CHECK( std::isnan(stats.variance()) );
+            CHECK( std::isnan(stats.stdev()) );
+            CHECK( std::isnan(stats.coefficient_of_variation()) );
             CHECK( stats.weighted_count() == stats.count() );
             CHECK( stats.weighted_sum() == stats.sum() );
             CHECK( std::isnan(stats.weighted_mean()) );
@@ -239,6 +252,9 @@ namespace exactextract {
             CHECK( !stats.min().has_value() );
             CHECK( !stats.max().has_value() );
             CHECK( std::isnan(stats.mean()) );
+            CHECK( std::isnan(stats.variance()) );
+            CHECK( std::isnan(stats.stdev()) );
+            CHECK( std::isnan(stats.coefficient_of_variation()) );
             CHECK( stats.weighted_count() == 0 );
             CHECK( stats.weighted_sum() == 0 );
             CHECK( std::isnan(stats.weighted_mean()) );
@@ -254,6 +270,9 @@ namespace exactextract {
             CHECK( stats.min() == 1.0f );
             CHECK( stats.max() == 4.0f );
             CHECK( stats.mean() == 2.5f );
+            CHECK( stats.variance() == 1.25f );
+            CHECK( stats.stdev() == 1.118034f );
+            CHECK( stats.coefficient_of_variation() == 0.4472136f );
             CHECK( std::isnan(stats.weighted_count()) );
             CHECK( std::isnan(stats.weighted_sum()) );
             CHECK( std::isnan(stats.weighted_mean()) );
@@ -268,6 +287,9 @@ namespace exactextract {
             CHECK( stats.min() == 1.0f );
             CHECK( stats.max() == 4.0f );
             CHECK( stats.mean() == 2.5f );
+            CHECK( stats.variance() == 1.25f );
+            CHECK( stats.stdev() == 1.118034f );
+            CHECK( stats.coefficient_of_variation() == 0.4472136f );
             CHECK( std::isnan(stats.weighted_count()) );
             CHECK( std::isnan(stats.weighted_sum()) );
             CHECK( std::isnan(stats.weighted_mean()) );
@@ -302,4 +324,31 @@ namespace exactextract {
         CHECK( weighted_stats.min() == unweighted_stats.min() );
         CHECK( weighted_stats.sum() == unweighted_stats.sum() );
     }
+
+    TEST_CASE("Variance calculations are correct for equally-weighted observations") {
+        std::vector<double> values{3.4, 2.9, 1.7, 8.8, -12.7, 100.4, 8.4, 11.3};
+
+        WestVariance wv;
+        for (const auto& x : values) {
+            wv.process(x, 3.0);
+        }
+
+        CHECK( wv.stdev() == Approx(32.80967) ); //
+        CHECK( wv.variance() == Approx(1076.474) );
+        CHECK( wv.coefficent_of_variation() == Approx(2.113344) );
+    };
+
+    TEST_CASE("Variance calculations are correct for unequally-weighted observations") {
+        std::vector<double> values{3.4, 2.9, 1.7,  8.8, -12.7, 100.4, 8.4, 11.3, 50};
+        std::vector<double> weights{1.0, 0.1, 1.0, 0.2,  0.44,   0.3, 0.3, 0.83,  0};
+
+        WestVariance wv;
+        for (size_t i = 0; i < values.size(); i++) {
+            wv.process(values[i], weights[i]);
+        }
+
+        CHECK( wv.stdev() == Approx(25.90092) ); // output from Weighted.Desc.Stat::w.sd in R
+        CHECK( wv.variance() == Approx(670.8578) ); // output from Weighted.Desc.Stat::w.var in R
+        CHECK( wv.coefficent_of_variation() == Approx(2.478301) ); // output from Weighted.Desc.Stat::w.sd / Weighted.Desc.Stat::w.mean
+    };
 }

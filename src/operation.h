@@ -64,6 +64,12 @@ namespace exactextract {
                 return [](const RasterStats<double> & s) { return s.minority(); };
             } else if (stat == "variety") {
                 return [](const RasterStats<double> & s) { return s.variety(); };
+            } else if (stat == "stdev") {
+                return [](const RasterStats<double> & s) { return s.stdev(); };
+            } else if (stat == "variance") {
+                return [](const RasterStats<double> & s) { return s.variance(); };
+            } else if (stat == "coefficient_of_variation") {
+                return [](const RasterStats<double> & s) { return s.coefficient_of_variation(); };
             } else {
                 throw std::runtime_error("Unknown stat: '" + stat + "'");
             }
