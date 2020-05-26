@@ -36,7 +36,7 @@ public:
      * @param x value to add
      * @param w weight of `x`
      */
-    constexpr void process(double x, double w) {
+    void process(double x, double w) {
         double mean_old = mean;
 
         sum_w += w;
