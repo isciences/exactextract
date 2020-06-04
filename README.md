@@ -34,7 +34,14 @@ The weighting raster does not need to have the same resolution and extent as the
 
 ### Compiling
 
-`exactextract` requires C++14 to build. It can be built as follows on Linux, using CMake 3.7 or greater:
+`exactextract` requires the following:
+
+* A C++14 compiler (e.g., gcc 5.0+)
+* CMake 3.8+
+* [GEOS](https://github.com/libgeos/geos) version 3.5+
+* [GDAL](https://github.com/osgeo/GDAL) version 2.0+
+
+It can be built as follows on Linux as follows:
 
 ```bash
 git clone https://github.com/isciences/exactextract
@@ -45,9 +52,6 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 sudo make install
 ```
-
-No testing has yet been performed on Windows or OS X.
-Feedback concerning building on these platforms is welcome.
 
 ### Using `exactextract`
 
