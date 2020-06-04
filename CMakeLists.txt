@@ -24,6 +24,20 @@ if (GEOS_VERSION_MAJOR LESS 3 OR GEOS_VERSION_MINOR LESS 5)
    message(FATAL_ERROR "GEOS version 3.5 or later is required.")
 endif()
 
+if (GDAL_FOUND)
+    # Check GDAL version (requires CMake 3.14)
+    if (${CMAKE_VERSION} VERSION_LESS 3.14.0)
+        message(WARNING "GDAL 2.0+ is required but detected GDAL version is unknown.")
+    elseif(${GDAL_VERSION} VERSION_LESS 2.0)
+        unset(GDAL_FOUND)
+    endif()
+endif()
+if (NOT GDAL_FOUND)
+    message(WARNING
+    "GDAL version >= 2.0 was not found. It is still possible to build and test libexactextract, but the "
+    "exactextract executable cannot be built or installed.")
+endif()
+
 # Download Catch (header-only library)
 set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
 set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
@@ -239,8 +253,4 @@ if (GDAL_FOUND)
     install(TARGETS ${BIN_NAME}
             RUNTIME
             DESTINATION bin)
-else(GDAL_FOUND)
-    message(WARNING
-            "GDAL was not found. It is still possible to build and test libexactextract, but the "
-            "exactextract executable cannot be built or installed.")
 endif(GDAL_FOUND)
