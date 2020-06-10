@@ -65,7 +65,12 @@ namespace exactextract {
                     return m_num_cols - 1;
             }
 
-            return extent_tag::padding + static_cast<size_t>(std::floor((x - m_extent.xmin) / m_dx));
+            // Since we've already range-checked our x value, make sure that
+            // the computed column index is no greater than the column index
+            // associated with xmax.
+            return std::min(
+                    extent_tag::padding + static_cast<size_t>(std::floor((x - m_extent.xmin) / m_dx)),
+                    get_column(m_extent.xmax));
         }
 
         size_t get_row(double y) const {
@@ -84,7 +89,12 @@ namespace exactextract {
                     return m_num_rows - 1;
             }
 
-            return extent_tag::padding + static_cast<size_t>(std::floor((m_extent.ymax - y) / m_dy));
+            // Since we've already range-checked our y value, make sure that
+            // the computed row index is no greater than the column index
+            // associated with ymin.
+            return std::min(
+                    extent_tag::padding + static_cast<size_t>(std::floor((m_extent.ymax - y) / m_dy)),
+                    get_row(m_extent.ymin));
         }
 
         bool empty() const { return m_num_rows <= 2*extent_tag::padding && m_num_cols <= 2*extent_tag::padding; }
