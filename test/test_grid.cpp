@@ -174,6 +174,15 @@ TEST_CASE("Cropping robustness", "[grid]") {
     CHECK( grid.extent().contains(cropped.extent()) );
 }
 
+TEST_CASE("Cropping robustness (2)") {
+    Grid<bounded_extent> grid{{-180, -90, 180, 90}, 0.5, 0.5};
+    Box b{179.749999999999972, -18.5833333333333321, 179.999999999999972, -18.5};
+
+    auto cropped = grid.crop(b);
+
+    CHECK( grid.extent().contains(cropped.extent()) );
+}
+
 TEST_CASE("Grid compatibility tests", "[grid]") {
     Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
     Grid<bounded_extent> one_degree_global{global, 1, 1};
