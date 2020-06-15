@@ -15,6 +15,7 @@
 
 #include <geos_c.h>
 
+#include "area.h"
 #include "cell.h"
 #include "floodfill.h"
 #include "geos_utils.h"
@@ -107,18 +108,41 @@ namespace exactextract {
     }
 
     void RasterCellIntersection::process_ring(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring) {
-        if (!geos_get_box(context, ls).intersects(m_geometry_grid.extent())) {
+        auto geom_box = geos_get_box(context, ls);
+
+        if (!geom_box.intersects(m_geometry_grid.extent())) {
             return;
         }
 
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, ls);
-        bool is_ccw = geos_is_ccw(context, seq);
 
         Grid<infinite_extent> ring_grid = get_ring_grid(context, ls, m_geometry_grid);
 
         size_t rows = ring_grid.rows();
         size_t cols = ring_grid.cols();
 
+        // Short circuit for small rings that are entirely contained
+        // within a single grid cell.
+        if (rows == (1 + 2*infinite_extent::padding) &&
+            cols == (1 + 2*infinite_extent::padding) &&
+            grid_cell(ring_grid, 1, 1).contains(geom_box)) {
+
+            auto coords = read(context, seq);
+            auto ring_area = area(coords) / grid_cell(ring_grid, 1, 1).area();
+
+            size_t i0 = ring_grid.row_offset(m_geometry_grid);
+            size_t j0 = ring_grid.col_offset(m_geometry_grid);
+
+            if (exterior_ring) {
+                m_overlap_areas->increment(i0, j0, ring_area);
+            } else {
+                m_overlap_areas->increment(i0, j0, -1 * ring_area);
+            }
+
+            return;
+        }
+
+        bool is_ccw = geos_is_ccw(context, seq);
         Matrix<std::unique_ptr<Cell>> cells(rows, cols);
 
         std::deque<Coordinate> stk;
