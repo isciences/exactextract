@@ -30,6 +30,13 @@ namespace exactextract {
                  make_finite(rci.m_geometry_grid) };
     }
 
+    Raster<float> raster_cell_intersection(const Grid<bounded_extent> & raster_grid, const Box & box) {
+        RasterCellIntersection rci(raster_grid, box);
+
+        return { std::move(const_cast<Matrix<float>&>(rci.overlap_areas())),
+                 make_finite(rci.m_geometry_grid) };
+    }
+
     static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Grid<infinite_extent> &ex, size_t row, size_t col) {
         //std::cout << " getting cell " << row << ", " << col << std::endl;
 
@@ -77,6 +84,16 @@ namespace exactextract {
         }
     }
 
+    static Grid<infinite_extent> get_geometry_grid(const Grid<bounded_extent> & raster_grid, const Box & box) {
+        auto region = box.intersection(raster_grid.extent());
+
+        if (!region.empty()) {
+            return make_infinite(raster_grid.shrink_to_fit(region));
+        } else {
+            return Grid<infinite_extent>::make_empty();
+        }
+    }
+
 
     RasterCellIntersection::RasterCellIntersection(const Grid<bounded_extent> &raster_grid, GEOSContextHandle_t context, const GEOSGeometry *g)
         : m_geometry_grid{get_geometry_grid(raster_grid, context, g)},
@@ -84,6 +101,14 @@ namespace exactextract {
     {
         if (!m_geometry_grid.empty())
             process(context, g);
+    }
+
+    RasterCellIntersection::RasterCellIntersection(const Grid<bounded_extent> & raster_grid, const Box & box)
+        : m_geometry_grid{get_geometry_grid(raster_grid, box)},
+          m_overlap_areas{std::make_unique<Matrix<float>>(m_geometry_grid.rows() - 2, m_geometry_grid.cols() - 2)} {
+        if (!m_geometry_grid.empty()) {
+            process_rectangular_ring(box, true);
+        }
     }
 
     void RasterCellIntersection::process(GEOSContextHandle_t context, const GEOSGeometry *g) {
@@ -102,9 +127,102 @@ namespace exactextract {
         }
     }
 
-    static Grid<infinite_extent> get_ring_grid(GEOSContextHandle_t context, const GEOSGeometry* ls, const Grid<infinite_extent> & geometry_grid) {
-        Box cropped_ring_extent = geometry_grid.extent().intersection(geos_get_box(context, ls));
+    static Grid<infinite_extent> get_box_grid(const Box & box, const Grid<infinite_extent> & geometry_grid) {
+        Box cropped_ring_extent = geometry_grid.extent().intersection(box);
         return geometry_grid.shrink_to_fit(cropped_ring_extent);
+    }
+
+    static Grid<infinite_extent> get_ring_grid(GEOSContextHandle_t context, const GEOSGeometry* ls, const Grid<infinite_extent> & geometry_grid) {
+        return get_box_grid(geos_get_box(context, ls), geometry_grid);
+    }
+
+    void RasterCellIntersection::process_rectangular_ring(const Box& box, bool exterior_ring) {
+        if (!box.intersects(m_geometry_grid.extent())) {
+            return;
+        }
+
+        auto ring_grid = get_box_grid(box, m_geometry_grid);
+
+        auto row_min = ring_grid.get_row(box.ymax);
+        auto row_max = ring_grid.get_row(box.ymin);
+        auto col_min = ring_grid.get_column(box.xmin);
+        auto col_max = ring_grid.get_column(box.xmax);
+
+        Matrix<float> areas(ring_grid.rows() - 2, ring_grid.cols() - 2);
+
+        // upper-left
+        if (row_min > 0 && col_min > 0) {
+            auto ul = grid_cell(ring_grid, row_min, col_min);
+            areas(row_min - 1, col_min - 1) = ul.intersection(box).area() / ul.area();
+        }
+
+        // upper-right
+        if (row_min > 0 && col_max < ring_grid.cols() - 1) {
+            auto ur = grid_cell(ring_grid, row_min, col_max);
+            auto frac = ur.intersection(box).area() / ur.area();
+            areas(row_min - 1, col_max - 1) = frac;
+        }
+
+        // lower-left
+        if (row_max < ring_grid.rows() - 1 && col_min > 0) {
+            auto ll = grid_cell(ring_grid, row_max, col_min);
+            areas(row_max - 1, col_min - 1) = ll.intersection(box).area() / ll.area();
+        }
+
+        // lower-right
+        if (row_max < ring_grid.rows() - 1 && col_max < ring_grid.cols() - 1) {
+            auto lr = grid_cell(ring_grid, row_max, col_max);
+            areas(row_max - 1, col_max - 1) = lr.intersection(box).area() / lr.area();
+        }
+
+        // left
+        if (col_min > 0) {
+            auto left = grid_cell(ring_grid, row_min + 1, col_min);
+            auto frac = left.intersection(box).area() / left.area();
+            for (size_t row = row_min + 1; row < row_max; row++) {
+                areas(row - 1, col_min - 1) = frac;
+            }
+        }
+
+        // right
+        if (col_max < ring_grid.cols() - 1) {
+            auto right = grid_cell(ring_grid, row_min + 1, col_max);
+            auto frac = right.intersection(box).area() / right.area();
+            for (size_t row = row_min + 1; row < row_max; row++) {
+                areas(row - 1, col_max - 1) = frac;
+            }
+        }
+
+        // top
+        if (row_min > 0) {
+            auto top = grid_cell(ring_grid, row_min, col_min + 1);
+            auto frac = top.intersection(box).area() / top.area();
+            for (size_t col = col_min + 1; col < col_max; col++) {
+                areas(row_min - 1, col - 1) = frac;
+            }
+        }
+
+        // bottom
+        if (row_max < ring_grid.rows() - 1) {
+            auto bottom = grid_cell(ring_grid, row_max, col_min + 1);
+            auto frac = bottom.intersection(box).area() / bottom.area();
+            for (size_t col = col_min + 1; col < col_max; col++) {
+                areas(row_max - 1, col - 1) = frac;
+            }
+        }
+
+        // interior
+        for (size_t row = row_min + 1; row < row_max; row++) {
+            for(size_t col = col_min + 1; col < col_max; col++) {
+                areas(row - 1, col - 1) = 1.0f;
+            }
+        }
+
+        // Transfer these areas to our global set
+        size_t i0 = ring_grid.row_offset(m_geometry_grid);
+        size_t j0 = ring_grid.col_offset(m_geometry_grid);
+
+        add_ring_areas(i0, j0, areas, exterior_ring);
     }
 
     void RasterCellIntersection::process_ring(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring) {
@@ -115,6 +233,15 @@ namespace exactextract {
         }
 
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, ls);
+        unsigned int npoints = geos_get_num_points(context, seq);
+
+        if (npoints == 5) {
+            auto coords = read(context, seq);
+            if (area(coords) == geom_box.area()) {
+                process_rectangular_ring(geom_box, exterior_ring);
+                return;
+            }
+        }
 
         Grid<infinite_extent> ring_grid = get_ring_grid(context, ls, m_geometry_grid);
 
@@ -147,8 +274,6 @@ namespace exactextract {
 
         std::deque<Coordinate> stk;
         {
-            unsigned int npoints = geos_get_num_points(context, seq);
-
             for (unsigned int i = 0; i < npoints; i++) {
                 double x, y;
 #if HAVE_380
