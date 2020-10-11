@@ -43,7 +43,7 @@ namespace exactextract {
             }
         }
 
-        std::function<nonstd::optional<double>(RasterStats<double>)> result_fetcher() const {
+        std::function<nonstd::optional<double>(const RasterStats<double>&)> result_fetcher() const {
             if (stat == "mean") {
                 return [](const RasterStats<double> & s) { return s.mean(); };
             } else if (stat == "sum") {
