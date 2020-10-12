@@ -110,6 +110,8 @@ set(PROJECT_SOURCES
         src/stats_registry.h
         src/utils.h
         src/utils.cpp
+        src/weighted_quantiles.h
+        src/weighted_quantiles.cpp
         src/variance.h
         vend/optional.hpp)
 
