@@ -7,6 +7,7 @@
 #include "raster_cell_intersection.h"
 #include "raster_stats.h"
 #include "variance.h"
+#include "weighted_quantiles.h"
 #include "geos_utils.h"
 
 using Catch::Detail::Approx;
@@ -336,7 +337,7 @@ namespace exactextract {
         CHECK( wv.stdev() == Approx(32.80967) ); //
         CHECK( wv.variance() == Approx(1076.474) );
         CHECK( wv.coefficent_of_variation() == Approx(2.113344) );
-    };
+    }
 
     TEST_CASE("Variance calculations are correct for unequally-weighted observations") {
         std::vector<double> values{3.4, 2.9, 1.7,  8.8, -12.7, 100.4, 8.4, 11.3, 50};
@@ -350,5 +351,70 @@ namespace exactextract {
         CHECK( wv.stdev() == Approx(25.90092) ); // output from Weighted.Desc.Stat::w.sd in R
         CHECK( wv.variance() == Approx(670.8578) ); // output from Weighted.Desc.Stat::w.var in R
         CHECK( wv.coefficent_of_variation() == Approx(2.478301) ); // output from Weighted.Desc.Stat::w.sd / Weighted.Desc.Stat::w.mean
-    };
+    }
+
+    TEST_CASE("Weighted quantile calculations are correct for equally-weighted inputs") {
+        std::vector<double> values{3.4, 2.9, 1.7, 8.8, -12.7, 100.4, 8.4, 11.3};
+
+        WeightedQuantiles wq;
+        for (const auto &x : values) {
+            wq.process(x, 1.7);
+        }
+
+        // check values against output of stats::quantile in R
+        CHECK( wq.quantile(0) == -12.7 );
+        CHECK( wq.quantile(0.25) == Approx(2.6) );
+        CHECK( wq.quantile(0.50) == Approx(5.9) );
+        CHECK( wq.quantile(0.75) == Approx(9.425) );
+        CHECK( wq.quantile(1.0) == Approx(100.4) );
+    }
+
+    TEST_CASE("Weighted quantile calculations are correct for unequally-weighted inputs") {
+        std::vector<double> values{3.4, 2.9, 1.7, 8.8, -12.7, 100.4, 8.4, 11.3, 50};
+        std::vector<double> weights{1.0, 0.1, 1.0, 0.2, 0.44, 0.3, 0.3, 0.83, 0};
+
+        WeightedQuantiles wq;
+        for (auto i = 0; i < values.size(); i++) {
+            wq.process(values[i], weights[i]);
+        }
+
+        // check values against output of wsim.distributions::stack_weighted_quantile in R
+        // https://gitlab.com/isciences/wsim/wsim
+        CHECK( wq.quantile(0.00) == Approx(-12.7) );
+        CHECK( wq.quantile(0.25) == Approx(2.336667) );
+        CHECK( wq.quantile(0.50) == Approx(4.496774) );
+        CHECK( wq.quantile(0.75) == Approx(9.382437) );
+        CHECK( wq.quantile(1.00) == Approx(100.4) );
+    }
+
+    TEST_CASE("Weighted quantile errors on invalid weights") {
+        CHECK_THROWS( WeightedQuantiles().process(5, -1 ) );
+        CHECK_THROWS( WeightedQuantiles().process(3, std::numeric_limits<double>::quiet_NaN() ));
+        CHECK_THROWS( WeightedQuantiles().process(3, std::numeric_limits<double>::infinity() ));
+    }
+
+    TEST_CASE("Weighted quantile errors on invalid quantiles") {
+        WeightedQuantiles wq;
+        for (auto i = 0; i < 10; i++) {
+            wq.process(i, 1);
+        }
+
+        CHECK_THROWS( wq.quantile(1.1) );
+        CHECK_THROWS( wq.quantile(-0.1) );
+        CHECK_THROWS( wq.quantile(std::numeric_limits<double>::quiet_NaN()) );
+    }
+
+    TEST_CASE("Weighted quantiles are appropriately refreshed") {
+        WeightedQuantiles wq;
+        wq.process(1, 1);
+        wq.process(2, 1),
+        wq.process(3, 1);
+
+        CHECK( wq.quantile(0.5) == 2 );
+
+        wq.process(4, 1);
+
+        CHECK( wq.quantile(0.5) == 2.5 );
+    }
+
 }

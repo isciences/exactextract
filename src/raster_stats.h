@@ -20,6 +20,7 @@
 #include <unordered_map>
 
 #include "raster_cell_intersection.h"
+#include "weighted_quantiles.h"
 #include "variance.h"
 
 #include "../vend/optional.hpp"
@@ -160,6 +161,28 @@ namespace exactextract {
         }
 
         /**
+         * The given quantile (0-1) of raster cell values. Coverage fractions
+         * are taken into account but weights are not.
+         */
+        nonstd::optional<T> quantile(double q) const {
+            if (m_sum_ci == 0) {
+                return nonstd::nullopt;
+            }
+
+            // The weighted quantile computation is not processed incrementally.
+            // Create it on demand and retain it in case we want multiple quantiles.
+            if (!m_quantiles) {
+                m_quantiles = std::make_unique<WeightedQuantiles>();
+
+                for (const auto& entry : m_freq) {
+                    m_quantiles->process(entry.first, entry.second);
+                }
+            }
+
+            return m_quantiles->quantile(q);
+        }
+
+        /**
          * The sum of raster cells covered by the polygon, with each raster
          * value weighted by its coverage fraction.
          */
@@ -275,6 +298,8 @@ namespace exactextract {
         double m_sum_xiciwi;
         WestVariance m_variance;
 
+        mutable std::unique_ptr<WeightedQuantiles> m_quantiles;
+
         std::unordered_map<T, float> m_freq;
 
         bool m_store_values;
@@ -298,8 +323,10 @@ namespace exactextract {
             }
 
             // TODO should weights factor in here?
-            if (m_store_values)
+            if (m_store_values) {
                 m_freq[val] += coverage;
+                m_quantiles.reset();
+            }
         }
     };
 
