@@ -51,15 +51,13 @@ namespace exactextract {
         elem_t lookup(0, 0); // create a dummy element to use with std::upper_bound
         lookup.s = q*sn;
 
-        // get first element that is greater than or equal to lookup value (q * sn)
+        // get first element that is greater than the lookup value (q * sn)
         auto right = std::upper_bound(m_elems.cbegin(), m_elems.cend(), lookup, [](const elem_t & a, const elem_t & b) {
             return a.s < b.s;
         });
 
-        if (right == m_elems.cbegin()) {
-            return right->x;
-        }
-
+        // since the minimum value of "lookup" is zero, and the first value of "s" is zero,
+        // we are guaranteed to have at least one element to the left of "right"
         auto left = std::prev(right, 1);
 
         if (right == m_elems.cend()) {
