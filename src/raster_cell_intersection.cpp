@@ -112,13 +112,15 @@ namespace exactextract {
     }
 
     void RasterCellIntersection::process(GEOSContextHandle_t context, const GEOSGeometry *g) {
-        if (GEOSGeomTypeId_r(context, g) == GEOS_POLYGON) {
+        auto type = GEOSGeomTypeId_r(context, g);
+
+        if (type == GEOS_POLYGON) {
             process_ring(context, GEOSGetExteriorRing_r(context, g), true);
 
             for (int i = 0; i < GEOSGetNumInteriorRings_r(context, g); i++) {
                 process_ring(context, GEOSGetInteriorRingN_r(context, g, i), false);
             }
-        } else if (GEOSGeomTypeId_r(context, g) == GEOS_MULTIPOLYGON) {
+        } else if (type == GEOS_MULTIPOLYGON || type == GEOS_GEOMETRYCOLLECTION) {
             for (int i = 0; i < GEOSGetNumGeometries_r(context, g); i++) {
                 process(context, GEOSGetGeometryN_r(context, g, i));
             }

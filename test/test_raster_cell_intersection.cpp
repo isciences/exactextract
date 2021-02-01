@@ -50,7 +50,38 @@ TEST_CASE("Basic rectangle", "[raster-cell-intersection]" ) {
     auto rci2 = raster_cell_intersection(ex, geos_get_box(context, g.get()));
 
     CHECK( rci == rci2 );
+}
 
+TEST_CASE("Basic rectangle with GeometryCollection", "[raster-cell-intersection]" ) {
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
+
+    auto g = GEOSGeom_read_r(context,
+                             "GEOMETRYCOLLECTION ("
+                             "MULTIPOLYGON (((0.5 0.5, 1.5 0.5, 1.5 1.5, 0.5 1.5, 0.5 0.5)),"
+                             "              ((1.5 1.5, 2.5 1.5, 2.5 2.5, 1.5 2.5, 1.5 1.5))),"
+                             "POLYGON ((0.5 1.5, 1.5 1.5, 1.5 2.5, 0.5 2.5, 0.5 1.5)),"
+                             "POLYGON ((1.5 0.5, 2.5 0.5, 2.5 1.5, 1.5 1.5, 1.5 0.5)))");
+
+    Raster<float> rci = raster_cell_intersection(ex, context, g.get());
+
+    check_cell_intersections(rci, {
+            {0.25, 0.5, 0.25},
+            {0.50, 1.0, 0.50},
+            {0.25, 0.5, 0.25}
+    });
+}
+
+TEST_CASE("Non-polygonal geometry", "[raster-cell-intersection]") {
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
+
+    auto g = GEOSGeom_read_r(context, "LINESTRING (0 0, 3 3)");
+
+    CHECK_THROWS_WITH(raster_cell_intersection(ex, context, g.get()),
+                      "Unsupported geometry type.");
 }
 
 TEST_CASE("Basic non-rectangle", "[raster-cell-intersection]" ) {
