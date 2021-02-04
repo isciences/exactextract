@@ -6,7 +6,7 @@
 
 `exactextract` provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as **zonal statistics**. Unlike other zonal statistics implementations, it takes into account raster cells that are partially covered by the polygon.
 
-<img align="right" width="380" height="380" src="https://s3.us-east-2.amazonaws.com/exactextract/exactextract.svg" />
+<img align="right" width="380" height="380" src="https://gitlab.com/isciences/exactextract/-/raw/master/doc/exactextract.svg" />
 
 ### Background
 
@@ -144,7 +144,7 @@ The area covered by the polygon is shaded purple.
 
 | Example Value Raster | Example Weighting Raster |
 | -------------------- | ------------------------ |
-| <img align="left" width="200" height="200" src="https://s3.us-east-2.amazonaws.com/exactextract/readme_example_values.svg" /> | <img align="left" width="200" height="200" src="https://s3.us-east-2.amazonaws.com/exactextract/readme_example_weights.svg" /> | 
+| <img align="left" width="200" height="200" src="https://gitlab.com/isciences/exactextract/-/raw/master/doc/readme_example_values.svg" /> | <img align="left" width="200" height="200" src="https://gitlab.com/isciences/exactextract/-/raw/master/doc/readme_example_weights.svg" /> | 
 
 
 | Name           | Formula                                                                              | Description                                                                     | Typical Application  | Example Result |
