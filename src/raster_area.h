@@ -63,8 +63,7 @@ namespace exactextract {
     private:
         static constexpr double EARTH_RADIUS = 6378137;
         static constexpr double EARTH_RADIUS_SQ = EARTH_RADIUS * EARTH_RADIUS;
-        static constexpr double PI = 3.141592653589793238462643383279502884197169399375105;
-        static constexpr double PI_180 = PI / 180;
+        static constexpr double PI_180 = 3.141592653589793238462643383279502884197169399375105 / 180;
 
         std::vector<double> m_areas;
     };
