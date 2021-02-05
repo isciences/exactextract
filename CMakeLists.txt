@@ -126,6 +126,7 @@ set(TEST_SOURCES
         test/test_raster.cpp
         test/test_raster_area.cpp
         test/test_raster_cell_intersection.cpp
+        test/test_raster_iterator.cpp
         test/test_traversal_areas.cpp
         test/test_stats.cpp
         test/test_utils.cpp)

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2018-2021 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -14,6 +14,7 @@
 #ifndef EXACTEXTRACT_RASTER_H
 #define EXACTEXTRACT_RASTER_H
 
+#include <array>
 #include <cmath>
 #include <limits>
 
@@ -42,6 +43,10 @@ namespace exactextract {
 
         size_t cols() const {
             return m_grid.cols();
+        }
+
+        size_t size() const {
+            return rows() * cols();
         }
 
         double xres() const {
@@ -141,6 +146,50 @@ namespace exactextract {
 
         bool operator!=(const AbstractRaster<T> & other) const {
             return !(operator==(other));
+        }
+
+        class Iterator : public std::iterator<std::forward_iterator_tag, T> {
+        public:
+            Iterator(const AbstractRaster<T>* r, size_t i, size_t j) :
+                    m_rast(r), m_row(i), m_col(j) {}
+
+            const T& operator*() const {
+                m_val = m_rast->operator()(m_row, m_col);
+                return m_val;
+            }
+
+            Iterator& operator++() {
+                m_col++;
+                if (m_col == m_rast->cols()) {
+                    m_col = 0;
+                    m_row++;
+                }
+                return *this;
+            }
+
+            friend bool operator==(const Iterator& a,
+                                   const Iterator& b) {
+                return a.m_rast == b.m_rast && a.m_row == b.m_row && a.m_col == b.m_col;
+            }
+
+            friend bool operator!=(const Iterator& a,
+                                   const Iterator& b) {
+                return a.m_row != b.m_row || a.m_col != b.m_col || a.m_rast != b.m_rast;
+            }
+
+        private:
+            const AbstractRaster<T>* m_rast;
+            mutable T m_val;
+            size_t m_row;
+            size_t m_col;
+        };
+
+        Iterator begin() const {
+            return Iterator(this, 0, 0);
+        }
+
+        Iterator end() const {
+            return Iterator(this, rows(), 0);
         }
     private:
         Grid<bounded_extent> m_grid;
