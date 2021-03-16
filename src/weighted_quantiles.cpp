@@ -13,6 +13,8 @@
 
 #include "weighted_quantiles.h"
 
+#include <stdexcept>
+
 namespace exactextract {
 
     void WeightedQuantiles::prepare() const {

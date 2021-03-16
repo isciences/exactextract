@@ -13,6 +13,8 @@
 
 #include "geos_utils.h"
 
+#include <stdexcept>
+
 #if !HAVE_380
 static inline int GEOSCoordSeq_setXY_r(GEOSContextHandle_t context,
         GEOSCoordSequence* seq,

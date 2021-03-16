@@ -15,6 +15,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <stdexcept>
 #include <vector>
 
 #include "CLI11.hpp"
