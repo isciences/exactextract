@@ -242,7 +242,13 @@ namespace exactextract {
     public:
         // Construct a view of a raster r at an extent ex that is larger
         // and/or of finer resolution than r
-        RasterView(const AbstractRaster<T> & r, Grid<bounded_extent> ex) : AbstractRaster<T>(ex), m_raster{r} {
+        RasterView(const AbstractRaster<T> & r, Grid<bounded_extent> ex) :
+            AbstractRaster<T>(ex),
+                    m_raster{r},
+                    m_x_off{0},
+                    m_y_off{0},
+                    m_rx{1},
+                    m_ry{1} {
             if (!this->grid().empty()) {
                 double disaggregation_factor_x = r.xres() / ex.dx();
                 double disaggregation_factor_y = r.yres() / ex.dy();
