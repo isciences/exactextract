@@ -293,6 +293,21 @@ TEST_CASE("Empty view") {
     CHECK ( rv.cols() == 0 );
 }
 
+TEST_CASE("View on empty raster") {
+    Raster<double> rast{Grid<bounded_extent>::make_empty()};
+
+    Box rast_box{-10, -10, 10, 10};
+    double res = 0.5;
+    Grid<bounded_extent> view_grid{rast_box, res, res};
+
+    RasterView<double> rv{rast, view_grid};
+
+    CHECK ( 24 < rv.rows() );
+    CHECK ( 24 < rv.cols() );
+
+    CHECK ( std::isnan(rv(24, 24)) );
+}
+
 TEST_CASE("Expanded view") {
     Box rast_box{5, 10, 20, 20};
     Box view_box{0, 0, 30, 30};

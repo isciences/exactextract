@@ -274,6 +274,10 @@ namespace exactextract {
         }
 
         T operator()(size_t row, size_t col) const override {
+            if (m_raster.grid().empty()) {
+                return this->nodata();
+            }
+
             if (m_x_off < 0 && static_cast<size_t>(-m_x_off) > col) {
                 return this->nodata();
             }
