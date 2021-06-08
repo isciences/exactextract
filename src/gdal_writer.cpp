@@ -133,6 +133,8 @@ namespace exactextract {
             return "CSV";
         } else if (ends_with(filename, ".dbf")) {
             return "ESRI Shapefile";
+        } else if (ends_with(filename, ".gpkg")) {
+            return "GPKG";
         } else if (ends_with(filename, ".nc")) {
             return "NetCDF";
         } else if (starts_with(filename, "PG:")) {
