@@ -46,7 +46,13 @@ namespace exactextract {
                 m_store_values{store_values} {}
 
         void process(const Raster<float> & intersection_percentages, const AbstractRaster<T> & rast) {
-            RasterView<T> rv{rast, intersection_percentages.grid()};
+            std::unique_ptr<AbstractRaster<T>> rvp;
+
+            if (rast.grid() != intersection_percentages.grid()) {
+                rvp = std::make_unique<RasterView<T>>(rast, intersection_percentages.grid());
+            }
+
+            const AbstractRaster<T>& rv = rvp ? *rvp : rast;
 
             for (size_t i = 0; i < rv.rows(); i++) {
                 for (size_t j = 0; j < rv.cols(); j++) {
