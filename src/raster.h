@@ -83,7 +83,7 @@ namespace exactextract {
 
         T nodata() const { return m_nodata; }
 
-        bool get(size_t row, size_t col, T & val) {
+        bool get(size_t row, size_t col, T & val) const {
             val = operator()(row, col);
 
             if (m_has_nodata && val == m_nodata) {
