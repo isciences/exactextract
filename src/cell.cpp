@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2021 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -83,7 +83,7 @@ namespace exactextract {
         return m_traversals.at(m_traversals.size() - 1);
     }
 
-    bool Cell::take(const Coordinate &c) {
+    bool Cell::take(const Coordinate& c, const Coordinate* prev_original) {
         Traversal &t = traversal_in_progress();
 
         if (t.empty()) {
@@ -100,7 +100,11 @@ namespace exactextract {
             return true;
         }
 
-        Crossing x = m_box.crossing(t.last_coordinate(), c);
+        // We need to calculate the coordinate of the cell exit point using only uninterpolated coordinates.
+        // (The previous point in the traversal may be an interpolated coordinate.) If an interpolated coordinate
+        // is used, it can cause an error in the relative position two traversals, inverting the fraction of
+        // the cell that is considered covered. (See robustness regression test #7).
+        Crossing x = prev_original ? m_box.crossing(*prev_original, c) : m_box.crossing(t.last_coordinate(), c);
         t.exit(x.coord(), x.side());
 
         //std::cout << "Leaving " << m_box << " from " << x.side() << " at " << x.coord();

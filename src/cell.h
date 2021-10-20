@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2021 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -47,7 +47,13 @@ namespace exactextract {
 
         const Box &box() const { return m_box; }
 
-        bool take(const Coordinate &c);
+        //! Take a coordinate and add it to a traversal in progress, or start a new traversal
+        //! \param c             Coordinate to process
+        //! \param prev_original The last *uninterpolated* coordinate preceding `c` in the
+        //!                      boundary being processed
+        //! \return `true` if `c` was consumed by this cell, or `false` if this cell was
+        //!         exited before `c` was reached.
+        bool take(const Coordinate& c, const Coordinate* prev_original = nullptr);
 
     private:
         enum class Location {

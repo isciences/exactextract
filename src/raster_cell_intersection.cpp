@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2018-2021 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -235,10 +235,9 @@ namespace exactextract {
         }
 
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, ls);
-        unsigned int npoints = geos_get_num_points(context, seq);
+        auto coords = read(context, seq);
 
-        if (npoints == 5) {
-            auto coords = read(context, seq);
+        if (coords.size() == 5) {
             if (area(coords) == geom_box.area()) {
                 process_rectangular_ring(geom_box, exterior_ring);
                 return;
@@ -256,7 +255,6 @@ namespace exactextract {
             cols == (1 + 2*infinite_extent::padding) &&
             grid_cell(ring_grid, 1, 1).contains(geom_box)) {
 
-            auto coords = read(context, seq);
             auto ring_area = area(coords) / grid_cell(ring_grid, 1, 1).area();
 
             size_t i0 = ring_grid.row_offset(m_geometry_grid);
@@ -274,49 +272,40 @@ namespace exactextract {
         bool is_ccw = geos_is_ccw(context, seq);
         Matrix<std::unique_ptr<Cell>> cells(rows, cols);
 
-        std::deque<Coordinate> stk;
-        {
-            for (unsigned int i = 0; i < npoints; i++) {
-                double x, y;
-#if HAVE_380
-                if (!GEOSCoordSeq_getXY_r(context, seq, i, &x, &y)) {
-                    throw std::runtime_error("Error reading coordinates.");
-                }
-#else
-                if (!GEOSCoordSeq_getX_r(context, seq, i, &x) || !GEOSCoordSeq_getY_r(context, seq, i, &y)) {
-                    throw std::runtime_error("Error reading coordinates.");
-                }
-#endif
-
-                if (is_ccw) {
-                    stk.emplace_back(x, y);
-                } else {
-                    stk.emplace_front(x, y);
-                }
-            }
+        if (!is_ccw) {
+            std::reverse(coords.begin(), coords.end());
         }
 
-        size_t row = ring_grid.get_row(stk.front().y);
-        size_t col = ring_grid.get_column(stk.front().x);
+        size_t pos = 0;
+        size_t row = ring_grid.get_row(coords.front().y);
+        size_t col = ring_grid.get_column(coords.front().x);
+        const Coordinate* last_exit = nullptr;
 
-        while (!stk.empty()) {
+        while (pos < coords.size()) {
             Cell &cell = *get_cell(cells, ring_grid, row, col);
 
-            while (!stk.empty()) {
-                cell.take(stk.front());
+            while (pos < coords.size()) {
+                const Coordinate* next_coord = last_exit ? last_exit : &coords[pos];
+                const Coordinate* prev_coord = pos > 0 ? &coords[pos - 1] : nullptr;
+
+                cell.take(*next_coord, prev_coord);
 
                 if (cell.last_traversal().exited()) {
                     // Only push our exit coordinate if it's not same as the
                     // coordinate we just took. This covers the case where
                     // the next coordinate in the stack falls exactly on
                     // the cell boundary.
-                    const Coordinate &exc = cell.last_traversal().exit_coordinate();
-                    if (exc != stk.front()) {
-                        stk.emplace_front(exc.x, exc.y);
+                    const Coordinate& exc = cell.last_traversal().exit_coordinate();
+                    if (exc != *next_coord) {
+                        last_exit = &exc;
                     }
                     break;
                 } else {
-                    stk.pop_front();
+                    if (last_exit) {
+                        last_exit = nullptr;
+                    } else {
+                        pos++;
+                    }
                 }
             }
 
@@ -329,7 +318,7 @@ namespace exactextract {
                 // coordinate falls on a cell boundary.
                 if (!cell.last_traversal().traversed()) {
                     for (const auto &coord : cell.last_traversal().coords()) {
-                        stk.push_back(coord);
+                        coords.push_back(coord);
                     }
                 }
 

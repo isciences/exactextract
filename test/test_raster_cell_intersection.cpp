@@ -525,6 +525,26 @@ TEST_CASE("Robustness regression test #6", "[raster-cell-intersection]") {
     CHECK( tot == 823.0 );
 }
 
+TEST_CASE("Robustness regression test #7", "[raster-cell-intersection]") {
+    auto context = init_geos();
+
+    Grid<bounded_extent> ex{{487800, 492800, 5813800, 5818800}, 100, 100};
+
+    auto g = GEOSGeom_read_r(context, "POLYGON ((492094.9283999996 5816959.8553, 492374.9335527361 5816811.352641133, 492374.9335527363 5816811.352641133, 492094.9283999996 5816959.8553)))");
+
+    double total_area;
+    CHECK( GEOSArea_r(context, g.get(), &total_area) == 1);
+    double cell_area = ex.dx() * ex.dy();
+    double max_possible_frac = total_area / cell_area;
+
+    auto result = raster_cell_intersection(ex, context, g.get());
+
+    for (auto& frac : result) {
+        CHECK( (frac >= 0 && frac <= max_possible_frac) );
+    }
+
+}
+
 TEST_CASE("Processing region is empty when there are no polygons") {
     Box raster_extent{0, 0, 10, 10};
     std::vector<Box> component_boxes;
