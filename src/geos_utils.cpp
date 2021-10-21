@@ -210,12 +210,23 @@ namespace exactextract {
 
         std::vector<Coordinate> coords{size};
 
+#if HAVE_3100
+        if (!GEOSCoordSeq_copyToBuffer_r(context, s, reinterpret_cast<double*>(coords.data()), false, false)) {
+            throw std::runtime_error("Error reading coordinates.");
+        }
+#elif HAVE_380
+        for (unsigned int i = 0; i < size; i++) {
+            if (!GEOSCoordSeq_getXY_r(context, s, i, &(coords[i].x), &(coords[i].y))) {
+                throw std::runtime_error("Error reading coordinates.");
+            }
+        }
+#else
         for (unsigned int i = 0; i < size; i++) {
             if (!GEOSCoordSeq_getX_r(context, s, i, &(coords[i].x)) || !GEOSCoordSeq_getY_r(context, s, i, &(coords[i].y))) {
                 throw std::runtime_error("Error reading coordinates.");
             }
         }
-
+#endif
         return coords;
     }
 

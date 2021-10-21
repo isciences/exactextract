@@ -25,6 +25,7 @@
 
 #define HAVE_370 (GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 7)
 #define HAVE_380 (GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 8)
+#define HAVE_3100 (GEOS_VERSION_MAJOR >= 3 && GEOS_VERSION_MINOR >= 10)
 
 #include "box.h"
 #include "coordinate.h"
