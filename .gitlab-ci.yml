@@ -50,6 +50,8 @@ build:
     - docker login -u ci4isciences -p $DOCKERHUB_PW
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
+  only:
+    - master
 
 pages:
   stage: release
