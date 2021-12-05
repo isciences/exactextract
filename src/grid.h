@@ -217,36 +217,36 @@ namespace exactextract {
         }
 
         template<typename extent_tag2>
-        bool compatible_with(const Grid<extent_tag2> &b) const {
+        bool compatible_with(const Grid<extent_tag2> &b, double compatability_tol) const {
             // Define a tolerance for grid compatibility, to be used in the following ways:
             // Grid resolutions must be integer multiples of each other within a factor of 'compatibility_tol'
             // Grid origin points must differ by an integer multiple of the smaller of the two grid resolutions,
             // within a factor of 'compatibility_tol'.
-            // Perhaps it's possible to remove this hardcoded tolerance and express something in terms of
-            // std::numeric_limits<double>::epsilon(), but I wasn't able to make that work.
-            constexpr double compatability_tol = 1e-6;
 
             if (empty() || b.empty()) {
                 return true;
             }
 
+            double xtol = std::min(m_dx, b.m_dx) * compatability_tol;
+            double ytol = std::min(m_dy, b.m_dy) * compatability_tol;
+
             // Check x-resolution compatibility
-            if (!is_integral(std::max(m_dx, b.m_dx) / std::min(m_dx, b.m_dx), std::min(m_dx, b.m_dx)*compatability_tol)) {
+            if (!is_integral(std::max(m_dx, b.m_dx) / std::min(m_dx, b.m_dx), xtol)) {
                 return false;
             }
 
             // Check y-resolution compatibility
-            if (!is_integral(std::max(m_dy, b.m_dy) / std::min(m_dy, b.m_dy), std::min(m_dy, b.m_dy)*compatability_tol)) {
+            if (!is_integral(std::max(m_dy, b.m_dy) / std::min(m_dy, b.m_dy), ytol)) {
                 return false;
             }
 
             // Check left-hand boundary compatibility
-            if (!is_integral(std::abs(b.m_extent.xmin - m_extent.xmin) / std::min(m_dx, b.m_dx), std::min(m_dx, b.m_dx)*compatability_tol)) {
+            if (!is_integral(std::abs(b.m_extent.xmin - m_extent.xmin) / std::min(m_dx, b.m_dx), xtol)) {
                 return false;
             }
 
             // Check upper boundary compatibility
-            if (!is_integral(std::abs(b.m_extent.ymax - m_extent.ymax) / std::min(m_dy, b.m_dy), std::min(m_dy, b.m_dy)*compatability_tol)) {
+            if (!is_integral(std::abs(b.m_extent.ymax - m_extent.ymax) / std::min(m_dy, b.m_dy), ytol)) {
                 return false;
             }
 
@@ -254,8 +254,8 @@ namespace exactextract {
         }
 
         template<typename extent_tag2>
-        Grid<extent_tag> common_grid(const Grid<extent_tag2> &b) const {
-            if (!compatible_with(b)) {
+        Grid<extent_tag> common_grid(const Grid<extent_tag2> &b, double tol = 1e-6) const {
+            if (!compatible_with(b, tol)) {
                 throw std::runtime_error("Incompatible extents.");
             }
 
@@ -282,8 +282,8 @@ namespace exactextract {
         }
 
         template<typename extent_tag2>
-        Grid<extent_tag> overlapping_grid(const Grid<extent_tag2> &b) const {
-            if (!compatible_with(b)) {
+        Grid<extent_tag> overlapping_grid(const Grid<extent_tag2> &b, double tol = 1e-6) const {
+            if (!compatible_with(b, tol)) {
                 throw std::runtime_error("Incompatible extents.");
             }
 

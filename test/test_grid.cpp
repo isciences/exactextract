@@ -184,6 +184,8 @@ TEST_CASE("Cropping robustness (2)") {
 }
 
 TEST_CASE("Grid compatibility tests", "[grid]") {
+    constexpr double tol = 1e-6;
+
     Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
     Grid<bounded_extent> one_degree_global{global, 1, 1};
     Grid<bounded_extent> quarter_degree_partial{{-180, -60, 90, 83}, 0.25, 0.25};
@@ -191,30 +193,47 @@ TEST_CASE("Grid compatibility tests", "[grid]") {
     Grid<bounded_extent> tenth_degree_global{global, 0.1, 0.1};
     Grid<bounded_extent> half_degree_offset{{-180.25, -90, -100.25, 50}, 0.5, 0.5};
 
-    CHECK( half_degree_global.compatible_with(one_degree_global) );
-    CHECK( quarter_degree_partial.compatible_with(one_degree_global) );
-    CHECK( one_degree_global.compatible_with(nldas) );
-    CHECK( half_degree_global.compatible_with(tenth_degree_global) );
+    CHECK( half_degree_global.compatible_with(one_degree_global, tol) );
+    CHECK( quarter_degree_partial.compatible_with(one_degree_global, tol) );
+    CHECK( one_degree_global.compatible_with(nldas, tol) );
+    CHECK( half_degree_global.compatible_with(tenth_degree_global, tol) );
 
-    CHECK( !quarter_degree_partial.compatible_with(tenth_degree_global) );
-    CHECK( !tenth_degree_global.compatible_with(nldas) );
-    CHECK( !half_degree_global.compatible_with(half_degree_offset) );
+    CHECK( !quarter_degree_partial.compatible_with(tenth_degree_global, tol) );
+    CHECK( !tenth_degree_global.compatible_with(nldas, tol) );
+    CHECK( !half_degree_global.compatible_with(half_degree_offset, tol) );
 }
 
 TEST_CASE("Grid compatibility, with tolerance", "[grid]") {
+    constexpr double tol = 1e-6;
+
     Grid<bounded_extent> a{{60.525000000000006, 29.308333333333334, 75.166666666666671, 38.491666666666667}, 0.0083333333333333332, 0.0083333333333333332};
     Grid<bounded_extent> b{{60.5, 29, 75.5, 38.5}, 0.5, 0.5};
 
-    CHECK ( a.compatible_with(b) );
-    CHECK ( b.compatible_with(a) );
+    CHECK ( a.compatible_with(b, tol) );
+    CHECK ( b.compatible_with(a, tol) );
+}
+
+TEST_CASE("Grid compatibility with reduced tolerance") {
+    constexpr double tol = 1e-3;
+
+    // Examples below are taken from test data used in vignettes for exactextractr
+    // The grids are considered compatible before they are pre-cropped to the extent of the input polygons,
+    // but not afterwards.
+    Grid<bounded_extent> a{{-25.8583333333334, 37.6999999999999, -25.1333333333334, 37.9083333333333}, 1.0/120, 1.0/120};
+    Grid<bounded_extent> b{{-25.8550000000072, 37.7029166667142, -25.1345833334558, 37.9095833333478}, 1.0/4800, 1.0/4800};
+
+    CHECK ( a.compatible_with(b, tol) );
+    CHECK ( b.compatible_with(a, tol) );
 }
 
 TEST_CASE("Grid compatibility (empty grid)", "[grid]") {
+    constexpr double tol = 0.0;
+
     Grid<bounded_extent> half_degree_global{global, 0.5, 0.5};
 
-    CHECK( half_degree_global.compatible_with(Grid<bounded_extent>::make_empty()) );
-    CHECK( Grid<bounded_extent>::make_empty().compatible_with(half_degree_global) );
-    CHECK( Grid<bounded_extent>::make_empty().compatible_with(Grid<bounded_extent>::make_empty()) );
+    CHECK( half_degree_global.compatible_with(Grid<bounded_extent>::make_empty(), tol) );
+    CHECK( Grid<bounded_extent>::make_empty().compatible_with(half_degree_global, tol) );
+    CHECK( Grid<bounded_extent>::make_empty().compatible_with(Grid<bounded_extent>::make_empty(), tol) );
 }
 
 TEST_CASE("Common extent calculation", "[grid]") {
