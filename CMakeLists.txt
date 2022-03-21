@@ -22,6 +22,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 include(VersionSource)
 find_package(GEOS REQUIRED)
+
+#Configure some options the various components this module can build
+option(BUILD_CLI "Build the exactextract cli binary" ON) #requires gdal
+option(BUILD_TEST "Build the exactextract tests" ON) #requires catch
+option(BUILD_DOC "Build documentation" ON) #requires doxygen
+
 find_package(GDAL)
 
 message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
