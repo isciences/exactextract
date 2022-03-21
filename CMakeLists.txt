@@ -35,13 +35,13 @@ if(BUILD_CLI)
     if (GDAL_FOUND)
         # Check GDAL version (requires CMake 3.14)
         if (${CMAKE_VERSION} VERSION_LESS 3.14.0)
-                message(WARNING "GDAL 2.0+ is required but detected GDAL version is unknown.")
+                message(FATAL_ERROR "GDAL 2.0+ is required but detected GDAL version is unknown.")
         elseif(${GDAL_VERSION} VERSION_LESS 2.0)
                 unset(GDAL_FOUND)
         endif()
     endif() #GDAL_FOUND
     if (NOT GDAL_FOUND)
-        message(WARNING
+        message(FATAL_ERROR
         "GDAL version >= 2.0 was not found. It is still possible to build and test libexactextract, but the "
         "exactextract executable cannot be built or installed.")
     endif() #NOT GDAL_FOUND
