@@ -218,9 +218,17 @@ set(PROJECT_SOURCES
         src/variance.h
         vend/optional.hpp)
 
+#Compile the source into an object lib
+add_library(${LIB_NAME}_OBJ OBJECT ${PROJECT_SOURCES})
+#Reusing the same object library for both shared libs and object libs *may* be less efficient
+#due to the position indendent code generated for the shared library.
+#This can be reverted if that is a factor, or two object libraries can be defined
+#(although that would be the same as removing these lines and using the loop below...)
+#a third option is to let CMAKE determine the build type using `BUILD_SHARED_LIBS`
+set_property(TARGET ${LIB_NAME}_OBJ PROPERTY POSITION_INDEPENDENT_CODE 1)
 # Make a shared and static version of the library
 foreach(LINKING SHARED STATIC)
-    add_library(${LIB_NAME}_${LINKING} ${LINKING} ${PROJECT_SOURCES})
+    add_library(${LIB_NAME}_${LINKING} ${LINKING} $<TARGET_OBJECTS:${LIB_NAME}_OBJ>)
 
     # Check matrix bounds for debug builds
     set_target_properties(${LIB_NAME}_${LINKING}
