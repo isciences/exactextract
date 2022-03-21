@@ -112,23 +112,59 @@ if(BUILD_CLI)
 
 endif() #BUILD_CLI
 
+if(BUILD_TEST)
+    #Build the test suite
+
+    # Download Catch (header-only library)
+    set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
+    set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
+
+    if (NOT EXISTS ${CATCH_INCLUDE})
+        file(DOWNLOAD https://github.com/catchorg/Catch2/releases/download/v2.9.1/catch.hpp
+            ${CATCH_INCLUDE}
+            SHOW_PROGRESS)
+    endif()
+
+    set(TEST_SOURCES
+    test/test_box.cpp
+    test/test_cell.cpp
+    test/test_geos_utils.cpp
+    test/test_grid.cpp
+    test/test_main.cpp
+    test/test_perimeter_distance.cpp
+    test/test_raster.cpp
+    test/test_raster_area.cpp
+    test/test_raster_cell_intersection.cpp
+    test/test_raster_iterator.cpp
+    test/test_traversal_areas.cpp
+    test/test_stats.cpp
+    test/test_utils.cpp)
+
+    # Create an executable to run the unit tests
+    add_executable(catch_tests ${TEST_SOURCES})
+
+    target_include_directories(
+            catch_tests
+            PRIVATE
+                ${CATCH_INCLUDE_DIR}
+                ${GEOS_INCLUDE_DIR}
+                ${CMAKE_SOURCE_DIR}/src
+    )
+
+    target_link_libraries(
+            catch_tests
+            PRIVATE
+                ${LIB_NAME}_SHARED
+                ${GEOS_LIBRARY}
+    )
+
+endif() #BUILD_TEST
+
 message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
 configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h)
 
 if (GEOS_VERSION_MAJOR LESS 3 OR GEOS_VERSION_MINOR LESS 5)
    message(FATAL_ERROR "GEOS version 3.5 or later is required.")
-endif()
-
-
-
-# Download Catch (header-only library)
-set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
-set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
-
-if (NOT EXISTS ${CATCH_INCLUDE})
-    file(DOWNLOAD https://github.com/catchorg/Catch2/releases/download/v2.9.1/catch.hpp
-         ${CATCH_INCLUDE}
-         SHOW_PROGRESS)
 endif()
 
 # Define coverage build type
@@ -182,21 +218,6 @@ set(PROJECT_SOURCES
         src/variance.h
         vend/optional.hpp)
 
-set(TEST_SOURCES
-        test/test_box.cpp
-        test/test_cell.cpp
-        test/test_geos_utils.cpp
-        test/test_grid.cpp
-        test/test_main.cpp
-        test/test_perimeter_distance.cpp
-        test/test_raster.cpp
-        test/test_raster_area.cpp
-        test/test_raster_cell_intersection.cpp
-        test/test_raster_iterator.cpp
-        test/test_traversal_areas.cpp
-        test/test_stats.cpp
-        test/test_utils.cpp)
-
 # Make a shared and static version of the library
 foreach(LINKING SHARED STATIC)
     add_library(${LIB_NAME}_${LINKING} ${LINKING} ${PROJECT_SOURCES})
@@ -232,24 +253,6 @@ foreach(LINKING SHARED STATIC)
 
     set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})
 endforeach(LINKING)
-
-# Create an executable to run the unit tests
-add_executable(catch_tests ${TEST_SOURCES})
-
-target_include_directories(
-        catch_tests
-        PRIVATE
-            ${CATCH_INCLUDE_DIR}
-            ${GEOS_INCLUDE_DIR}
-            ${CMAKE_SOURCE_DIR}/src
-)
-
-target_link_libraries(
-        catch_tests
-        PRIVATE
-            ${LIB_NAME}_SHARED
-            ${GEOS_LIBRARY}
-)
 
 # Doxygen configuration from https://vicrucann.github.io/tutorials/quick-cmake-doxygen/
 
