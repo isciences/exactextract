@@ -22,47 +22,149 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 include(VersionSource)
 find_package(GEOS REQUIRED)
-find_package(GDAL)
+
+#Configure some options the various components this module can build
+option(BUILD_CLI "Build the exactextract cli binary" ON) #requires gdal, cli11
+option(BUILD_TEST "Build the exactextract tests" ON) #requires catch
+option(BUILD_DOC "Build documentation" ON) #requires doxygen
+
+if(BUILD_CLI)
+    # Create our main program, statically linked to our library
+    # Unlike the library, this depends on GDAL
+    find_package(GDAL)
+    if (GDAL_FOUND)
+        # Check GDAL version (requires CMake 3.14)
+        if (${CMAKE_VERSION} VERSION_LESS 3.14.0)
+                message(FATAL_ERROR "GDAL 2.0+ is required but detected GDAL version is unknown.")
+        elseif(${GDAL_VERSION} VERSION_LESS 2.0)
+                unset(GDAL_FOUND)
+        endif()
+    endif() #GDAL_FOUND
+    if (NOT GDAL_FOUND)
+        message(FATAL_ERROR
+        "GDAL version >= 2.0 was not found. It is still possible to build and test libexactextract, but the "
+        "exactextract executable cannot be built or installed.")
+    endif() #NOT GDAL_FOUND
+
+    # Download CLI11 (header-only library)
+    set(CLI11_INCLUDE_DIR ${CMAKE_BINARY_DIR}/CLI11)
+    set(CLI11_INCLUDE ${CLI11_INCLUDE_DIR}/CLI11.hpp)
+
+    if (NOT EXISTS ${CLI11_INCLUDE})
+        file(DOWNLOAD https://github.com/CLIUtils/CLI11/releases/download/v1.6.0/CLI11.hpp
+                ${CLI11_INCLUDE}
+                SHOW_PROGRESS)
+    endif()
+
+    #Configure the exactextract CLI target
+    set(BIN_SOURCES
+        src/exactextract.cpp
+        src/gdal_raster_wrapper.h
+        src/gdal_raster_wrapper.cpp
+        src/gdal_dataset_wrapper.h
+        src/gdal_dataset_wrapper.cpp
+        src/gdal_writer.h
+        src/gdal_writer.cpp
+        src/processor.h
+        src/feature_sequential_processor.cpp
+        src/feature_sequential_processor.h
+        src/raster_sequential_processor.cpp
+        src/raster_sequential_processor.h
+    )
+
+    add_executable(${BIN_NAME} ${BIN_SOURCES})
+    set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
+
+    target_compile_definitions(${BIN_NAME} PRIVATE GEOS_USE_ONLY_R_API)
+
+    target_link_libraries(
+            ${BIN_NAME}
+            PRIVATE
+            ${LIB_NAME}_STATIC
+            ${GDAL_LIBRARY}
+            ${GEOS_LIBRARY}
+    )
+
+    target_include_directories(
+            ${BIN_NAME}
+            PRIVATE
+            ${CMAKE_BINARY_DIR}/generated
+            ${CMAKE_SOURCE_DIR}/src
+            ${GEOS_INCLUDE_DIR}
+            ${GDAL_INCLUDE_DIR}
+    )
+
+    # Include CLI11 as a system include so that -Wshadow warnings are suppressed.
+    target_include_directories(
+            ${BIN_NAME}
+            SYSTEM PRIVATE ${CLI11_INCLUDE_DIR}
+    )
+
+    target_compile_options(
+            ${BIN_NAME}
+            PRIVATE
+            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>)
+
+    install(TARGETS ${BIN_NAME}
+            RUNTIME
+            DESTINATION bin)
+
+endif() #BUILD_CLI
+
+if(BUILD_TEST)
+    #Build the test suite
+
+    # Download Catch (header-only library)
+    set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
+    set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
+
+    if (NOT EXISTS ${CATCH_INCLUDE})
+        file(DOWNLOAD https://github.com/catchorg/Catch2/releases/download/v2.13.8/catch.hpp
+            ${CATCH_INCLUDE}
+            SHOW_PROGRESS)
+    endif()
+
+    set(TEST_SOURCES
+    test/test_box.cpp
+    test/test_cell.cpp
+    test/test_geos_utils.cpp
+    test/test_grid.cpp
+    test/test_main.cpp
+    test/test_perimeter_distance.cpp
+    test/test_raster.cpp
+    test/test_raster_area.cpp
+    test/test_raster_cell_intersection.cpp
+    test/test_raster_iterator.cpp
+    test/test_traversal_areas.cpp
+    test/test_stats.cpp
+    test/test_utils.cpp)
+
+    # Create an executable to run the unit tests
+    add_executable(catch_tests ${TEST_SOURCES})
+
+    target_include_directories(
+            catch_tests
+            PRIVATE
+                ${CATCH_INCLUDE_DIR}
+                ${GEOS_INCLUDE_DIR}
+                ${CMAKE_SOURCE_DIR}/src
+    )
+
+    target_link_libraries(
+            catch_tests
+            PRIVATE
+                ${LIB_NAME}_SHARED
+                ${GEOS_LIBRARY}
+    )
+
+endif() #BUILD_TEST
 
 message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
 configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h)
 
 if (GEOS_VERSION_MAJOR LESS 3 OR GEOS_VERSION_MINOR LESS 5)
    message(FATAL_ERROR "GEOS version 3.5 or later is required.")
-endif()
-
-if (GDAL_FOUND)
-    # Check GDAL version (requires CMake 3.14)
-    if (${CMAKE_VERSION} VERSION_LESS 3.14.0)
-        message(WARNING "GDAL 2.0+ is required but detected GDAL version is unknown.")
-    elseif(${GDAL_VERSION} VERSION_LESS 2.0)
-        unset(GDAL_FOUND)
-    endif()
-endif()
-if (NOT GDAL_FOUND)
-    message(WARNING
-    "GDAL version >= 2.0 was not found. It is still possible to build and test libexactextract, but the "
-    "exactextract executable cannot be built or installed.")
-endif()
-
-# Download Catch (header-only library)
-set(CATCH_INCLUDE_DIR ${CMAKE_BINARY_DIR}/catch)
-set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
-
-if (NOT EXISTS ${CATCH_INCLUDE})
-    file(DOWNLOAD https://github.com/catchorg/Catch2/releases/download/v2.9.1/catch.hpp
-         ${CATCH_INCLUDE}
-         SHOW_PROGRESS)
-endif()
-
-# Download CLI11 (header-only library)
-set(CLI11_INCLUDE_DIR ${CMAKE_BINARY_DIR}/CLI11)
-set(CLI11_INCLUDE ${CLI11_INCLUDE_DIR}/CLI11.hpp)
-
-if (NOT EXISTS ${CLI11_INCLUDE})
-    file(DOWNLOAD https://github.com/CLIUtils/CLI11/releases/download/v1.6.0/CLI11.hpp
-            ${CLI11_INCLUDE}
-            SHOW_PROGRESS)
 endif()
 
 # Define coverage build type
@@ -116,39 +218,17 @@ set(PROJECT_SOURCES
         src/variance.h
         vend/optional.hpp)
 
-set(TEST_SOURCES
-        test/test_box.cpp
-        test/test_cell.cpp
-        test/test_geos_utils.cpp
-        test/test_grid.cpp
-        test/test_main.cpp
-        test/test_perimeter_distance.cpp
-        test/test_raster.cpp
-        test/test_raster_area.cpp
-        test/test_raster_cell_intersection.cpp
-        test/test_raster_iterator.cpp
-        test/test_traversal_areas.cpp
-        test/test_stats.cpp
-        test/test_utils.cpp)
-
-set(BIN_SOURCES
-        src/exactextract.cpp
-        src/gdal_raster_wrapper.h
-        src/gdal_raster_wrapper.cpp
-        src/gdal_dataset_wrapper.h
-        src/gdal_dataset_wrapper.cpp
-        src/gdal_writer.h
-        src/gdal_writer.cpp
-        src/processor.h
-        src/feature_sequential_processor.cpp
-        src/feature_sequential_processor.h
-        src/raster_sequential_processor.cpp
-        src/raster_sequential_processor.h
-    )
-
+#Compile the source into an object lib
+add_library(${LIB_NAME}_OBJ OBJECT ${PROJECT_SOURCES})
+#Reusing the same object library for both shared libs and object libs *may* be less efficient
+#due to the position indendent code generated for the shared library.
+#This can be reverted if that is a factor, or two object libraries can be defined
+#(although that would be the same as removing these lines and using the loop below...)
+#a third option is to let CMAKE determine the build type using `BUILD_SHARED_LIBS`
+set_property(TARGET ${LIB_NAME}_OBJ PROPERTY POSITION_INDEPENDENT_CODE 1)
 # Make a shared and static version of the library
 foreach(LINKING SHARED STATIC)
-    add_library(${LIB_NAME}_${LINKING} ${LINKING} ${PROJECT_SOURCES})
+    add_library(${LIB_NAME}_${LINKING} ${LINKING} $<TARGET_OBJECTS:${LIB_NAME}_OBJ>)
 
     # Check matrix bounds for debug builds
     set_target_properties(${LIB_NAME}_${LINKING}
@@ -182,87 +262,26 @@ foreach(LINKING SHARED STATIC)
     set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})
 endforeach(LINKING)
 
-# Create an executable to run the unit tests
-add_executable(catch_tests ${TEST_SOURCES})
+if(BUILD_DOC)
+    # Doxygen configuration from https://vicrucann.github.io/tutorials/quick-cmake-doxygen/
+    # check if Doxygen is installed
+    find_package(Doxygen)
+    if (DOXYGEN_FOUND)
+        # set input and output files
+        set(DOXYGEN_IN ${CMAKE_SOURCE_DIR}/docs/Doxyfile.in)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-target_include_directories(
-        catch_tests
-        PRIVATE
-            ${CATCH_INCLUDE_DIR}
-            ${GEOS_INCLUDE_DIR}
-            ${CMAKE_SOURCE_DIR}/src
-)
+        # request to configure the file
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        message("Doxygen build started")
 
-target_link_libraries(
-        catch_tests
-        PRIVATE
-            ${LIB_NAME}_SHARED
-            ${GEOS_LIBRARY}
-)
-
-# Doxygen configuration from https://vicrucann.github.io/tutorials/quick-cmake-doxygen/
-# first we can indicate the documentation build as an option and set it to ON by default
-option(BUILD_DOC "Build documentation" ON)
-
-# check if Doxygen is installed
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-    # set input and output files
-    set(DOXYGEN_IN ${CMAKE_SOURCE_DIR}/docs/Doxyfile.in)
-    set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-
-    # request to configure the file
-    configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-    message("Doxygen build started")
-
-    # note the option ALL which allows to build the docs together with the application
-    add_custom_target( doc_doxygen ALL
-            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            COMMENT "Generating API documentation with Doxygen"
-            VERBATIM )
-else (DOXYGEN_FOUND)
-    message("Doxygen need to be installed to generate the doxygen documentation")
-endif (DOXYGEN_FOUND)
-
-# Create our main program, statically linked to our library
-# Unlike the library, this depends on GDAL
-if (GDAL_FOUND)
-    add_executable(${BIN_NAME} ${BIN_SOURCES})
-    set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
-
-    target_compile_definitions(${BIN_NAME} PRIVATE GEOS_USE_ONLY_R_API)
-
-    target_link_libraries(
-            ${BIN_NAME}
-            PRIVATE
-            ${LIB_NAME}_STATIC
-            ${GDAL_LIBRARY}
-            ${GEOS_LIBRARY}
-    )
-
-    target_include_directories(
-            ${BIN_NAME}
-            PRIVATE
-            ${CMAKE_BINARY_DIR}/generated
-            ${CMAKE_SOURCE_DIR}/src
-            ${GEOS_INCLUDE_DIR}
-            ${GDAL_INCLUDE_DIR}
-    )
-
-    # Include CLI11 as a system include so that -Wshadow warnings are suppressed.
-    target_include_directories(
-            ${BIN_NAME}
-            SYSTEM PRIVATE ${CLI11_INCLUDE_DIR}
-    )
-
-    target_compile_options(
-            ${BIN_NAME}
-            PRIVATE
-            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow>
-            $<$<CXX_COMPILER_ID:Clang>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>)
-
-    install(TARGETS ${BIN_NAME}
-            RUNTIME
-            DESTINATION bin)
-endif(GDAL_FOUND)
+        # note the option ALL which allows to build the docs together with the application
+        add_custom_target( doc_doxygen ALL
+                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMENT "Generating API documentation with Doxygen"
+                VERBATIM )
+    else (DOXYGEN_FOUND)
+        message("Doxygen need to be installed to generate the doxygen documentation")
+    endif (DOXYGEN_FOUND)
+endif() #BUILD_DOC

@@ -16,7 +16,7 @@ variables:
   script:
     - mkdir build-coverage
     - cd build-coverage
-    - cmake -DCMAKE_BUILD_TYPE=Coverage ..
+    - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=NO ..
     - make -j2 catch_tests
     - valgrind --leak-check=full --error-exitcode=1 ./catch_tests
   after_script:
@@ -69,7 +69,7 @@ pages:
   script:
     - mkdir build-docs
     - cd build-docs
-    - cmake ..
+    - cmake -DBUILD_CLI=NO ..
     - make doc_doxygen
     - mv html ../public
   artifacts:

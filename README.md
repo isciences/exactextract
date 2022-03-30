@@ -39,7 +39,7 @@ The weighting raster does not need to have the same resolution and extent as the
 * A C++14 compiler (e.g., gcc 5.0+)
 * CMake 3.8+
 * [GEOS](https://github.com/libgeos/geos) version 3.5+
-* [GDAL](https://github.com/osgeo/GDAL) version 2.0+
+* [GDAL](https://github.com/osgeo/GDAL) version 2.0+ (For CLI binary)
 
 It can be built as follows on Linux as follows:
 
@@ -51,6 +51,23 @@ cd cmake-build-release
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 sudo make install
+```
+
+There are three options available to control what gets compiled. They are each ON by default.
+- `BUILD_CLI` will build main program (which requires GDAL)
+- `BUILD_TEST` will build the catch_test suite
+- `BUILD_DOC` will build the doxygen documentation if doxygen is available
+
+To build just the library (static and dynamic) and test suite, you can use these options as follows to turn off the CLI (which means GDAL isn't required) and disable the documentation build. The tests and libary are built, the tests run, and the library installed if the tests were run successfully:
+
+```bash
+git clone https://github.com/isciences/exactextract
+cd exactextract
+mkdir cmake-build-release
+cd cmake-build-release
+cmake -DBUILD_CLI:=OFF -DBUILD_DOC:=OFF -DCMAKE_BUILD_TYPE=Release ..
+make
+./catch_tests && sudo make install
 ```
 
 ### Using `exactextract`
