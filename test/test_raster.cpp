@@ -281,6 +281,18 @@ TEST_CASE("Creating a shifted view (robustness)") {
     CHECK ( rv(5, 5) == rast(5, 6) );
 }
 
+TEST_CASE("Creating a scaled view (robustness)") {
+    Box rast_box{-180, -90, 180, 90};
+
+    double rast_res = 0.5 - 1e-12;
+    double view_res = 2.5 / 60;
+
+    Raster<int> rast{Grid<bounded_extent>{rast_box, rast_res, rast_res}};
+    RasterView<int> rv{rast, Grid<bounded_extent>{rast_box, view_res, view_res}};
+
+    CHECK ( rv.rows() == 4320 );
+}
+
 TEST_CASE("Empty view") {
     Box rast_box{10, 0, 10, 10};
     double res = 1.0;
