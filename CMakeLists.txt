@@ -120,7 +120,7 @@ if(BUILD_TEST)
     set(CATCH_INCLUDE ${CATCH_INCLUDE_DIR}/catch.hpp)
 
     if (NOT EXISTS ${CATCH_INCLUDE})
-        file(DOWNLOAD https://github.com/catchorg/Catch2/releases/download/v2.9.1/catch.hpp
+        file(DOWNLOAD https://github.com/catchorg/Catch2/releases/download/v2.13.8/catch.hpp
             ${CATCH_INCLUDE}
             SHOW_PROGRESS)
     endif()
