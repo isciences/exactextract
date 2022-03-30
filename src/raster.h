@@ -253,8 +253,8 @@ namespace exactextract {
                 double disaggregation_factor_x = r.xres() / ex.dx();
                 double disaggregation_factor_y = r.yres() / ex.dy();
 
-                if (std::abs(disaggregation_factor_x - std::floor(disaggregation_factor_x)) > 1e-6 ||
-                    std::abs(disaggregation_factor_y - std::floor(disaggregation_factor_y)) > 1e-6) {
+                if (std::abs(disaggregation_factor_x - std::round(disaggregation_factor_x)) > 1e-6 ||
+                    std::abs(disaggregation_factor_y - std::round(disaggregation_factor_y)) > 1e-6) {
                     throw std::runtime_error("Must construct view at resolution that is an integer multiple of original.");
                 }
 
