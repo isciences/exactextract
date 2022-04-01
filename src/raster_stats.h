@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2018-2022 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -110,6 +110,32 @@ namespace exactextract {
             }
         }
 
+        void process_value(const T& val, float coverage, double weight) {
+            m_sum_ci += static_cast<double>(coverage);
+            m_sum_xici += val*static_cast<double>(coverage);
+
+            m_variance.process(val, coverage);
+
+            double ciwi = static_cast<double>(coverage)*weight;
+            m_sum_ciwi += ciwi;
+            m_sum_xiciwi += val * ciwi;
+
+            if (val < m_min) {
+                m_min = val;
+            }
+
+            if (val > m_max) {
+                m_max = val;
+            }
+
+            if (m_store_values) {
+                auto& entry = m_freq[val];
+                entry.m_sum_ci += static_cast<double>(coverage);
+                entry.m_sum_ciwi += ciwi;
+                m_quantiles.reset();
+            }
+        }
+
         /**
          * The mean value of cells covered by this polygon, weighted
          * by the percent of the cell that is covered.
@@ -153,7 +179,7 @@ namespace exactextract {
             return std::max_element(m_freq.cbegin(),
                                     m_freq.cend(),
                                     [](const auto &a, const auto &b) {
-                                        return a.second < b.second || (a.second == b.second && a.first < b.first);
+                                        return a.second.m_sum_ci < b.second.m_sum_ci || (a.second.m_sum_ci == b.second.m_sum_ci && a.first < b.first);
                                     })->first;
         }
 
@@ -194,7 +220,7 @@ namespace exactextract {
                 m_quantiles = std::make_unique<WeightedQuantiles>();
 
                 for (const auto& entry : m_freq) {
-                    m_quantiles->process(entry.first, entry.second);
+                    m_quantiles->process(entry.first, entry.second.m_sum_ci);
                 }
             }
 
@@ -222,12 +248,57 @@ namespace exactextract {
         }
 
         /**
-         * The number of raster cells with a defined value
+         * The number of raster cells with any defined value
          * covered by the polygon. Weights are not taken
          * into account.
          */
         float count() const {
             return (float) m_sum_ci;
+        }
+
+        /**
+         * The number of raster cells with a specific value
+         * covered by the polygon. Weights are not taken
+         * into account.
+         */
+        nonstd::optional<float> count(const T& value) const {
+            const auto& entry = m_freq.find(value);
+
+            if (entry == m_freq.end()) {
+                return nonstd::nullopt;
+            }
+
+            return static_cast<float>(entry->second.m_sum_ci);
+        }
+
+        /**
+         * The fraction of defined raster cells covered by the polygon with
+         * a value that equals the specified value.
+         * Weights are not taken into account.
+         */
+        nonstd::optional<float> frac(const T& value) const {
+            auto count_for_value = count(value);
+
+            if (!count_for_value.has_value()) {
+                return count_for_value;
+            }
+
+            return count_for_value.value() / count();
+        }
+
+        /**
+         * The weighted fraction of defined raster cells covered by the polygon with
+         * a value that equals the specified value.
+         * Weights are not taken into account.
+         */
+        nonstd::optional<float> weighted_frac(const T& value) const {
+            auto count_for_value = weighted_count(value);
+
+            if (!count_for_value.has_value()) {
+                return count_for_value;
+            }
+
+            return count_for_value.value() / weighted_count();
         }
 
         /**
@@ -273,6 +344,25 @@ namespace exactextract {
         }
 
         /**
+         * The sum of weights for each cell of a specific value covered by the
+         * polygon, with each weight multiplied by the coverage coverage fraction
+         * of each cell.
+         *
+         * If any weights are undefined, will return NAN. If this is undesirable,
+         * caller should replace undefined weights with a suitable default
+         * before computing statistics.
+         */
+        nonstd::optional<float> weighted_count(const T& value) const {
+            const auto& entry = m_freq.find(value);
+
+            if (entry == m_freq.end()) {
+                return nonstd::nullopt;
+            }
+
+            return static_cast<float>(entry->second.m_sum_ciwi);
+        }
+
+        /**
          * The raster value occupying the least number of cells
          * or partial cells within the polygon. When multiple values
          * cover the same number of cells, the lowest value will
@@ -288,7 +378,7 @@ namespace exactextract {
             return std::min_element(m_freq.cbegin(),
                                     m_freq.cend(),
                                     [](const auto &a, const auto &b) {
-                                        return a.second < b.second || (a.second == b.second && a.first < b.first);
+                                        return a.second.m_sum_ci < b.second.m_sum_ci || (a.second.m_sum_ci == b.second.m_sum_ci && a.first < b.first);
                                     })->first;
         }
 
@@ -319,34 +409,66 @@ namespace exactextract {
 
         mutable std::unique_ptr<WeightedQuantiles> m_quantiles;
 
-        std::unordered_map<T, float> m_freq;
+        struct ValueFreqEntry {
+            double m_sum_ci = 0;
+            double m_sum_ciwi = 0;
+        };
+        std::unordered_map<T, ValueFreqEntry> m_freq;
 
         bool m_store_values;
 
-        void process_value(const T& val, float coverage, double weight) {
-            m_sum_ci += static_cast<double>(coverage);
-            m_sum_xici += val*static_cast<double>(coverage);
+        struct Iterator {
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type = std::ptrdiff_t;
+            using value_type = const T;
+            using pointer = value_type*;
+            using reference = value_type&;
 
-            m_variance.process(val, coverage);
+            using underlying_iterator = decltype(m_freq.cbegin());
 
-            double ciwi = static_cast<double>(coverage)*weight;
-            m_sum_ciwi += ciwi;
-            m_sum_xiciwi += val * ciwi;
+            Iterator(underlying_iterator it) : m_iterator(it) {}
 
-            if (val < m_min) {
-                m_min = val;
+            reference operator*() const {
+                return m_iterator->first;
             }
 
-            if (val > m_max) {
-                m_max = val;
+            pointer operator->() const {
+                return &(m_iterator->first);
             }
 
-            // TODO should weights factor in here?
-            if (m_store_values) {
-                m_freq[val] += coverage;
-                m_quantiles.reset();
+            // prefix
+            Iterator& operator++() {
+                m_iterator++;
+                return *this;
             }
+
+            // postfix
+            Iterator operator++(int) {
+                Iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
+            friend bool operator==(const Iterator& a, const Iterator& b) {
+                return a.m_iterator == b.m_iterator;
+            }
+            friend bool operator!=(const Iterator& a, const Iterator& b) {
+                return !(a == b);
+            }
+
+        private:
+            underlying_iterator m_iterator;
+        };
+
+    public:
+        Iterator begin() const {
+            return Iterator(m_freq.cbegin());
         }
+
+        Iterator end() const {
+            return Iterator(m_freq.cend());
+        }
+
     };
 
     template<typename T>
