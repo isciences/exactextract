@@ -297,6 +297,34 @@ namespace exactextract {
         }
     }
 
+    TEST_CASE("Stat subsets calculated for a specific category") {
+        std::vector<int> landcov =    {1,     1, 1, 2,     2,   2};
+        std::vector<float> coverage = {0.5, 0.4, 0, 0.3, 0.3, 0.2};
+        std::vector<double> weight =  {0.3, 0.4, 1, 4.0, 3.0,   0};
+
+        RasterStats<decltype(landcov)::value_type> stats{true};
+
+        for (std::size_t i = 0; i < landcov.size(); i++) {
+            stats.process_value(landcov[i], coverage[i], weight[i]);
+        }
+
+        CHECK( stats.count(1).value() == Approx(0.5 + 0.4) );
+        CHECK( stats.count(2).value() == Approx(0.3 + 0.3 + 0.2) );
+        CHECK( !stats.count(3).has_value() );
+
+        CHECK( stats.frac(1).value() == Approx(stats.count(1).value() / stats.count()) );
+        CHECK( stats.frac(2).value() == Approx(stats.count(2).value() / stats.count()) );
+        CHECK( !stats.frac(3).has_value() );
+
+        CHECK( stats.weighted_count(1).value() == Approx(0.5*0.3 + 0.4*0.4) );
+        CHECK( stats.weighted_count(2).value() == Approx(0.3*4.0 + 0.3*3.0) );
+        CHECK( !stats.weighted_count(3).has_value() );
+
+        CHECK( stats.weighted_frac(1).value() == Approx(stats.weighted_count(1).value() / stats.weighted_count()) );
+        CHECK( stats.weighted_frac(2).value() == Approx(stats.weighted_count(2).value() / stats.weighted_count()) );
+        CHECK( !stats.weighted_frac(3).has_value() );
+    }
+
     TEST_CASE("Unweighted stats consider all values when part of polygon is inside value raster but outside weighting raster") {
         GEOSContextHandle_t context = init_geos();
 
