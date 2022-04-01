@@ -416,6 +416,59 @@ namespace exactextract {
         std::unordered_map<T, ValueFreqEntry> m_freq;
 
         bool m_store_values;
+
+        struct Iterator {
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type = std::ptrdiff_t;
+            using value_type = const T;
+            using pointer = value_type*;
+            using reference = value_type&;
+
+            using underlying_iterator = decltype(m_freq.cbegin());
+
+            Iterator(underlying_iterator it) : m_iterator(it) {}
+
+            reference operator*() const {
+                return m_iterator->first;
+            }
+
+            pointer operator->() const {
+                return &(m_iterator->first);
+            }
+
+            // prefix
+            Iterator& operator++() {
+                m_iterator++;
+                return *this;
+            }
+
+            // postfix
+            Iterator operator++(int) {
+                Iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
+            friend bool operator==(const Iterator& a, const Iterator& b) {
+                return a.m_iterator == b.m_iterator;
+            }
+            friend bool operator!=(const Iterator& a, const Iterator& b) {
+                return !(a == b);
+            }
+
+        private:
+            underlying_iterator m_iterator;
+        };
+
+    public:
+        Iterator begin() const {
+            return Iterator(m_freq.cbegin());
+        }
+
+        Iterator end() const {
+            return Iterator(m_freq.cend());
+        }
+
     };
 
     template<typename T>

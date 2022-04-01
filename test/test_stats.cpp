@@ -325,6 +325,25 @@ namespace exactextract {
         CHECK( !stats.weighted_frac(3).has_value() );
     }
 
+    TEST_CASE("Iterator provides access to seen values") {
+        std::vector<int> values = { 1,   3,   2};
+        std::vector<float> cov = {1.0, 2.0, 0.0};
+
+        RasterStats<decltype(values)::value_type> stats{true};
+
+        for (std::size_t i = 0; i < values.size(); i++) {
+            stats.process_value(values[i], cov[i], 1.0);
+        }
+
+        std::vector<int> found(stats.begin(), stats.end());
+        std::sort(found.begin(), found.end());
+
+        CHECK( found.size() == 3 );
+        CHECK( found[0] == 1 );
+        CHECK( found[1] == 2 );
+        CHECK( found[2] == 3 );
+    }
+
     TEST_CASE("Unweighted stats consider all values when part of polygon is inside value raster but outside weighting raster") {
         GEOSContextHandle_t context = init_geos();
 
