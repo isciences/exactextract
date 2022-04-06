@@ -72,7 +72,6 @@ namespace exactextract {
 
         GDALDatasetWrapper& m_shp;
 
-        bool store_values=false;
         bool m_show_progress=false;
 
         std::vector<Operation> m_operations;

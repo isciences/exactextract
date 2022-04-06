@@ -26,7 +26,17 @@ namespace exactextract {
     public:
         RasterStats<double> &stats(const std::string &feature, const Operation &op) {
             // TODO come up with a better storage method.
-            return m_feature_stats[feature][op_key(op)];
+            auto& stats_for_feature = m_feature_stats[feature];
+
+            // can't use find because this requires RasterStats to be copy-constructible before C++ 17
+            auto exists = stats_for_feature.count(op_key(op));
+            if (!exists) {
+                // can't use emplace because this requires RasterStats be copy-constructible before C++17
+                RasterStats<double> new_stats(requires_stored_values(op.stat));
+                stats_for_feature[op_key(op)] = std::move(new_stats);
+            }
+
+            return stats_for_feature[op_key(op)];
         }
 
         const RasterStats<double> &stats(const std::string &feature, const Operation &op) const {
@@ -61,6 +71,10 @@ namespace exactextract {
             } else {
                 return op.values->name();
             }
+        }
+
+        static bool requires_stored_values(const std::string & stat) {
+            return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety";
         }
 
 
