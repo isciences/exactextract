@@ -264,8 +264,8 @@ namespace exactextract {
 
                 m_x_off = static_cast<long>(std::round((ex.xmin() - r.xmin()) / ex.dx()));
                 m_y_off = static_cast<long>(std::round((r.ymax() - ex.ymax()) / ex.dy()));
-                m_rx = static_cast<size_t>(disaggregation_factor_x);
-                m_ry = static_cast<size_t>(disaggregation_factor_y);
+                m_rx = static_cast<size_t>(std::round(disaggregation_factor_x));
+                m_ry = static_cast<size_t>(std::round(disaggregation_factor_y));
             }
 
             if (r.has_nodata()) {

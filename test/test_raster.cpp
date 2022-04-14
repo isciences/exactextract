@@ -288,9 +288,15 @@ TEST_CASE("Creating a scaled view (robustness)") {
     double view_res = 2.5 / 60;
 
     Raster<int> rast{Grid<bounded_extent>{rast_box, rast_res, rast_res}};
+    fill_sequential(rast);
     RasterView<int> rv{rast, Grid<bounded_extent>{rast_box, view_res, view_res}};
 
     CHECK ( rv.rows() == 4320 );
+
+    size_t i = 2015;
+    for (size_t j = 0; j < rv.cols(); j++) {
+        CHECK( rv(i, j) == rast(i / 12, j / 12) );
+    }
 }
 
 TEST_CASE("Empty view") {
