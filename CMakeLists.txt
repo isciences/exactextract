@@ -80,7 +80,7 @@ if(BUILD_CLI)
     target_link_libraries(
             ${BIN_NAME}
             PRIVATE
-            ${LIB_NAME}_STATIC
+            ${LIB_NAME}
             ${GDAL_LIBRARY}
             ${GEOS_LIBRARY}
     )
@@ -154,7 +154,7 @@ if(BUILD_TEST)
     target_link_libraries(
             catch_tests
             PRIVATE
-                ${LIB_NAME}_SHARED
+                ${LIB_NAME}
                 ${GEOS_LIBRARY}
     )
 
@@ -218,49 +218,38 @@ set(PROJECT_SOURCES
         src/variance.h
         vend/optional.hpp)
 
-#Compile the source into an object lib
-add_library(${LIB_NAME}_OBJ OBJECT ${PROJECT_SOURCES})
-#Reusing the same object library for both shared libs and object libs *may* be less efficient
-#due to the position indendent code generated for the shared library.
-#This can be reverted if that is a factor, or two object libraries can be defined
-#(although that would be the same as removing these lines and using the loop below...)
-#a third option is to let CMAKE determine the build type using `BUILD_SHARED_LIBS`
-set_property(TARGET ${LIB_NAME}_OBJ PROPERTY POSITION_INDEPENDENT_CODE 1)
-# Make a shared and static version of the library
-foreach(LINKING SHARED STATIC)
-    add_library(${LIB_NAME}_${LINKING} ${LINKING} $<TARGET_OBJECTS:${LIB_NAME}_OBJ>)
+add_library(${LIB_NAME} ${PROJECT_SOURCES})
 
-    # Check matrix bounds for debug builds
-    set_target_properties(${LIB_NAME}_${LINKING}
-            PROPERTIES COMPILE_DEFINITIONS $<$<CONFIG:Debug>:MATRIX_CHECK_BOUNDS>)
+# Check matrix bounds for debug builds
+set_target_properties(${LIB_NAME}
+        PROPERTIES COMPILE_DEFINITIONS $<$<CONFIG:Debug>:MATRIX_CHECK_BOUNDS>)
 
-    target_include_directories(
-            ${LIB_NAME}_${LINKING}
-            PRIVATE
-            ${GEOS_INCLUDE_DIR}
-    )
+target_include_directories(
+        ${LIB_NAME}
+        PRIVATE
+        ${GEOS_INCLUDE_DIR}
+)
 
-    target_compile_definitions(
-            ${LIB_NAME}_${LINKING}
-            PRIVATE
-            GEOS_USE_ONLY_R_API
-    )
+target_compile_definitions(
+        ${LIB_NAME}
+        PRIVATE
+        GEOS_USE_ONLY_R_API
+)
 
-    target_compile_options(
-            ${LIB_NAME}_${LINKING}
-            PRIVATE
-            $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
-            $<$<CXX_COMPILER_ID:Clang>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
-    )
+target_compile_options(
+        ${LIB_NAME}
+        PRIVATE
+        $<$<CXX_COMPILER_ID:GNU>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
+        $<$<CXX_COMPILER_ID:Clang>:-Werror -Wall -Wextra -Wshadow -Wdouble-promotion>
+)
 
-    target_link_libraries(
-            ${LIB_NAME}_${LINKING}
-            PUBLIC
-            ${GEOS_LIBRARY}
-    )
+target_link_libraries(
+        ${LIB_NAME}
+        PUBLIC
+        ${GEOS_LIBRARY}
+)
 
-    set_target_properties(${LIB_NAME}_${LINKING} PROPERTIES OUTPUT_NAME ${LIB_NAME})
-endforeach(LINKING)
+set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME ${LIB_NAME})
 
 if(BUILD_DOC)
     # Doxygen configuration from https://vicrucann.github.io/tutorials/quick-cmake-doxygen/
