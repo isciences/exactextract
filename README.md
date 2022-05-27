@@ -58,7 +58,7 @@ There are three options available to control what gets compiled. They are each O
 - `BUILD_TEST` will build the catch_test suite
 - `BUILD_DOC` will build the doxygen documentation if doxygen is available
 
-To build just the library (static and dynamic) and test suite, you can use these options as follows to turn off the CLI (which means GDAL isn't required) and disable the documentation build. The tests and libary are built, the tests run, and the library installed if the tests were run successfully:
+To build just the library and test suite, you can use these options as follows to turn off the CLI (which means GDAL isn't required) and disable the documentation build. The tests and library are built, the tests run, and the library installed if the tests were run successfully:
 
 ```bash
 git clone https://github.com/isciences/exactextract
