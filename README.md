@@ -81,10 +81,10 @@ A minimal usage is as follows, in which we want to compute a mean temperature fo
 
 ```bash
 exactextract \
-  -r temp:temperature_2018.tif \
+  -r "temp:temperature_2018.tif" \
   -p countries.shp \
   -f country_name \
-  -s mean(temp) \
+  -s "mean(temp)" \
   -o mean_temperature.csv
 ```
 
@@ -111,20 +111,20 @@ The following more advanced usage shows how `exactextract` might be called to pe
 
 ```bash
 exactextract \
-  -r temp_2016:temperature_2016.tif \
-  -r temp_2017:temperature_2017.tif \
-  -r temp_2018:temperature_2018.tif \
+  -r "temp_2016:temperature_2016.tif" \
+  -r "temp_2017:temperature_2017.tif" \
+  -r "temp_2018:temperature_2018.tif" \
   -p countries.shp \
   -f country_name \
-  -s min(temp_2016) \
-  -s mean(temp_2016) \
-  -s max(temp_2016) \
-  -s min(temp_2017) \
-  -s mean(temp_2017) \
-  -s max(temp_2017) \
-  -s min(temp_2017) \
-  -s mean(temp_2017) \
-  -s max(temp_2017) \
+  -s "min(temp_2016)" \
+  -s "mean(temp_2016)" \
+  -s "max(temp_2016)" \
+  -s "min(temp_2017)" \
+  -s "mean(temp_2017)" \
+  -s "max(temp_2017)" \
+  -s "min(temp_2017)" \
+  -s "mean(temp_2017)" \
+  -s "max(temp_2017)" \
   -o temp_summary.csv
 ```
 
@@ -135,11 +135,11 @@ For example, we may wish to calculate both a standard and population-weighted me
 
 ```bash
 exactextract \
-  -r temp:temperature_2018.tif \
-  -r pop:world_population.tif \
+  -r "temp:temperature_2018.tif" \
+  -r "pop:world_population.tif" \
   -p countries.shp \
   -f country_name \
-  -s mean(temp) \
+  -s "mean(temp)" \
   -s "pop_weighted_mean=weighted_mean(temp,pop)" \
   -o mean_temperature.csv
 ```
