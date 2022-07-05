@@ -7,3 +7,7 @@ cmake-build-*
 .vscode
 .idea/
 callgrind.out.*
+*.egg-info
+build/
+dist/
+*\.pyc

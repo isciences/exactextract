@@ -1,0 +1,7 @@
+[style]
+based_on_style = pep8
+spaces_before_comment = 5
+indent_width: 4
+split_before_logical_operator = true
+split_complex_comprehension = false
+column_limit = 79

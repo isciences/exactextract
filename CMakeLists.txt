@@ -26,9 +26,10 @@ find_package(GEOS REQUIRED)
 #Configure some options the various components this module can build
 option(BUILD_CLI "Build the exactextract cli binary" ON) #requires gdal, cli11
 option(BUILD_TEST "Build the exactextract tests" ON) #requires catch
+option(BUILD_PYTHON "Build the exactextract Python bindings" ON) # requires pybind11
 option(BUILD_DOC "Build documentation" ON) #requires doxygen
 
-if(BUILD_CLI)
+if(BUILD_CLI OR BUILD_PYTHON)
     # Create our main program, statically linked to our library
     # Unlike the library, this depends on GDAL
     find_package(GDAL)
@@ -45,7 +46,9 @@ if(BUILD_CLI)
         "GDAL version >= 2.0 was not found. It is still possible to build and test libexactextract, but the "
         "exactextract executable cannot be built or installed.")
     endif() #NOT GDAL_FOUND
+endif() #BUILD_CLI OR BUILD_PYTHON
 
+if (BUILD_CLI)
     # Download CLI11 (header-only library)
     set(CLI11_INCLUDE_DIR ${CMAKE_BINARY_DIR}/CLI11)
     set(CLI11_INCLUDE ${CLI11_INCLUDE_DIR}/CLI11.hpp)
@@ -219,6 +222,67 @@ set(PROJECT_SOURCES
         vend/optional.hpp)
 
 add_library(${LIB_NAME} ${PROJECT_SOURCES})
+
+if (BUILD_PYTHON)
+    # Build the Python bindings, which require pybind11
+    find_package(pybind11 REQUIRED)
+    if (pybind11_FOUND)
+        # TODO: which pybind11 version
+    endif() #pybind11_FOUND
+    if (NOT pybind11_FOUND)
+        message(FATAL_ERROR
+        "pybind11 was not found. It is still possible to build and test libexactextract, but the "
+        "exactextract Python bindings cannot be built or installed.")
+    endif() #NOT pybind11_FOUND
+
+    set(WRAPPER_SOURCES
+        src/gdal_raster_wrapper.h
+        src/gdal_raster_wrapper.cpp
+        src/gdal_dataset_wrapper.h
+        src/gdal_dataset_wrapper.cpp
+        src/gdal_writer.h
+        src/gdal_writer.cpp
+        src/processor.h
+        src/feature_sequential_processor.cpp
+        src/feature_sequential_processor.h
+        src/raster_sequential_processor.cpp
+        src/raster_sequential_processor.h)
+
+    set(PYBIND_SOURCES
+        ${WRAPPER_SOURCES}
+        src/pybindings/bindings.cpp
+        src/pybindings/box_bindings.cpp
+        src/pybindings/box_bindings.h
+        src/pybindings/cell_bindings.cpp
+        src/pybindings/cell_bindings.h
+        src/pybindings/coordinate_bindings.cpp
+        src/pybindings/coordinate_bindings.h
+        src/pybindings/gdal_dataset_wrapper_bindings.cpp
+        src/pybindings/gdal_dataset_wrapper_bindings.h
+        src/pybindings/gdal_raster_wrapper_bindings.cpp
+        src/pybindings/gdal_raster_wrapper_bindings.h
+        src/pybindings/grid_bindings.cpp
+        src/pybindings/grid_bindings.h
+        src/pybindings/operation_bindings.cpp
+        src/pybindings/operation_bindings.h
+        src/pybindings/processor_bindings.cpp
+        src/pybindings/processor_bindings.h
+        src/pybindings/side_bindings.cpp
+        src/pybindings/side_bindings.h
+        src/pybindings/utils_bindings.cpp
+        src/pybindings/utils_bindings.h
+        src/pybindings/writer_bindings.cpp
+        src/pybindings/writer_bindings.h)
+
+    pybind11_add_module(_exactextract MODULE ${PYBIND_SOURCES})
+    target_include_directories(_exactextract PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${GDAL_INCLUDE_DIR}
+        ${GEOS_INCLUDE_DIR})
+    set_property(TARGET ${LIB_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+    target_link_libraries(_exactextract PRIVATE ${LIB_NAME} ${GDAL_LIBRARY} ${GEOS_LIBRARY})
+
+endif() # BUILD_PYTHON
 
 # Check matrix bounds for debug builds
 set_target_properties(${LIB_NAME}

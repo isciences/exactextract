@@ -39,7 +39,8 @@ The weighting raster does not need to have the same resolution and extent as the
 * A C++14 compiler (e.g., gcc 5.0+)
 * CMake 3.8+
 * [GEOS](https://github.com/libgeos/geos) version 3.5+
-* [GDAL](https://github.com/osgeo/GDAL) version 2.0+ (For CLI binary)
+* [GDAL](https://github.com/osgeo/GDAL) version 2.0+ (For CLI binary and/or Python bindings)
+* [pybind11](https://pybind11.readthedocs.io/en/stable/)  version 2.2+ (For Python bindings)
 
 It can be built as follows on Linux as follows:
 
@@ -57,6 +58,7 @@ There are three options available to control what gets compiled. They are each O
 - `BUILD_CLI` will build main program (which requires GDAL)
 - `BUILD_TEST` will build the catch_test suite
 - `BUILD_DOC` will build the doxygen documentation if doxygen is available
+- `BUILD_PYTHON` will build the Python bindings (requires GDAL and pybind11) ([see the Python README](/python/README.md))
 
 To build just the library and test suite, you can use these options as follows to turn off the CLI (which means GDAL isn't required) and disable the documentation build. The tests and library are built, the tests run, and the library installed if the tests were run successfully:
 
@@ -65,7 +67,7 @@ git clone https://github.com/isciences/exactextract
 cd exactextract
 mkdir cmake-build-release
 cd cmake-build-release
-cmake -DBUILD_CLI:=OFF -DBUILD_DOC:=OFF -DCMAKE_BUILD_TYPE=Release ..
+cmake -DBUILD_CLI:=OFF -DBUILD_DOC:=OFF -DBUILD_PYTHON:=OFF -DCMAKE_BUILD_TYPE=Release ..
 make
 ./catch_tests && sudo make install
 ```
