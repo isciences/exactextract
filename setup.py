@@ -89,15 +89,16 @@ setup(
     name="exactextract",
     version="1.0.0",
     author="ISciences, LLC",
+    url="https://github.com/isciences/exactextract",
     author_email="",
     description="A test project using pybind11 and CMake",
-    long_description="",
+    long_description="exactextract provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as zonal statistics. Unlike other zonal statistics implementations, it takes into account raster cells that are partially covered by the polygon.",
     packages=['exactextract'],
     package_dir={'exactextract': 'python/src/exactextract'},
     ext_modules=[CMakeExtension("_exactextract")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
-    extras_require={},
+    extras_require={"test": ["pytest>=6.0"]},
     python_requires=">=3.7",
-    install_requires=["gdal>=2.0.0"]
+    install_requires=["GDAL>=2.0.0", "pybind11>=2.2"]
 )

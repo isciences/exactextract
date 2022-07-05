@@ -4,7 +4,15 @@
 The `exactextract` Python bindings require a standard Python 3.7+ installation with `pip` and `setuptools`. After building, the only extra dependency is GDAL.
 
 ## Building
-The following can be added to the build environment Docker file to enable building the Python bindings and docs.
+With an Anaconda installation, run:
+```bash
+conda create -n my_env "python>=3.7" "gdal>=2.0.0" "pybind11>=2.2" cmake
+conda activate my_env
+python3 setup.py bdist
+python3 setup.py install
+```
+
+Additionally, the following can be added to the build environment Docker file to enable building the Python bindings and docs.
 ```Dockerfile
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y \
