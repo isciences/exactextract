@@ -247,17 +247,17 @@ from exactextract import GDALDatasetWrapper, GDALRasterWrapper, Operation, MapWr
 dsw = GDALDatasetWrapper('/path/to/dataset.gpkg')
 
 # Define raster wrapper
-raster_wrapper = GDALRasterWrapper('/path/to/raster.tif')
+rsw = GDALRasterWrapper('/path/to/raster.tif')
 
 # Define operations
-op = Operation.from_descriptor('mean(my_id)', raster=raster_wrapper)
-op2 = Operation.from_descriptor('max(my_id)', raster=raster_wrapper)
+op = Operation.from_descriptor('mean(my_id)', raster=rsw)
+op2 = Operation.from_descriptor('max(my_id)', raster=rsw)
 
 # Define output writer
 writer = GDALWriter('/path/to/my_output.csv', dsw)
 
 # Process the data!
-processor = FeatureSequentialProcessor(ds_wrapper, writer, [op, op2])
+processor = FeatureSequentialProcessor(dsw, writer, [op, op2])
 processor.process()
 
 # Flush changes to disk
