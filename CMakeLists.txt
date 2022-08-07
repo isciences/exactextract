@@ -242,6 +242,8 @@ if (BUILD_PYTHON)
         src/gdal_dataset_wrapper.cpp
         src/gdal_writer.h
         src/gdal_writer.cpp
+        src/map_writer.h
+        src/map_writer.cpp
         src/processor.h
         src/feature_sequential_processor.cpp
         src/feature_sequential_processor.h
