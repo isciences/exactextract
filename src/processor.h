@@ -22,6 +22,20 @@
 #include "stats_registry.h"
 
 
+static void errorHandler(const char *fmt, ...) {
+
+    char buf[BUFSIZ], *p;
+    va_list ap;
+    va_start(ap, fmt);
+    vsprintf(buf, fmt, ap);
+    va_end(ap);
+    p = buf + strlen(buf) - 1;
+    if(strlen(buf) > 0 && *p == '\n') *p = '\0';
+
+    std::cerr << buf << std::endl;
+}
+
+
 namespace exactextract {
     class Processor {
 
@@ -29,7 +43,7 @@ namespace exactextract {
         // FIXME add GEOS error/notice handlers
         Processor(GDALDatasetWrapper & ds, OutputWriter & out, const std::vector<Operation> & ops) :
                 m_reg{},
-                m_geos_context{initGEOS_r(nullptr, nullptr)},
+                m_geos_context{initGEOS_r(errorHandler, errorHandler)},
                 m_output{out},
                 m_shp{ds},
                 m_operations{ops}

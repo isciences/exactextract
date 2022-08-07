@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2020 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "area.h"
+#include "measures.h"
 
 #include <cmath>
 #include <cstddef>
@@ -38,6 +38,16 @@ namespace exactextract {
 
     double area(const std::vector<Coordinate> &ring) {
         return std::abs(area_signed(ring));
+    }
+
+    double length(const std::vector<Coordinate> & coords) {
+        double sum{0};
+
+        for (size_t i = 1; i < coords.size(); i++) {
+            sum += coords[i-1].distance(coords[i]);
+        }
+
+        return sum;
     }
 
 }

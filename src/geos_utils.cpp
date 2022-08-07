@@ -105,17 +105,26 @@ namespace exactextract {
             throw std::runtime_error("Error getting geometry extent.");
         }
 #else
-        geom_ptr_r env = geos_ptr(context, GEOSEnvelope_r(context, g));
-
-        const GEOSGeometry* ring = GEOSGetExteriorRing_r(context, env.get());
-        const GEOSCoordSequence* seq = GEOSGeom_getCoordSeq_r(context, ring);
-
         xmin = std::numeric_limits<double>::max();
         ymin = std::numeric_limits<double>::max();
         xmax = std::numeric_limits<double>::lowest();
         ymax = std::numeric_limits<double>::lowest();
 
-        for (unsigned int i = 0; i < 4; i++) {
+        geom_ptr_r env = geos_ptr(context, GEOSEnvelope_r(context, g));
+        int dim = GEOSGeom_getDimensions_r(context, g);
+
+        const GEOSCoordSequence* seq;
+        if (dim == 2) {
+            const GEOSGeometry* ring = GEOSGetExteriorRing_r(context, env.get());
+            seq = GEOSGeom_getCoordSeq_r(context, ring);
+        } else {
+            seq = GEOSGeom_getCoordSeq_r(context, g);
+        }
+
+        unsigned int npts;
+        GEOSCoordSeq_getSize_r(context, seq, &npts);
+
+        for (unsigned int i = 0; i < npts; i++) {
             double x, y;
 
             if (!GEOSCoordSeq_getX_r(context, seq, i, &x) || !GEOSCoordSeq_getY_r(context, seq, i, &y)) {

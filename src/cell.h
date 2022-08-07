@@ -41,6 +41,8 @@ namespace exactextract {
 
         double area() const;
 
+        double traversal_length() const;
+
         double covered_fraction() const;
 
         Traversal &last_traversal();

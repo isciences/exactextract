@@ -15,7 +15,7 @@
 #include <limits>
 #include <vector>
 
-#include "area.h"
+#include "measures.h"
 #include "box.h"
 #include "coordinate.h"
 #include "perimeter_distance.h"

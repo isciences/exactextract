@@ -12,8 +12,9 @@
 // limitations under the License.
 
 #include <stdexcept>
+#include <numeric>
 
-#include "area.h"
+#include "measures.h"
 #include "cell.h"
 #include "crossing.h"
 #include "traversal_areas.h"
@@ -111,6 +112,13 @@ namespace exactextract {
         //std::cout << " on the way to " << c << std::endl;
 
         return false;
+    }
+    
+    double Cell::traversal_length() const {
+        return std::accumulate(m_traversals.begin(), m_traversals.end(), 0.0,
+                               [](double tot, const Traversal & t) {
+                                   return tot + length(t.coords());
+                               });
     }
 
     double Cell::covered_fraction() const {
