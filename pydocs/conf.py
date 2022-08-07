@@ -6,27 +6,32 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
+import os
+import sys
+import configparser
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
 sys.path.insert(0, os.path.abspath('../python/src/exactextract'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'exactextract'
-copyright = '2022, ISciences, LLC'
-author = 'ISciences, LLC'
+# Read from config file
+config = configparser.ConfigParser()
+config.read('../project.ini')
 
-# The short X.Y version
-version = ''
-# The full version, including alpha/beta/rc tags
-release = '1.0.0'
-
+project = config['base']['project']
+copyright = config['base']['copyright']
+author = config['base']['author']
+title = config['base']['title']
+description = config['base']['description']
+version = config['base']['version']
+tag = config['base']['tag']
+release = f'{version}{tag}'
 
 # -- General configuration ---------------------------------------------------
 
@@ -72,7 +77,6 @@ exclude_patterns = []
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -101,51 +105,43 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 
-
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'exactextractdoc'
 
-
 # -- Options for LaTeX output ------------------------------------------------
 
 latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #
-    # 'papersize': 'letterpaper',
+     # The paper size ('letterpaper' or 'a4paper').
+     #
+     # 'papersize': 'letterpaper',
 
-    # The font size ('10pt', '11pt' or '12pt').
-    #
-    # 'pointsize': '10pt',
+     # The font size ('10pt', '11pt' or '12pt').
+     #
+     # 'pointsize': '10pt',
 
-    # Additional stuff for the LaTeX preamble.
-    #
-    # 'preamble': '',
+     # Additional stuff for the LaTeX preamble.
+     #
+     # 'preamble': '',
 
-    # Latex figure (float) alignment
-    #
-    # 'figure_align': 'htbp',
+     # Latex figure (float) alignment
+     #
+     # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'exactextract.tex', 'exactextract Documentation',
-     'ISciences, LLC', 'manual'),
+    (master_doc, f'{project}.tex', title, author, 'manual'),
 ]
-
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'exactextract', 'exactextract Documentation',
-     [author], 1)
-]
-
+man_pages = [(master_doc, project, title, [author], 1)]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -153,11 +149,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'exactextract', 'exactextract Documentation',
-     author, 'exactextract', 'One line description of project.',
+    (master_doc, project, title, author, project, description,
      'Miscellaneous'),
 ]
-
 
 # -- Options for Epub output -------------------------------------------------
 
@@ -175,7 +169,6 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
-
 
 # -- Extension configuration -------------------------------------------------
 

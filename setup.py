@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
-import re
 import sys
-import sysconfig
-import platform
 import subprocess
+import configparser
 from pathlib import Path
 
-from distutils.version import LooseVersion
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-from setuptools.command.test import test as TestCommand
 
 
 class CMakeExtension(Extension):
@@ -22,7 +18,7 @@ class CMakeExtension(Extension):
 class CMakeBuild(build_ext):
     def run(self):
         try:
-            out = subprocess.check_output(['cmake', '--version'])
+            subprocess.check_output(['cmake', '--version'])
         except OSError:
             raise RuntimeError(
                 "CMake must be installed to build the following extensions: " +
@@ -51,17 +47,17 @@ class CMakeBuild(build_ext):
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
             env.get('CXXFLAGS', ''),
-            self.distribution.get_version())
+            self.distribution.get_version())  # type: ignore
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
 
         # CMakeLists.txt is in the same directory as this setup.py file
         cmake_list_dir = os.path.abspath(os.path.dirname(__file__))
-        print('-'*10, 'Running CMake prepare', '-'*40)
+        print('-' * 10, 'Running CMake prepare', '-' * 40)
         subprocess.check_call(['cmake', cmake_list_dir] + cmake_args,
                               cwd=self.build_temp, env=env)
 
-        print('-'*10, 'Building extensions', '-'*40)
+        print('-' * 10, 'Building extensions', '-' * 40)
         cmake_cmd = ['cmake', '--build', '.'] + self.build_args
         subprocess.check_call(cmake_cmd,
                               cwd=self.build_temp)
@@ -80,19 +76,32 @@ class CMakeBuild(build_ext):
         source_path = build_temp / self.get_ext_filename(ext.name)
         dest_directory = dest_path.parents[0]
         dest_directory.mkdir(parents=True, exist_ok=True)
-        self.copy_file(source_path, dest_path)
+        self.copy_file(str(source_path), str(dest_path))
 
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
+
+# For now, just parse from config file
+config = configparser.ConfigParser()
+config.read('project.ini')
+
+project = config['base']['project']
+copyright = config['base']['copyright']
+author = config['base']['author']
+url = config['base']['url']
+title = config['base']['title']
+description = config['base']['description']
+version = config['base']['version']
+tag = config['base']['tag']
+
 setup(
-    name="exactextract",
-    version="1.0.0",
-    author="ISciences, LLC",
-    url="https://github.com/isciences/exactextract",
-    author_email="",
-    description="A test project using pybind11 and CMake",
-    long_description="exactextract provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as zonal statistics. Unlike other zonal statistics implementations, it takes into account raster cells that are partially covered by the polygon.",
+    name=project,
+    version=version,
+    author=author,
+    url=url,
+    author_email='',
+    description=description,
     packages=['exactextract'],
     package_dir={'exactextract': 'python/src/exactextract'},
     ext_modules=[CMakeExtension("_exactextract")],
