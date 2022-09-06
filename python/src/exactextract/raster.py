@@ -17,7 +17,7 @@ class GDALRasterWrapper(_GDALRasterWrapper):
 
     def __init__(self,
                  filename_or_ds: Union[str, pathlib.Path, gdal.Dataset],
-                 band_idx: int = 1):
+                 band_idx: int = 1, nc_file: bool = False):
         """
         Create exactextract GDALRasterWrapper object from Python OSGeo Dataset
         object or from file path.
@@ -25,6 +25,7 @@ class GDALRasterWrapper(_GDALRasterWrapper):
         Args:
             filename_or_ds (Union[str, pathlib.Path, gdal.Dataset]): File path or OSGeo Dataset / DataSource
             band_idx (int, optional): Raster band index. Defaults to 1.
+            nc_file (boolean, optional): Flag to indicate input string is netcdf format to call specific variable
 
         Raises:
             ValueError: If raster band index is <= 0
@@ -37,20 +38,30 @@ class GDALRasterWrapper(_GDALRasterWrapper):
             raise ValueError('Raster band index starts from 1!')
         elif band_idx is None:
             band_idx = 1
-
-        # Get file path based on input, filename or dataset
-        if isinstance(filename_or_ds, gdal.Dataset):
-            path = pathlib.Path(get_ds_path(filename_or_ds))
+        # if block to check whether user specified netcdf raster
+        # or raster data from a tif file
+        if(nc_file):
+            # Check to see if expected netcdf gdal subdataset string indicates netcdf file
+            nc_format = filename_or_ds.split(":")[0]
+            if(nc_format != "NETCDF"):
+                raise RuntimeError('Netcdf file is not proper format for GDAL. Returned as : %s' % str(nc_format))
+            else:
+                # String here indicates the raster being sliced from netcdf file
+                this_ds_name = filename_or_ds
         else:
-            path = pathlib.Path(filename_or_ds)
+            # Get file path based on input, filename or dataset
+            if isinstance(filename_or_ds, gdal.Dataset):
+                path = pathlib.Path(get_ds_path(filename_or_ds))
+            else:
+                path = pathlib.Path(filename_or_ds)
 
-        # Assert the path exists and resolve the full path
-        if not path.exists():
-            raise RuntimeError('File path not found: %s' % str(path))
-        path = path.resolve()
+            # Assert the path exists and resolve the full path
+            if not path.exists():
+                raise RuntimeError('File path not found: %s' % str(path))
+            path = path.resolve()
 
-        # Name of the dataset
-        this_ds_name = str(path)
+            # Name of the dataset
+            this_ds_name = str(path)
 
         # Open the dataset and load the layer of interest
         try:
