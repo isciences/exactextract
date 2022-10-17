@@ -24,7 +24,8 @@ class GDALRasterWrapper(_GDALRasterWrapper):
 
         Args:
             filename_or_ds (Union[str, pathlib.Path, gdal.Dataset]): File path or OSGeo Dataset / DataSource
-            band_idx (int, optional): Raster band index. Defaults to 1.
+                If NETCDF file, must be string that begins with 'NETCDF:' (e.g. 'NETCDF:raster.nc:Band1')
+            band_idx (int, optional): Raster band index. Unused for NETCDF files. Defaults to 1.
 
         Raises:
             ValueError: If raster band index is <= 0
@@ -38,19 +39,26 @@ class GDALRasterWrapper(_GDALRasterWrapper):
         elif band_idx is None:
             band_idx = 1
 
-        # Get file path based on input, filename or dataset
+        # Get file path based on input, filename, NETCDF file, or dataset
+        is_netcdf = False
         if isinstance(filename_or_ds, gdal.Dataset):
             path = pathlib.Path(get_ds_path(filename_or_ds))
+            this_ds_name = str(path)
+        elif str(filename_or_ds).split(':')[0] == 'NETCDF':
+            # Get part after NETCDF, but not before band name
+            # If quotes are in path, remove them
+            path = pathlib.Path(
+                str(filename_or_ds).split(':')[1].replace('"', ''))
+            this_ds_name = str(filename_or_ds)
+            is_netcdf = True
         else:
             path = pathlib.Path(filename_or_ds)
+            this_ds_name = str(path)
 
         # Assert the path exists and resolve the full path
         if not path.exists():
             raise RuntimeError('File path not found: %s' % str(path))
         path = path.resolve()
-
-        # Name of the dataset
-        this_ds_name = str(path)
 
         # Open the dataset and load the layer of interest
         try:
@@ -58,7 +66,7 @@ class GDALRasterWrapper(_GDALRasterWrapper):
             if tmp_ds is None:
                 raise RuntimeError('Failed to open dataset!')
 
-            if band_idx > tmp_ds.RasterCount:
+            if not is_netcdf and band_idx > tmp_ds.RasterCount:
                 raise ValueError('Band index is greater than raster count!')
         finally:
             # Clean up
