@@ -29,11 +29,14 @@ namespace exactextract {
         auto band = GDALGetRasterBand(rast, bandnum);
         double nodata_value = GDALGetRasterNoDataValue(band, &has_nodata);
 
+        std::stringstream this_name;
+        this_name << filename << "|" << bandnum;
+        set_name(this_name.str());
+
         m_rast = rast;
         m_band = band;
         m_nodata_value = nodata_value;
         m_has_nodata = static_cast<bool>(has_nodata);
-        set_name(filename);
         compute_raster_grid();
     }
     
