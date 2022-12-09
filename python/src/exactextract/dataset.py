@@ -45,10 +45,11 @@ class GDALDatasetWrapper(_GDALDatasetWrapper):
         else:
             path = pathlib.Path(filename_or_ds)
 
-        # Assert the path exists and resolve the full path
-        if not path.exists():
-            raise RuntimeError('File path not found: %s' % str(path))
-        path = path.resolve()
+        if not str(path).startswith('/vsi'):
+            # Assert the path exists and resolve the full path
+            if not path.exists():
+                raise RuntimeError('File path not found: %s' % str(path))
+            path = path.resolve()
 
         # Name of the dataset
         this_ds_name = str(path)

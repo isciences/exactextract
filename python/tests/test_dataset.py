@@ -77,3 +77,8 @@ class TestGDALDatasetWrapper():
         with pytest.raises(RuntimeError):
             GDALDatasetWrapper.from_descriptor(
                 str(simple_gpkg_path) + '[bad_input]')
+
+    def test_vfs(self):
+        with pytest.raises(RuntimeError) as e:
+            GDALDatasetWrapper('/vsimem/test')
+        assert str(e.value) == "Failed to open dataset!"

@@ -55,10 +55,11 @@ class GDALRasterWrapper(_GDALRasterWrapper):
             path = pathlib.Path(filename_or_ds)
             this_ds_name = str(path)
 
-        # Assert the path exists and resolve the full path
-        if not path.exists():
-            raise RuntimeError('File path not found: %s' % str(path))
-        path = path.resolve()
+        if not str(path).startswith('/vsi'):
+            # Assert the path exists and resolve the full path
+            if not path.exists():
+                raise RuntimeError('File path not found: %s' % str(path))
+            path = path.resolve()
 
         # Open the dataset and load the layer of interest
         try:

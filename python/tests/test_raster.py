@@ -77,3 +77,8 @@ class TestGDALRasterWrapper():
         with pytest.raises(RuntimeError):
             GDALRasterWrapper.from_descriptor('temp:NETCDF:%s' %
                                               str(simple_netcdf_path))
+
+    def test_vfs(self):
+        with pytest.raises(RuntimeError) as e:
+            GDALRasterWrapper('/vsimem/test')
+        assert str(e.value) == "Failed to open dataset!"
