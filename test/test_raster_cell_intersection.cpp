@@ -598,7 +598,7 @@ TEST_CASE("Robustness regression test #7", "[raster-cell-intersection]") {
 
     Grid<bounded_extent> ex{{487800, 492800, 5813800, 5818800}, 100, 100};
 
-    auto g = GEOSGeom_read_r(context, "POLYGON ((492094.9283999996 5816959.8553, 492374.9335527361 5816811.352641133, 492374.9335527363 5816811.352641133, 492094.9283999996 5816959.8553)))");
+    auto g = GEOSGeom_read_r(context, "POLYGON ((492094.9283999996 5816959.8553, 492374.9335527361 5816811.352641133, 492374.9335527363 5816811.352641133, 492094.9283999996 5816959.8553))");
 
     double total_area;
     CHECK( GEOSArea_r(context, g.get(), &total_area) == 1);
