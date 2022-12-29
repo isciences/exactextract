@@ -400,6 +400,20 @@ namespace exactextract {
         CHECK( wv.coefficent_of_variation() == Approx(2.478301) ); // output from Weighted.Desc.Stat::w.sd / Weighted.Desc.Stat::w.mean
     }
 
+    TEST_CASE("Variance calculations are correct for unequally-weighted observations, initial zeros") {
+        std::vector<double> values{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        std::vector<double> weights{0, 0, 0, 0, 0, 0, 0.25, 0.5, 0.25};
+
+        WestVariance wv;
+        for (size_t i = 0; i < values.size(); i++) {
+            wv.process(values[i], weights[i]);
+        }
+
+        CHECK( wv.stdev() == Approx(0.7071068) ); // output from Weighted.Desc.Stat::w.sd in R
+        CHECK( wv.variance() == Approx(0.5) ); // output from Weighted.Desc.Stat::w.var in R
+        CHECK( wv.coefficent_of_variation() == Approx(0.7071068 / 8) ); // output from Weighted.Desc.Stat::w.sd / Weighted.Desc.Stat::w.mean
+    }
+
     TEST_CASE("Weighted quantile calculations are correct for equally-weighted inputs") {
         std::vector<double> values{3.4, 2.9, 1.7, 8.8, -12.7, 100.4, 8.4, 11.3};
 

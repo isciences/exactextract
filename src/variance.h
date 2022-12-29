@@ -37,6 +37,10 @@ public:
      * @param w weight of `x`
      */
     void process(double x, double w) {
+        if (w == 0) {
+            return;
+        }
+
         double mean_old = mean;
 
         sum_w += w;
