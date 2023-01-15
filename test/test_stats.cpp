@@ -177,6 +177,8 @@ namespace exactextract {
             CHECK( std::isnan(stats.mean()) );
             CHECK( std::isnan(stats.variance()) );
             CHECK( std::isnan(stats.stdev()) );
+            CHECK( std::isnan(stats.weighted_variance()) );
+            CHECK( std::isnan(stats.weighted_stdev()) );
             CHECK( std::isnan(stats.coefficient_of_variation()) );
             CHECK( !stats.mode().has_value() );
             CHECK( !stats.minority().has_value() );
@@ -186,7 +188,7 @@ namespace exactextract {
             CHECK( std::isnan(stats.weighted_mean()) );
         }
 
-        SECTION("All values defined, no weights defined") {
+        SECTION("All values defined, no weights provided") {
             // Example application: precipitation over polygon in the middle of continent
             RasterStats<TestType> stats{true};
             stats.process(areas, all_values_defined);
@@ -200,6 +202,8 @@ namespace exactextract {
             CHECK( stats.minority() == 1.0f );
             CHECK( stats.variance() == 1.25f );
             CHECK( stats.stdev() == 1.118034f );
+            CHECK( stats.weighted_variance() == stats.variance() );
+            CHECK( stats.weighted_stdev() == stats.stdev() );
             CHECK( stats.coefficient_of_variation() == 0.4472136f );
             CHECK( stats.weighted_count() == stats.count() );
             CHECK( stats.weighted_sum() == stats.sum() );
@@ -220,6 +224,8 @@ namespace exactextract {
             CHECK( stats.minority() == 1.0f );
             CHECK( stats.variance() == 0.25f );
             CHECK( stats.stdev() == 0.5f );
+            CHECK( stats.weighted_variance() == stats.variance() );
+            CHECK( stats.weighted_stdev() == stats.stdev() );
             CHECK( stats.coefficient_of_variation() == Approx(0.333333f) );
             CHECK( stats.weighted_count() == stats.count() );
             CHECK( stats.weighted_sum() == stats.sum() );
@@ -238,6 +244,8 @@ namespace exactextract {
             CHECK( std::isnan(stats.mean()) );
             CHECK( std::isnan(stats.variance()) );
             CHECK( std::isnan(stats.stdev()) );
+            CHECK( std::isnan(stats.weighted_variance()) );
+            CHECK( std::isnan(stats.weighted_stdev()) );
             CHECK( std::isnan(stats.coefficient_of_variation()) );
             CHECK( stats.weighted_count() == stats.count() );
             CHECK( stats.weighted_sum() == stats.sum() );
@@ -255,6 +263,8 @@ namespace exactextract {
             CHECK( std::isnan(stats.mean()) );
             CHECK( std::isnan(stats.variance()) );
             CHECK( std::isnan(stats.stdev()) );
+            CHECK( std::isnan(stats.weighted_variance()) );
+            CHECK( std::isnan(stats.weighted_stdev()) );
             CHECK( std::isnan(stats.coefficient_of_variation()) );
             CHECK( stats.weighted_count() == 0 );
             CHECK( stats.weighted_sum() == 0 );
@@ -277,6 +287,8 @@ namespace exactextract {
             CHECK( std::isnan(stats.weighted_count()) );
             CHECK( std::isnan(stats.weighted_sum()) );
             CHECK( std::isnan(stats.weighted_mean()) );
+            CHECK( std::isnan(stats.weighted_variance()) );
+            CHECK( std::isnan(stats.weighted_stdev()) );
         }
 
         SECTION("All values defined, some weights defined") {
@@ -294,6 +306,8 @@ namespace exactextract {
             CHECK( std::isnan(stats.weighted_count()) );
             CHECK( std::isnan(stats.weighted_sum()) );
             CHECK( std::isnan(stats.weighted_mean()) );
+            CHECK( std::isnan(stats.weighted_variance()) );
+            CHECK( std::isnan(stats.weighted_stdev()) );
         }
     }
 
@@ -398,6 +412,20 @@ namespace exactextract {
         CHECK( wv.stdev() == Approx(25.90092) ); // output from Weighted.Desc.Stat::w.sd in R
         CHECK( wv.variance() == Approx(670.8578) ); // output from Weighted.Desc.Stat::w.var in R
         CHECK( wv.coefficent_of_variation() == Approx(2.478301) ); // output from Weighted.Desc.Stat::w.sd / Weighted.Desc.Stat::w.mean
+    }
+
+    TEST_CASE("Variance calculations are correct for unequally-weighted observations, initial zeros") {
+        std::vector<double> values{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        std::vector<double> weights{0, 0, 0, 0, 0, 0, 0.25, 0.5, 0.25};
+
+        WestVariance wv;
+        for (size_t i = 0; i < values.size(); i++) {
+            wv.process(values[i], weights[i]);
+        }
+
+        CHECK( wv.stdev() == Approx(0.7071068) ); // output from Weighted.Desc.Stat::w.sd in R
+        CHECK( wv.variance() == Approx(0.5) ); // output from Weighted.Desc.Stat::w.var in R
+        CHECK( wv.coefficent_of_variation() == Approx(0.7071068 / 8) ); // output from Weighted.Desc.Stat::w.sd / Weighted.Desc.Stat::w.mean
     }
 
     TEST_CASE("Weighted quantile calculations are correct for equally-weighted inputs") {

@@ -120,6 +120,8 @@ namespace exactextract {
             m_sum_ciwi += ciwi;
             m_sum_xiciwi += val * ciwi;
 
+            m_weighted_variance.process(val, ciwi);
+
             if (val < m_min) {
                 m_min = val;
             }
@@ -311,6 +313,15 @@ namespace exactextract {
         }
 
         /**
+         * The population variance of raster cells touched
+         * by the polygon, taking into account cell coverage
+         * fractions and values of a weighting raster.
+         */
+        float weighted_variance() const {
+            return static_cast<float>(m_weighted_variance.variance());
+        }
+
+        /**
          * The population standard deviation of raster cells
          * touched by the polygon. Cell coverage fractions
          * are taken into account; values of a weighting
@@ -318,6 +329,15 @@ namespace exactextract {
          */
         float stdev() const {
             return static_cast<float>(m_variance.stdev());
+        }
+
+        /**
+         * The population standard deviation of raster cells
+         * touched by the polygon, taking into account cell
+         * coverage fractions and values of a weighting raster.
+         */
+        float weighted_stdev() const {
+            return static_cast<float>(m_weighted_variance.stdev());
         }
 
         /**
@@ -406,6 +426,7 @@ namespace exactextract {
         double m_sum_xici;
         double m_sum_xiciwi;
         WestVariance m_variance;
+        WestVariance m_weighted_variance;
 
         mutable std::unique_ptr<WeightedQuantiles> m_quantiles;
 
