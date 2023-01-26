@@ -54,13 +54,24 @@ namespace exactextract {
             }
 
             const AbstractRaster<T>& rv = rvp ? *rvp : rast;
-
+            //Reserve memory for at most rows*cols
+            //may not need this much, depends on pct_cov
+            m_grid_meta.rows.reserve(rv.rows()*rv.cols());
+            m_grid_meta.cols.reserve(rv.rows()*rv.cols());
+            m_grid_meta.pct_cov.reserve(rv.rows()*rv.cols());
+            //Record the grid
+            m_grid_meta.grid = rv.grid();
             for (size_t i = 0; i < rv.rows(); i++) {
                 for (size_t j = 0; j < rv.cols(); j++) {
                     float pct_cov = intersection_percentages(i, j);
                     T val;
-                    if (pct_cov > 0 && rv.get(i, j, val)) {
-                        process_value(val, pct_cov, 1.0);
+                    if (pct_cov > 0){ //mark the coverage
+                        m_grid_meta.rows.push_back(i);
+                        m_grid_meta.cols.push_back(j);
+                        m_grid_meta.pct_cov.push_back(pct_cov);
+                        if(rv.get(i, j, val)) { //only process if value is not NA
+                            process_value(val, pct_cov, 1.0);
+                        }
                     }
                 }
             }
@@ -92,19 +103,30 @@ namespace exactextract {
 
             const AbstractRaster<T>& rv = rvp ? *rvp : rast;
             const AbstractRaster<T>& wv = wvp ? *wvp : weights;
-
+            //Reserve memory for at most rows*cols
+            //may not need this much, depends on pct_cov
+            m_grid_meta.rows.reserve(rv.rows()*rv.cols());
+            m_grid_meta.cols.reserve(rv.rows()*rv.cols());
+            m_grid_meta.pct_cov.reserve(rv.rows()*rv.cols());
+            //Record the grid
+            m_grid_meta.grid = rv.grid();
             for (size_t i = 0; i < rv.rows(); i++) {
                 for (size_t j = 0; j < rv.cols(); j++) {
                     float pct_cov = intersection_percentages(i, j);
                     T weight;
                     T val;
 
-                    if (pct_cov > 0 && rv.get(i, j, val)) {
-                        if (wv.get(i, j, weight)) {
-                            process_value(val, pct_cov, weight);
-                        } else {
-                            // Weight is NODATA, convert to NAN
-                            process_value(val, pct_cov, std::numeric_limits<double>::quiet_NaN());
+                    if (pct_cov > 0){
+                        m_grid_meta.rows.push_back(i);
+                        m_grid_meta.cols.push_back(j);
+                        m_grid_meta.pct_cov.push_back(pct_cov);
+                        if(rv.get(i, j, val)) {
+                            if (wv.get(i, j, weight)) {
+                                process_value(val, pct_cov, weight);
+                            } else {
+                                // Weight is NODATA, convert to NAN
+                                process_value(val, pct_cov, std::numeric_limits<double>::quiet_NaN());
+                            }
                         }
                     }
                 }
