@@ -37,14 +37,14 @@ namespace exactextract {
 
         void add_id_field(const std::string & field_name, const std::string & field_type);
 
-        void copy_id_field(const GDALDatasetWrapper & w);
+    protected:
+        using OGRLayerH = void*;
+        OGRLayerH m_layer;
 
     private:
         using GDALDatasetH = void*;
-        using OGRLayerH = void*;
 
         GDALDatasetH m_dataset;
-        OGRLayerH m_layer;
         const StatsRegistry* m_reg;
         bool id_field_defined = false;
     };
