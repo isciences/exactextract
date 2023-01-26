@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file operation.h
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) add a vector result fetcher to handle vectorized "stat" data
+ *       Nels Frazier (nfrazier@lynker.com) add a Coverage operation to expose coverage fraction
+ * 
+ */
+
 #ifndef EXACTEXTRACT_OPERATION_H
 #define EXACTEXTRACT_OPERATION_H
 
@@ -75,10 +87,38 @@ namespace exactextract {
             }
         }
 
+        std::function<nonstd::optional<std::vector<double>>(const RasterStats<double>&)> vector_result_fetcher() const {
+            if (stat == "coverage_fraction") {
+                return [](const RasterStats<double> & s) { 
+                    return s.coverage_fraction(); 
+                };
+            } else if (stat == "cell_number") {
+                return [this](const RasterStats<double> & s) { 
+                    return s.cell_number(grid()); 
+                };
+            }
+            else {
+                throw std::runtime_error("Unknown stat: '" + stat + "'");
+            }
+        }
         std::string stat;
         std::string name;
         RasterSource* values;
         RasterSource* weights;
+    };
+
+    class Coverage: public Operation{
+    public: 
+        Coverage(RasterSource* p_values): 
+            Operation("noop", "coverage_fraction", p_values),
+            global( p_values->grid() )
+        {}
+        std::function<nonstd::optional<std::vector<double>>(const RasterStats<double>&)> vector_result_fetcher()
+        {
+            return [](const RasterStats<double> & s) { return s.coverage_fraction(); };
+        }
+    private:
+        const Grid<bounded_extent>& global;
     };
 
 }
