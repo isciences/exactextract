@@ -1,3 +1,14 @@
+/**
+ * @file test_stats.cpp
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) add tests for coverage fraction processing
+ * 
+ */
+
 #include <cmath>
 #include <valarray>
 
@@ -71,9 +82,27 @@ namespace exactextract {
           {1, 1, 1, 1, 1}
         }}, extent};
         values.set_nodata(NA);
-
+        //The cell numbers that the polygon intersects with
+        //starting at 1, row wise
+        std::vector<size_t> expected_cell_numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9};
         RasterStats<TestType> stats{true};
         stats.process(areas, values);
+
+        auto coverage = stats.coverage_fraction();
+        CHECK( coverage.size() == areas.size() );
+        int i = 0;
+        for(auto const &a : areas){
+            CHECK(coverage[i] == a);
+            i++;
+        }
+        auto cell_num = stats.cell_number();
+        CHECK( cell_num.size() == expected_cell_numbers.size());
+        i = 0;
+        for(auto const &expected : expected_cell_numbers)
+        {
+            CHECK( cell_num[i] == expected);
+            i++;
+        }
 
         CHECK( stats.count() ==
                (0.25 + 0.5 + 0.25) +
@@ -114,14 +143,39 @@ namespace exactextract {
 
         fill_by_row<TestType>(values, 1, 1);
         fill_by_row<TestType>(weights, 5, 5);
-
+        //The cell numbers that the polygon intersects with
+        //starting at 1, row wise
+        std::vector<size_t> expected_cell_numbers_ex1 = {28, 29, 30, 31, 36, 37, 38, 39};
+        std::vector<size_t> expected_cell_numbers_ex2 = {11, 12, 13, 14, 15, 16, 17, 18};
         RasterStats<TestType> stats(false);
         stats.process(areas, values, weights);
 
         std::valarray<double> cov_values  = {   28,  29,  30,   31,   36,  37,  38,   39 };
         std::valarray<double> cov_weights = {   30,  35,  35,   40,   50,  55,  55,   60 };
         std::valarray<double> cov_fracs   = { 0.25, 0.5, 0.5, 0.25, 0.25, 0.5, 0.5, 0.25 };
-
+        auto coverage = stats.coverage_fraction();
+        CHECK( coverage.size() == areas.size() );
+        int i = 0;
+        for(auto const &a : areas){
+            CHECK(coverage[i] == a);
+            i++;
+        }
+        auto cell_num = stats.cell_number(values.grid());
+        CHECK( cell_num.size() == expected_cell_numbers_ex1.size());
+        i = 0;
+        for(auto const &expected : expected_cell_numbers_ex1)
+        {
+            CHECK( cell_num[i] == expected);
+            i++;
+        }
+        cell_num = stats.cell_number(ex2);
+        CHECK( cell_num.size() == expected_cell_numbers_ex2.size());
+        i = 0;
+        for(auto const &expected : expected_cell_numbers_ex2)
+        {
+            CHECK( cell_num[i] == expected);
+            i++;
+        }
         CHECK( stats.weighted_mean() == Approx( (cov_values * cov_weights * cov_fracs).sum() / (cov_weights * cov_fracs).sum() ));
         CHECK( stats.mean() == Approx( (cov_values *  cov_fracs).sum() / cov_fracs.sum() ));
 
