@@ -11,9 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file gdal_writer.h
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) implemented write_coverage
+ *      Nels Frazier (nfrazier@lynker.com) marked add_id_field, copy_id_field as virtual
+ *      Nels Frazier (nfrazier@lynker.com) made OGRLayerH protected so it can be used by subclasses
+ * 
+ */
 #ifndef EXACTEXTRACT_GDAL_WRITER_H
 #define EXACTEXTRACT_GDAL_WRITER_H
 
+#include "raster.h"
 #include "output_writer.h"
 
 namespace exactextract {
@@ -35,7 +48,16 @@ namespace exactextract {
 
         void write(const std::string & fid) override;
 
-        void add_id_field(const std::string & field_name, const std::string & field_type);
+        void write_coverage(const std::string & fid, const Raster<float> & raster, const Grid<bounded_extent> & common_grid) override {
+            (void)fid;
+            (void)raster;
+            (void)common_grid;
+            throw std::runtime_error("Unimplemented Error: GDALWriter doesn't implement write_coverage, use 'write' instead");
+        };
+
+        virtual void add_id_field(const std::string & field_name, const std::string & field_type);
+
+        virtual void copy_id_field(const GDALDatasetWrapper & w);
 
     protected:
         using OGRLayerH = void*;

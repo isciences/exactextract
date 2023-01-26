@@ -11,11 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file output_writer.h
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) added write_coverage
+ * 
+ */
 #ifndef EXACTEXTRACT_OUTPUT_WRITER_H
 #define EXACTEXTRACT_OUTPUT_WRITER_H
 
 #include <string>
 #include <vector>
+#include "raster.h"
 
 namespace exactextract {
 
@@ -24,6 +35,15 @@ namespace exactextract {
 
     class OutputWriter {
     public:
+
+        /**
+         * @brief Allows writing of coverage fraction independently
+         * 
+         * @param fid Feature id the coverage fraction relates to
+         * @param raster The raster the features is covering, used to identify cell number
+         * @param common_grid The common grid used to map row and column indicies to coverage fraction
+         */
+        virtual void write_coverage(const std::string & fid, const Raster<float> & raster, const Grid<bounded_extent> & common_grid) = 0;
         virtual void write(const std::string & fid) = 0;
         virtual void add_operation(const Operation & op) = 0;
         virtual void set_registry(const StatsRegistry* reg) = 0;
