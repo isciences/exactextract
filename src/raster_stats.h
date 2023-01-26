@@ -417,9 +417,18 @@ namespace exactextract {
         }
 
     private:
+        struct grid_meta{
+            std::vector<size_t> rows;
+            std::vector<size_t> cols;
+            std::vector<double> pct_cov;
+            Grid<bounded_extent> grid;
+            grid_meta():rows{}, cols{}, pct_cov{}, grid(Grid<bounded_extent>::make_empty()){}
+        };
+
         T m_min;
         T m_max;
 
+        grid_meta m_grid_meta;
         // ci: coverage fraction of pixel i
         double m_ci;
         // wi: weight of pixel i
