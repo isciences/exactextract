@@ -11,6 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file raster_sequential_processor.h
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) make feature_tree protected so it can be accessed by subclasses
+ * 
+ */
+
 #include <memory>
 
 #ifndef EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
@@ -31,11 +42,13 @@ namespace exactextract {
 
         void process() override;
 
-    private:
+    protected:
         using Feature=std::pair<std::string, geom_ptr_r>;
+        tree_ptr_r m_feature_tree{geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10))};
+
+    private:
 
         std::vector<Feature> m_features;
-        tree_ptr_r m_feature_tree{geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10))};
     };
 
 }
