@@ -11,6 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file grid.h
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) add map_to_grid_cell function to map row,col pairs to grid cell numbers
+ * 
+ */
+
 #ifndef EXACTEXTRACT_GRID_H
 #define EXACTEXTRACT_GRID_H
 
@@ -318,6 +329,45 @@ namespace exactextract {
 
         bool operator!=(const Grid<extent_tag> &b) const {
             return !(*this == b);
+        }
+
+        /**
+         * @brief Compute the cell number that row,column corresponds to
+         * 
+         * If passed a global grid that is compatible with the grid, the grid cell
+         * will computed in the global grid.
+         * 
+         * This function returns cells assuming a 1-based index into the flattened
+         * raster.
+         * 
+         * @tparam extent_tag2 
+         * @param row row index in the local grid
+         * @param col column index in the local grid
+         * @param global (optional) global grid to map local cell to
+         * @return size_t cell number of the raster (local or global)
+         */
+        template<typename extent_tag2>
+        size_t map_to_grid_cell(const size_t & row, const size_t & col, Grid<extent_tag2> global = Grid<extent_tag2>::make_empty() ) const {
+            if(global.empty()){
+                //get grid cell on local
+                global = *this;
+            } else if (!this->compatible_with(global, 1e-6)) {
+                //cannot map local into global grid
+                throw std::runtime_error("Incompatible extents.");
+            }
+            //This is the row idx where local would start in the global grid
+            size_t row_offset = global.row_offset(*this);
+            //This is the column idx where local would start in the global grid
+            //offset by 1 to shift from 0 to 1 starting index
+            size_t col_offset = global.col_offset(*this)+1;
+
+            //So the global row idx of row (in the global grid) would be
+            size_t global_row_idx = row+row_offset;
+
+            //And the col idx of col (in the global grid) would be
+            size_t global_col_idx = col+col_offset;
+            //So the global cell number is
+            return global_row_idx * global.cols() + global_col_idx;
         }
 
     private:
