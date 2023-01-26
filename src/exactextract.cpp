@@ -11,6 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file exactextract.cpp
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) add a coverage_fraction strategey that only outputs coverage fraction
+ * 
+ */
+
 #include <exception>
 #include <iostream>
 #include <memory>
@@ -23,10 +34,12 @@
 #include "gdal_dataset_wrapper.h"
 #include "gdal_raster_wrapper.h"
 #include "gdal_writer.h"
+#include "coverage_writer.h"
 #include "operation.h"
 #include "processor.h"
 #include "feature_sequential_processor.h"
 #include "raster_sequential_processor.h"
+#include "coverage_processor.h"
 #include "utils.h"
 #include "version.h"
 
@@ -96,6 +109,15 @@ int main(int argc, char** argv) {
             proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer, operations);
         } else if (strategy == "raster-sequential") {
             proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer, operations);
+        } else if (strategy == "coverage_fraction"){
+            auto coverage_writer = std::make_unique<exactextract::CoverageWriter>(output_filename);
+            if (!id_name.empty() && !id_type.empty()) {
+                coverage_writer->add_id_field(id_name, id_type);
+            } else {
+                coverage_writer->copy_id_field(shp);
+            }
+            writer = std::move(coverage_writer);
+            proc = std::make_unique<exactextract::CoverageProcessor>(shp, *writer, rasters);
         } else {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
         }

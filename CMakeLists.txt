@@ -65,11 +65,16 @@ if(BUILD_CLI)
         src/gdal_dataset_wrapper.cpp
         src/gdal_writer.h
         src/gdal_writer.cpp
+        src/coverage_writer.h
+        src/coverage_writer.cpp
         src/processor.h
         src/feature_sequential_processor.cpp
         src/feature_sequential_processor.h
         src/raster_sequential_processor.cpp
         src/raster_sequential_processor.h
+        src/coverage_processor.cpp
+        src/coverage_processor.h
+        src/raster_source.h
     )
 
     add_executable(${BIN_NAME} ${BIN_SOURCES})
