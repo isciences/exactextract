@@ -11,6 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file raster_stats.h
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) cache m_ci
+ *      Nels Frazier (nfrazier@lynker.com) add a private grid_meta struct
+ *      Nels Frazier (nfrazier@lynker.com) store the coverage fraction info when processed
+ *      Nels Frazier (nfrazier@lynker.com) add coverage_fraction and cell_number "stat" functions to expose the cached grid meta data
+ * 
+ */
+
 #ifndef EXACTEXTRACT_RASTER_STATS_H
 #define EXACTEXTRACT_RASTER_STATS_H
 
@@ -160,6 +174,28 @@ namespace exactextract {
                 entry.m_sum_ciwi += ciwi;
                 m_quantiles.reset();
             }
+        }
+        
+        /**
+         * The percent of the cell covered by this polygon
+         */
+        std::vector<double> coverage_fraction() const {
+            return m_grid_meta.pct_cov;
+        }
+
+        /*
+        * The cell number of the raster the stat was extracted from
+        */
+        std::vector<double> cell_number (Grid<bounded_extent> global = Grid<bounded_extent>::make_empty() ) const {
+            std::vector<double> out(m_grid_meta.pct_cov.size());
+            for(size_t i = 0; i < m_grid_meta.pct_cov.size(); i++){
+                size_t cell_number = m_grid_meta.grid.map_to_grid_cell(m_grid_meta.rows[i], m_grid_meta.cols[i], global);
+                //THIS CAST isn't a good idea for large values of size_t
+                //but is a bit of a currrent limitation of the result_fetcher
+                //in operation.  Should probably template that...
+                out[i] = cell_number;
+            }
+            return out;
         }
 
         /**
