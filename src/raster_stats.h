@@ -39,6 +39,7 @@ namespace exactextract {
         explicit RasterStats(bool store_values = false) :
                 m_min{std::numeric_limits<T>::max()},
                 m_max{std::numeric_limits<T>::lowest()},
+                m_ci{0},
                 m_sum_ciwi{0},
                 m_sum_ci{0},
                 m_sum_xici{0},
@@ -111,12 +112,13 @@ namespace exactextract {
         }
 
         void process_value(const T& val, float coverage, double weight) {
-            m_sum_ci += static_cast<double>(coverage);
-            m_sum_xici += val*static_cast<double>(coverage);
+            m_ci = static_cast<double>(coverage);
+            m_sum_ci += m_ci;
+            m_sum_xici += val*m_ci;
 
             m_variance.process(val, coverage);
 
-            double ciwi = static_cast<double>(coverage)*weight;
+            double ciwi = m_ci*weight;
             m_sum_ciwi += ciwi;
             m_sum_xiciwi += val * ciwi;
 
@@ -132,7 +134,7 @@ namespace exactextract {
 
             if (m_store_values) {
                 auto& entry = m_freq[val];
-                entry.m_sum_ci += static_cast<double>(coverage);
+                entry.m_sum_ci += m_ci;
                 entry.m_sum_ciwi += ciwi;
                 m_quantiles.reset();
             }
@@ -419,6 +421,7 @@ namespace exactextract {
         T m_max;
 
         // ci: coverage fraction of pixel i
+        double m_ci;
         // wi: weight of pixel i
         // xi: value of pixel i
         double m_sum_ciwi;
