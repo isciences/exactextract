@@ -137,7 +137,9 @@ namespace exactextract {
             return "NetCDF";
         } else if (starts_with(filename, "PG:")) {
             return "PostgreSQL";
-        } else {
+        } else if (ends_with(filename, "json")){
+            return "GeoJSON";
+        }else {
             throw std::runtime_error("Unknown output format: " + filename);
         }
     }
