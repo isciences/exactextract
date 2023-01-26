@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file gdal_writer.cpp
+ * @version 0.1
+ * @date 2022-03-24
+ * 
+ * Changelog:
+ *  version 0.1
+ *      Nels Frazier (nfrazier@lynker.com) refactor write to handle vector results
+ *      Nels Frazier (nfrazier@lynker.com) add geojson output driver
+ * 
+ */
+
 #include "gdal_writer.h"
 #include "gdal_dataset_wrapper.h"
 #include "stats_registry.h"
@@ -101,31 +113,66 @@ namespace exactextract {
     }
 
     void GDALWriter::write(const std::string & fid) {
-        auto feature = OGR_F_Create(OGR_L_GetLayerDefn(m_layer));
-
-        OGR_F_SetFieldString(feature, 0, fid.c_str());
-
+        //container of features
+        using customMap = std::vector<OGRFeatureH>;
+        customMap feature_map;
+        OGRFeatureH feature_h;
         for (const auto &op : m_ops) {
+            //An aggregate and/or first cell
+            if( feature_map.size() == 0 ){
+                //if no features processed yet, create a feature
+                feature_h = OGR_F_Create(OGR_L_GetLayerDefn(m_layer));
+                OGR_F_SetFieldString(feature_h, 0, fid.c_str());
+                feature_map.push_back(feature_h);
+            }
+
             if (m_reg->contains(fid, *op)) {
-                const auto field_pos = OGR_F_GetFieldIndex(feature, op->name.c_str());
+                //reuse the info from first feature
+                const auto field_pos = OGR_F_GetFieldIndex(feature_map[0], op->name.c_str());
                 const auto &stats = m_reg->stats(fid, *op);
+                try{
+                    // TODO store between features
+                    auto fetcher = op->result_fetcher();
+                    auto val = fetcher(stats);
+                    if (val.has_value()) {
+                        OGR_F_SetFieldDouble(feature_map[0], field_pos, val.value());
+                    } else {
+                        OGR_F_SetFieldDouble(feature_map[0], field_pos, std::numeric_limits<double>::quiet_NaN());
+                    }
+                } catch(std::runtime_error& e)
+                {   //Handle fector results
+                    auto fetcher = op->vector_result_fetcher();
+                    auto val = fetcher(stats);
 
-                // TODO store between features
-                auto fetcher = op->result_fetcher();
+                    if (val.has_value() && val.value().size() > 0) {
+                        auto vec = val.value();
+                        //Write the first feature using the existing feature
+                         OGR_F_SetFieldDouble(feature_map[0], field_pos, vec[0]);
 
-                auto val = fetcher(stats);
-                if (val.has_value()) {
-                    OGR_F_SetFieldDouble(feature, field_pos, val.value());
-                } else {
-                    OGR_F_SetFieldDouble(feature, field_pos, std::numeric_limits<double>::quiet_NaN());
+                        for(size_t i = 1; i < vec.size(); i++){
+                            //create a new feature with the same id for each other value
+                            if(feature_map.size() == i){
+                                auto inner_feature = OGR_F_Create(OGR_L_GetLayerDefn(m_layer));
+                                OGR_F_SetFieldString(inner_feature, 0, fid.c_str());
+                                feature_map.push_back(inner_feature);
+                            }
+                             OGR_F_SetFieldDouble(feature_map[i], field_pos, vec[i]);
+                        }
+
+                    } else {
+                        OGR_F_SetFieldDouble(feature_map[0], field_pos, std::numeric_limits<double>::quiet_NaN());
+                    }
                 }
+                
             }
         }
 
-        if (OGR_L_CreateFeature(m_layer, feature) != OGRERR_NONE) {
+        for(const auto& handle : feature_map){
+            if (OGR_L_CreateFeature(m_layer, handle) != OGRERR_NONE) {
             throw std::runtime_error("Error writing results for record: " + fid);
+            }
+            OGR_F_Destroy(handle);
         }
-        OGR_F_Destroy(feature);
     }
 
     std::string GDALWriter::get_driver_name(const std::string & filename) {
