@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from typing import Union
+from typing import List, Union
 
 from osgeo import gdal, ogr
 
 
-def get_ds_path(ds: Union[gdal.Dataset, ogr.DataSource]):
+def get_ds_path(ds: Union[gdal.Dataset, ogr.DataSource]) -> str:
     """
     Get the file path of an OSGeo dataset
 
@@ -22,7 +22,7 @@ def get_ds_path(ds: Union[gdal.Dataset, ogr.DataSource]):
         return ds.GetName()
 
 
-def get_field_names(layer: ogr.Layer):
+def get_field_names(layer: ogr.Layer) -> List[str]:
     """
     Retrieves the names of the fields for a given layer.
 

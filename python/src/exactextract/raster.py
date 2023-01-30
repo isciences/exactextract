@@ -39,26 +39,30 @@ class GDALRasterWrapper(_GDALRasterWrapper):
         elif band_idx is None:
             band_idx = 1
 
-        # Get file path based on input, filename, NETCDF file, or dataset
+        # Get file path based on input: filename, NETCDF file, or dataset
         is_netcdf = False
         if isinstance(filename_or_ds, gdal.Dataset):
-            path = pathlib.Path(get_ds_path(filename_or_ds))
-            this_ds_name = str(path)
+            path_str = get_ds_path(filename_or_ds)
+            if path_str.startswith('/vsi'):
+                path, this_ds_name = None, path_str     # No "true" fs path exists
+            else:
+                path = pathlib.Path(path_str)
+                assert path.exists(), 'File path not found: %s' % str(path)
+                this_ds_name = str(path)
         elif str(filename_or_ds).split(':')[0] == 'NETCDF':
             # Get part after NETCDF, but not before band name
             # If quotes are in path, remove them
             path = pathlib.Path(
                 str(filename_or_ds).split(':')[1].replace('"', ''))
+            assert path.exists(), 'File path not found: %s' % str(path)
             this_ds_name = str(filename_or_ds)
             is_netcdf = True
+        elif str(filename_or_ds).startswith('/vsi'):
+            path, this_ds_name = None, filename_or_ds     # No "true" fs path exists
         else:
-            path = pathlib.Path(filename_or_ds)
+            path = pathlib.Path(filename_or_ds).resolve()
+            assert path.exists(), 'File path not found: %s' % str(path)
             this_ds_name = str(path)
-
-        # Assert the path exists and resolve the full path
-        if not path.exists():
-            raise RuntimeError('File path not found: %s' % str(path))
-        path = path.resolve()
 
         # Open the dataset and load the layer of interest
         try:
