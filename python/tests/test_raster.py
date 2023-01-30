@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import pathlib
-import pytest
+import zipfile
 
+import pytest
 from osgeo import gdal
 
 from exactextract import GDALRasterWrapper
@@ -15,6 +16,16 @@ simple_tif_path = pathlib.Path(data_path, 'simple_raster.tif')
 assert simple_tif_path.is_file()
 simple_netcdf_path = pathlib.Path(data_path, 'simple_raster.nc')
 assert simple_netcdf_path.is_file()
+
+
+# For virtual filesystem tests
+@pytest.fixture(scope='session')
+def zip_path(tmp_path_factory):
+    # Zip our raster in a temp directory
+    zip_path = tmp_path_factory.mktemp('data') / 'simple_raster.zip'
+    with zipfile.ZipFile(zip_path, 'w') as zip_object:
+        zip_object.write(simple_tif_path, simple_tif_path.name)
+    return zip_path
 
 
 class TestGDALRasterWrapper():
@@ -78,7 +89,50 @@ class TestGDALRasterWrapper():
             GDALRasterWrapper.from_descriptor('temp:NETCDF:%s' %
                                               str(simple_netcdf_path))
 
-    def test_vfs(self):
-        with pytest.raises(RuntimeError) as e:
-            GDALRasterWrapper('/vsimem/test')
-        assert str(e.value) == "Failed to open dataset!"
+    def test_valid_vfs(self, zip_path):
+        assert zip_path.exists()
+
+        # Load using /vsizip
+        dsw = GDALRasterWrapper(
+            f'/vsizip/{zip_path.resolve()}/{simple_tif_path.name}')
+        assert dsw is not None
+        dsw = None
+
+    def test_valid_vfs_as_ds(self, zip_path):
+        assert zip_path.exists()
+        ds = gdal.Open(f'/vsizip/{zip_path.resolve()}/{simple_tif_path.name}')
+        assert ds is not None
+        dsw = GDALRasterWrapper(ds)
+        assert dsw is not None
+        dsw = None
+        ds = None
+
+    def test_vsi_inmem(self):
+        vsi_str = '/vsimem/test_inmem.tif'
+
+        # Open TIFF file, and copy to inmem
+        ds = gdal.Open(str(simple_tif_path))
+        assert ds is not None
+        driver = gdal.GetDriverByName('GTiff')
+        ds_inmem = driver.CreateCopy(vsi_str, ds)
+        assert ds_inmem is not None
+
+        # Load by dataset
+        dsw = GDALRasterWrapper(ds_inmem)
+        assert dsw is not None
+        dsw = None
+
+        # Load by VSI string
+        dsw = GDALRasterWrapper(vsi_str)
+        assert dsw is not None
+        dsw = None
+
+        # Clean up
+        ds_inmem = None
+        ds = None
+        gdal.Unlink(vsi_str)
+
+    def test_invalid_vfs(self):
+        # Easy, give it a bad path
+        with pytest.raises(RuntimeError):
+            GDALRasterWrapper('/vsizip//bad.zip/bad.tif')

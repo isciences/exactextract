@@ -39,20 +39,21 @@ class GDALDatasetWrapper(_GDALDatasetWrapper):
             RuntimeError: If the field names for the layer could not be read.
             ValueError: If the provided field name is invalid
         """
-        # Get file path based on input, filename or dataset
+        # Get file path based on input: filename, NETCDF file, or dataset
         if isinstance(filename_or_ds, (gdal.Dataset, ogr.DataSource)):
-            path = pathlib.Path(get_ds_path(filename_or_ds))
+            path_str = get_ds_path(filename_or_ds)
+            if path_str.startswith('/vsi'):
+                path, this_ds_name = None, path_str     # No "true" fs path exists
+            else:
+                path = pathlib.Path(path_str)
+                assert path.exists(), 'File path not found: %s' % str(path)
+                this_ds_name = str(path)
+        elif str(filename_or_ds).startswith('/vsi'):
+            path, this_ds_name = None, filename_or_ds     # No "true" fs path exists
         else:
-            path = pathlib.Path(filename_or_ds)
-
-        if not str(path).startswith('/vsi'):
-            # Assert the path exists and resolve the full path
-            if not path.exists():
-                raise RuntimeError('File path not found: %s' % str(path))
-            path = path.resolve()
-
-        # Name of the dataset
-        this_ds_name = str(path)
+            path = pathlib.Path(filename_or_ds).resolve()
+            assert path.exists(), 'File path not found: %s' % str(path)
+            this_ds_name = str(path)
 
         try:
             # Open the dataset
