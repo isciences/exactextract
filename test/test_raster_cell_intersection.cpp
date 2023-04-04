@@ -152,6 +152,8 @@ TEST_CASE("Small polygon optimization", "[raster-cell-intersection]") {
     CHECK( rci.ymax() == 1 );
 }
 
+// GEOS < 3.10 will fail to read the WKT below
+#if HAVE_3100
 TEST_CASE("Zero-area polygon", "[raster-cell-intersection]") {
     auto context = init_geos();
 
@@ -166,6 +168,7 @@ TEST_CASE("Zero-area polygon", "[raster-cell-intersection]") {
             {0.0, 0.0, 0.0}
     });
 }
+#endif
 
 TEST_CASE("Small line optimization", "[raster-cell-intersection]") {
     auto context = init_geos();
