@@ -152,6 +152,21 @@ TEST_CASE("Small polygon optimization", "[raster-cell-intersection]") {
     CHECK( rci.ymax() == 1 );
 }
 
+TEST_CASE("Zero-area polygon", "[raster-cell-intersection]") {
+    auto context = init_geos();
+
+    Grid<bounded_extent> ex{{0, 0, 3, 3}, 1, 1}; // 3x3 grid
+    auto g = GEOSGeom_read_r(context, "POLYGON ((0 0, 3 3, 0 0))");
+
+    auto rci = raster_cell_intersection(ex, context, g.get());
+
+    check_cell_intersections(rci, {
+            {0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0}
+    });
+}
+
 TEST_CASE("Small line optimization", "[raster-cell-intersection]") {
     auto context = init_geos();
 

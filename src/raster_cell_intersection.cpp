@@ -268,8 +268,13 @@ namespace exactextract {
         const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, ls);
         auto coords = read(context, seq);
 
-        if (m_areal && coords.size() == 5) {
-            if (area(coords) == geom_box.area()) {
+        if (m_areal) {
+            if (coords.size() < 4) {
+                // Component cannot have any area, just skip it.
+                return;
+            }
+
+            if (coords.size() == 5 && area(coords) == geom_box.area()) {
                 process_rectangular_ring(geom_box, exterior_ring);
                 return;
             }
