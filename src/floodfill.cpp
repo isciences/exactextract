@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2018-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -33,9 +33,12 @@ namespace exactextract {
         double x = m_extent.x_for_col(j);
         double y = m_extent.y_for_row(i);
 
+#if HAVE_3120
+        return GEOSPreparedContainsXY_r(m_geos_context, m_pg.get(), x, y);
+#else
         auto point = GEOSGeom_createPoint_ptr(m_geos_context, x, y);
-
         return GEOSPreparedContains_r(m_geos_context, m_pg.get(), point.get());
+#endif
     }
 
 }

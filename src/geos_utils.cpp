@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2018-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -97,7 +97,11 @@ namespace exactextract {
     Box geos_get_box(GEOSContextHandle_t context, const GEOSGeometry* g) {
         double xmin, ymin, xmax, ymax;
 
-#if HAVE_370
+#if HAVE_3110
+        if (!GEOSGeom_getExtent_r(context, g, &xmin, &ymin, &xmax, &ymax)) {
+            throw std::runtime_error("Error getting geometry extent.");
+        }
+#elif HAVE_370
         if (!(GEOSGeom_getXMin_r(context, g, &xmin) &&
               GEOSGeom_getYMin_r(context, g, &ymin) &&
               GEOSGeom_getXMax_r(context, g, &xmax) &&
