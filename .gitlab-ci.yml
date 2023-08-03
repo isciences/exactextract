@@ -14,6 +14,7 @@ variables:
 
 .unittest_template: &unittest_definition
   script:
+    - geos-config --version
     - mkdir build-coverage
     - cd build-coverage
     - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=NO ..
@@ -52,6 +53,16 @@ test:geos39:
 test:geos310:
   stage: test
   image: isciences/exactextract-test-env:geos310
+  <<: *unittest_definition
+
+test:geos311:
+  stage: test
+  image: isciences/exactextract-test-env:geos311
+  <<: *unittest_definition
+
+test:geos312:
+  stage: test
+  image: isciences/exactextract-test-env:geos312
   <<: *unittest_definition
 
 build:
