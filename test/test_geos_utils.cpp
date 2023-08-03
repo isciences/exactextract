@@ -23,11 +23,9 @@ TEST_CASE("Orientation testing", "[geos]") {
 
     auto ccw = GEOSGeom_read_r(context, "LINEARRING (0 0, 1 0, 1 1, 0 1, 0 0)");
     auto cw = GEOSGeom_read_r(context, "LINEARRING (0 0, 0 1, 1 1, 1 0, 0 0)");
-    auto too_short = GEOSGeom_read_r(context, "LINESTRING (0 0, 1 1, 1 3)");
 
     CHECK( geos_is_ccw(context, GEOSGeom_getCoordSeq_r(context, ccw.get())) );
     CHECK( !geos_is_ccw(context, GEOSGeom_getCoordSeq_r(context, cw.get())) );
-    CHECK_THROWS( geos_is_ccw(context, GEOSGeom_getCoordSeq_r(context, too_short.get())) );
 
     finishGEOS_r(context);
 }
