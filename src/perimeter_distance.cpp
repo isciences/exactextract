@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -38,7 +38,7 @@ namespace exactextract {
             return (xmax - xmin) + 2 * (ymax - ymin) + (xmax - x);
         }
 
-        throw std::runtime_error("Never get here");
+        throw std::runtime_error("Cannot calculate perimeter distance for point not on boundary.");
     }
 
     double perimeter_distance(double xmin, double ymin, double xmax, double ymax, const Coordinate &c) {

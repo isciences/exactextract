@@ -15,30 +15,43 @@
 
 #include <stdexcept>
 
-#if !HAVE_380
-static inline int GEOSCoordSeq_setXY_r(GEOSContextHandle_t context,
-        GEOSCoordSequence* seq,
-        unsigned int idx,
-        double x,
-        double y) {
-    return GEOSCoordSeq_setX_r(context, seq, idx, x) && GEOSCoordSeq_setY_r(context, seq, idx, y);
-}
-#endif
-
 namespace exactextract {
 
-    geom_ptr_r geos_make_box_polygon(GEOSContextHandle_t context, const Box & b) {
+    geom_ptr_r geos_make_box_linearring(GEOSContextHandle_t context, const Box & b) {
         auto seq = geos_ptr(context, GEOSCoordSeq_create_r(context, 5, 2));
-
+#if HAVE_380
         GEOSCoordSeq_setXY_r(context, seq.get(), 0, b.xmin, b.ymin);
         GEOSCoordSeq_setXY_r(context, seq.get(), 1, b.xmax, b.ymin);
         GEOSCoordSeq_setXY_r(context, seq.get(), 2, b.xmax, b.ymax);
         GEOSCoordSeq_setXY_r(context, seq.get(), 3, b.xmin, b.ymax);
         GEOSCoordSeq_setXY_r(context, seq.get(), 4, b.xmin, b.ymin);
+#else
+        GEOSCoordSeq_setX_r(context, seq.get(), 0, b.xmin);
+        GEOSCoordSeq_setY_r(context, seq.get(), 0, b.ymin);
 
-        auto shell = geos_ptr(context, GEOSGeom_createLinearRing_r(context, seq.release()));
+        GEOSCoordSeq_setX_r(context, seq.get(), 1, b.xmax);
+        GEOSCoordSeq_setY_r(context, seq.get(), 1, b.ymin);
+
+        GEOSCoordSeq_setX_r(context, seq.get(), 2, b.xmax);
+        GEOSCoordSeq_setY_r(context, seq.get(), 2, b.ymax);
+
+        GEOSCoordSeq_setX_r(context, seq.get(), 3, b.xmin);
+        GEOSCoordSeq_setY_r(context, seq.get(), 3, b.ymax);
+
+        GEOSCoordSeq_setX_r(context, seq.get(), 4, b.xmin);
+        GEOSCoordSeq_setY_r(context, seq.get(), 4, b.ymin);
+#endif
+        return geos_ptr(context, GEOSGeom_createLinearRing_r(context, seq.release()));
+    }
+
+    geom_ptr_r geos_make_box_polygon(GEOSContextHandle_t context, const Box & b) {
+#if HAVE_3110
+        return geos_ptr(context, GEOSGeom_createRectangle_r(context, b.xmin, b.ymin, b.xmax, b.ymax));
+#else
+        auto shell = geos_make_box_linearring(context, b);
 
         return geos_ptr(context, GEOSGeom_createPolygon_r(context, shell.release(), nullptr, 0));
+#endif
     }
 
     bool segment_intersection(
@@ -241,6 +254,23 @@ namespace exactextract {
         }
 #endif
         return coords;
+    }
+
+    seq_ptr_r to_coordseq(GEOSContextHandle_t context, const std::vector<Coordinate>& coords) {
+#if HAVE_3110
+        auto seq = geos_ptr(context, GEOSCoordSeq_copyFromBuffer_r(context, &(coords[0].x), coords.size(), false, false));
+#else
+        auto seq = GEOSCoordSeq_create_ptr(context, coords.size(), 2);
+        for (std::size_t i = 0; i < coords.size(); i++) {
+#if HAVE_380
+            GEOSCoordSeq_setXY_r(context, seq.get(), i, coords[i].x, coords[i].y);
+#else
+            GEOSCoordSeq_setX_r(context, seq.get(), i, coords[i].x);
+            GEOSCoordSeq_setY_r(context, seq.get(), i, coords[i].y);
+#endif
+        }
+#endif
+        return seq;
     }
 
 }

@@ -73,7 +73,7 @@ test:cli:
     - mkdir build-coverage
     - cd build-coverage
     - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=YES ..
-    - make -j2 exactextract_bin
+    - make -j2 exactextract_bin subdivide
     - pytest ../test
   after_script:
     - cd build-coverage

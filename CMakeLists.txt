@@ -51,14 +51,13 @@ if(BUILD_CLI)
     set(CLI11_INCLUDE ${CLI11_INCLUDE_DIR}/CLI11.hpp)
 
     if (NOT EXISTS ${CLI11_INCLUDE})
-        file(DOWNLOAD https://github.com/CLIUtils/CLI11/releases/download/v1.6.0/CLI11.hpp
+        file(DOWNLOAD https://github.com/CLIUtils/CLI11/releases/download/v2.3.2/CLI11.hpp
                 ${CLI11_INCLUDE}
                 SHOW_PROGRESS)
     endif()
 
     #Configure the exactextract CLI target
-    set(BIN_SOURCES
-        src/exactextract.cpp
+    add_library(exactextract_gdal OBJECT
         src/gdal_raster_wrapper.h
         src/gdal_raster_wrapper.cpp
         src/gdal_dataset_wrapper.h
@@ -72,17 +71,34 @@ if(BUILD_CLI)
         src/raster_sequential_processor.h
     )
 
-    add_executable(${BIN_NAME} ${BIN_SOURCES})
+    target_link_libraries(exactextract_gdal
+        PRIVATE ${GDAL_LIBRARY})
+
+    target_include_directories(exactextract_gdal
+        PUBLIC ${GDAL_INCLUDE_DIR})
+
+    add_executable(${BIN_NAME} src/exactextract.cpp)
     set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
 
-    target_compile_definitions(${BIN_NAME} PRIVATE GEOS_USE_ONLY_R_API)
+    add_executable(subdivide src/subdivide.cpp)
+    set_target_properties(subdivide PROPERTIES OUTPUT_NAME "subdivide")
+
+    target_link_libraries(
+        subdivide
+        PRIVATE ${GDAL_LIBRARY} ${LIB_NAME})
+
+    target_include_directories(
+        subdivide
+        PRIVATE
+        ${GDAL_INCLUDE_DIR}
+        ${CMAKE_BINARY_DIR}/generated
+        )
 
     target_link_libraries(
             ${BIN_NAME}
             PRIVATE
             ${LIB_NAME}
-            ${GDAL_LIBRARY}
-            ${GEOS_LIBRARY}
+            exactextract_gdal
     )
 
     target_include_directories(
@@ -90,8 +106,6 @@ if(BUILD_CLI)
             PRIVATE
             ${CMAKE_BINARY_DIR}/generated
             ${CMAKE_SOURCE_DIR}/src
-            ${GEOS_INCLUDE_DIR}
-            ${GDAL_INCLUDE_DIR}
     )
 
     # Include CLI11 as a system include so that -Wshadow warnings are suppressed.
@@ -99,6 +113,10 @@ if(BUILD_CLI)
             ${BIN_NAME}
             SYSTEM PRIVATE ${CLI11_INCLUDE_DIR}
     )
+
+    target_include_directories(
+        subdivide
+        SYSTEM PRIVATE ${CLI11_INCLUDE_DIR})
 
     target_compile_options(
             ${BIN_NAME}

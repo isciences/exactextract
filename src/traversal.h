@@ -21,6 +21,11 @@
 
 namespace exactextract {
 
+    /**
+     * @brief The Traversal class records the coordinates of a line that are
+     *        within a grid cell, as well as the `Side` from which the line
+     *        entered and exited the cell.
+     */
     class Traversal {
     public:
         Traversal() : m_entry{Side::NONE}, m_exit{Side::NONE} {}
@@ -37,8 +42,10 @@ namespace exactextract {
 
         bool multiple_unique_coordinates() const;
 
+        /// Begin a Traversal on the specified `Side`
         void enter(const Coordinate &c, Side s);
 
+        /// Complete a Traversal on the specified `Side`
         void exit(const Coordinate &c, Side s);
 
         Side entry_side() const { return m_entry; }

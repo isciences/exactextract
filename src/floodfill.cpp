@@ -24,9 +24,14 @@ namespace exactextract {
             m_geos_context{context},
             m_g{nullptr},
             m_pg{nullptr} {
-        geom_ptr_r ring_copy = geos_ptr(context, GEOSGeom_clone_r(context, g));
-        m_g = geos_ptr(context, GEOSGeom_createPolygon_r(context, ring_copy.release(), nullptr, 0));
-        m_pg = GEOSPrepare_ptr(context, m_g.get());
+
+        if (GEOSGeom_getDimensions_r(context, g) == 1) {
+            geom_ptr_r ring_copy = geos_ptr(context, GEOSGeom_clone_r(context, g));
+            m_g = geos_ptr(context, GEOSGeom_createPolygon_r(context, ring_copy.release(), nullptr, 0));
+            m_pg = GEOSPrepare_ptr(context, m_g.get());
+        } else {
+            m_pg = GEOSPrepare_ptr(context, g);
+        }
     }
 
     bool FloodFill::cell_is_inside(size_t i, size_t j) const {

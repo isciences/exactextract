@@ -73,7 +73,7 @@ namespace exactextract {
     }
 
     Traversal &Cell::traversal_in_progress() {
-        if (m_traversals.empty() || m_traversals[m_traversals.size() - 1].exited()) {
+        if (m_traversals.empty() || m_traversals.back().exited() || m_traversals.back().is_closed_ring()) {
             m_traversals.emplace_back();
         }
 
@@ -98,6 +98,11 @@ namespace exactextract {
             //std::cout << "Still in " << m_box << " with " << c << std::endl;
 
             t.add(c);
+
+            if (t.is_closed_ring()) {
+                t.force_exit(Side::NONE);
+            }
+
             return true;
         }
 
@@ -121,57 +126,40 @@ namespace exactextract {
                                });
     }
 
-    double Cell::covered_fraction() const {
-        // Handle the special case of a ring that is enclosed within a
-        // single pixel of our raster
-        if (m_traversals.size() == 1 && m_traversals[0].is_closed_ring()) {
-            return exactextract::area(m_traversals[0].coords()) / area();
-        }
-
-        // TODO consider porting in simplified single-traversal area calculations
-        // from Java code. Do they really make a performance difference?
-        //if (m_traversals.size() == 1) {
-        //    double a = area();
-
-        //    return (a - area_right_of(m_traversals.at(m_traversals.size() - 1))) / a;
-        //}
-
-        std::vector<const std::vector<Coordinate> *> coord_lists;
-
-        for (const auto &t : m_traversals) {
-            if (!t.traversed() || !t.multiple_unique_coordinates()) {
+    bool Cell::determined() const {
+        for (const auto& t : m_traversals) {
+            if (!t.traversed() && !t.is_closed_ring()) {
                 continue;
             }
 
-            coord_lists.push_back(&t.coords());
+            if (t.multiple_unique_coordinates()) {
+                return true;
+            }
         }
 
+        return false;
+    }
+
+    std::vector<const std::vector<Coordinate>*> Cell::get_coord_lists() const {
+        std::vector<const std::vector<Coordinate>*> coord_lists;
+
+        for (const auto &t : m_traversals) {
+            if (t.traversed() || t.is_closed_ring()) {
+                coord_lists.push_back(&t.coords());
+            }
+        }
+
+        return coord_lists;
+    }
+
+    double Cell::covered_fraction() const {
+        auto coord_lists = get_coord_lists();
         return left_hand_area(m_box, coord_lists) / area();
     }
 
-#if 0
-    Crossing Cell::crossing(const Coordinate & c1, const Coordinate & c2) const {
-        Coordinate result(0, 0);
-
-        if (c2.y > c1.y && segment_intersection(c1, c2, m_box.upper_left(), m_box.upper_right(), result)) {
-            return Crossing(Side::TOP, result);
-        }
-
-        if (c2.y < c1.y && segment_intersection(c1, c2, m_box.lower_right(), m_box.lower_left(), result)) {
-            return Crossing(Side::BOTTOM, result);
-        }
-
-        if (c2.x < c1.x && segment_intersection(c1, c2, m_box.lower_left(), m_box.upper_left(), result)) {
-            return Crossing(Side::LEFT, result);
-        }
-
-        if (c2.x > c1.x && segment_intersection(c1, c2, m_box.lower_right(), m_box.upper_right(), result)) {
-            return Crossing(Side::RIGHT, result);
-        }
-
-        throw std::runtime_error("Never get here!");
+    geom_ptr_r Cell::covered_polygons(GEOSContextHandle_t context) const {
+        auto coord_lists = get_coord_lists();
+        return left_hand_rings(context, m_box, coord_lists);
     }
-#endif
-
 
 }

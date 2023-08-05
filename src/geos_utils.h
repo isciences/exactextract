@@ -94,6 +94,9 @@ namespace exactextract {
     GEOSGeom_read_r(GEOSContextHandle_t context, const std::string &s) {
         return geos_ptr(context, GEOSGeomFromWKT_r(context, s.c_str()));
     }
+
+    geom_ptr_r geos_make_box_linearring(GEOSContextHandle_t context, const Box & b);
+
     geom_ptr_r geos_make_box_polygon(GEOSContextHandle_t context, const Box & b);
 
     Box geos_get_box(GEOSContextHandle_t context, const GEOSGeometry* g);
@@ -106,6 +109,8 @@ namespace exactextract {
     bool geos_is_ccw(GEOSContextHandle_t context, const GEOSCoordSequence *s);
 
     std::vector<Coordinate> read(GEOSContextHandle_t context, const GEOSCoordSequence *s);
+
+    seq_ptr_r to_coordseq(GEOSContextHandle_t context, const std::vector<Coordinate>& coords);
 
 }
 

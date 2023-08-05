@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 ISciences, LLC.
+// Copyright (c) 2018-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -38,8 +38,6 @@ namespace exactextract {
     }
 
     static Cell *get_cell(Matrix<std::unique_ptr<Cell>> &cells, const Grid<infinite_extent> &ex, size_t row, size_t col) {
-        //std::cout << " getting cell " << row << ", " << col << std::endl;
-
         if (cells(row, col) == nullptr) {
             cells(row, col) = std::make_unique<Cell>(grid_cell(ex, row, col));
         }
@@ -258,6 +256,125 @@ namespace exactextract {
         }
     }
 
+    Matrix<float> RasterCellIntersection::collect_areas(const Matrix<std::unique_ptr<Cell>>& cells,
+                                const Grid<bounded_extent>& finite_ring_grid,
+                                GEOSContextHandle_t context,
+                                const GEOSGeometry* ls) {
+
+        // Create a matrix of areas using the FILLABLE placeholder value, which means that
+        // a known state (interior/exterior) can be propated from an adjacent cell.
+        Matrix<float> areas(cells.rows() - 2,
+                            cells.cols() - 2, fill_values<float>::FILLABLE);
+
+        FloodFill ff(context, ls, finite_ring_grid);
+
+        // Mark all cells that have been traversed as being either INTERIOR or EXTERIOR.
+        for (size_t i = 1; i <= areas.rows(); i++) {
+            for (size_t j = 1; j <= areas.cols(); j++) {
+                if (cells(i, j) != nullptr) {
+                    // When we encounter a cell that has been processed (ie, it is not nullptr)
+                    // but whose traversals contains no linear segments, we have no way to know
+                    // if it is inside of the polygon. So we perform point-in-polygon test and set
+                    // the covered fraction to 1.0 if needed.
+
+                    if (!cells(i, j)->determined()) {
+                        areas(i-1, j-1) = ff.cell_is_inside(i-1, j-1) ? fill_values<float>::INTERIOR : fill_values<float>::EXTERIOR;
+                    } else {
+                        areas(i - 1, j - 1) = cells(i, j)->covered_fraction();
+                    }
+                }
+            }
+        }
+
+        // Propagate INTERIOR and EXTERIOR values to all remaining FILLABLE cells
+        ff.flood(areas);
+
+        return areas;
+    }
+
+    Matrix<float> collect_lengths(const Matrix<std::unique_ptr<Cell>>& cells) {
+        Matrix<float> lengths(cells.rows() - 2,
+                              cells.cols()- 2, fill_values<float>::EXTERIOR);
+
+        for (size_t i = 1; i <= lengths.rows(); i++) {
+            for (size_t j = 1; j <= lengths.cols(); j++) {
+                if (cells(i, j) != nullptr) {
+                    lengths(i - 1, j - 1) = static_cast<float>(cells(i, j)->traversal_length());
+                }
+            }
+        }
+
+        return lengths;
+    }
+
+    void traverse_cells(Matrix<std::unique_ptr<Cell>>& cells, std::vector<Coordinate>& coords, const Grid<infinite_extent>& ring_grid, bool areal)  {
+        size_t pos = 0;
+        size_t row = ring_grid.get_row(coords.front().y);
+        size_t col = ring_grid.get_column(coords.front().x);
+        const Coordinate* last_exit = nullptr;
+
+        while (pos < coords.size()) {
+            Cell &cell = *get_cell(cells, ring_grid, row, col);
+
+            while (pos < coords.size()) {
+                const Coordinate* next_coord = last_exit ? last_exit : &coords[pos];
+                const Coordinate* prev_coord = pos > 0 ? &coords[pos - 1] : nullptr;
+
+                cell.take(*next_coord, prev_coord);
+
+                if (cell.last_traversal().exited()) {
+                    // Only push our exit coordinate if it's not same as the
+                    // coordinate we just took. This covers the case where
+                    // the next coordinate in the stack falls exactly on
+                    // the cell boundary.
+                    const Coordinate& exc = cell.last_traversal().exit_coordinate();
+                    if (exc != *next_coord) {
+                        last_exit = &exc;
+                    }
+                    break;
+                } else {
+                    if (last_exit) {
+                        last_exit = nullptr;
+                    } else {
+                        pos++;
+                    }
+                }
+            }
+
+            cell.force_exit();
+
+            if (cell.last_traversal().exited()) {
+                // When we start in the middle of a cell, for a polygon (areal) calculation,
+                // we need to save the coordinates from our incomplete traversal and reprocess
+                // them at the end of the line. The effect is just to restructure the polygon
+                // so that the start/end coordinate falls on a cell boundary.
+                if (areal && !cell.last_traversal().traversed()) {
+                    for (const auto &coord : cell.last_traversal().coords()) {
+                        coords.push_back(coord);
+                    }
+                }
+
+                switch (cell.last_traversal().exit_side()) {
+                    case Side::TOP:
+                        row--;
+                        break;
+                    case Side::BOTTOM:
+                        row++;
+                        break;
+                    case Side::LEFT:
+                        col--;
+                        break;
+                    case Side::RIGHT:
+                        col++;
+                        break;
+                    default:
+                        throw std::runtime_error("Invalid traversal");
+                }
+            }
+        }
+
+    }
+
     void RasterCellIntersection::process_line(GEOSContextHandle_t context, const GEOSGeometry *ls, bool exterior_ring) {
         auto geom_box = geos_get_box(context, ls);
 
@@ -308,115 +425,19 @@ namespace exactextract {
             return;
         }
 
-        Matrix<std::unique_ptr<Cell>> cells(rows, cols);
-
         if (m_areal && !geos_is_ccw(context, seq)) {
             std::reverse(coords.begin(), coords.end());
         }
 
-        size_t pos = 0;
-        size_t row = ring_grid.get_row(coords.front().y);
-        size_t col = ring_grid.get_column(coords.front().x);
-        const Coordinate* last_exit = nullptr;
-
-        while (pos < coords.size()) {
-            Cell &cell = *get_cell(cells, ring_grid, row, col);
-
-            while (pos < coords.size()) {
-                const Coordinate* next_coord = last_exit ? last_exit : &coords[pos];
-                const Coordinate* prev_coord = pos > 0 ? &coords[pos - 1] : nullptr;
-
-                cell.take(*next_coord, prev_coord);
-
-                if (cell.last_traversal().exited()) {
-                    // Only push our exit coordinate if it's not same as the
-                    // coordinate we just took. This covers the case where
-                    // the next coordinate in the stack falls exactly on
-                    // the cell boundary.
-                    const Coordinate& exc = cell.last_traversal().exit_coordinate();
-                    if (exc != *next_coord) {
-                        last_exit = &exc;
-                    }
-                    break;
-                } else {
-                    if (last_exit) {
-                        last_exit = nullptr;
-                    } else {
-                        pos++;
-                    }
-                }
-            }
-
-            cell.force_exit();
-
-            if (cell.last_traversal().exited()) {
-                // When we start in the middle of a cell, for a polygon (areal) calculation,
-                // we need to save the coordinates from our incomplete traversal and reprocess
-                // them at the end of the line. The effect is just to restructure the polygon
-                // so that the start/end coordinate falls on a cell boundary.
-                if (m_areal && !cell.last_traversal().traversed()) {
-                    for (const auto &coord : cell.last_traversal().coords()) {
-                        coords.push_back(coord);
-                    }
-                }
-
-                switch (cell.last_traversal().exit_side()) {
-                    case Side::TOP:
-                        row--;
-                        break;
-                    case Side::BOTTOM:
-                        row++;
-                        break;
-                    case Side::LEFT:
-                        col--;
-                        break;
-                    case Side::RIGHT:
-                        col++;
-                        break;
-                    default:
-                        throw std::runtime_error("Invalid traversal");
-                }
-            }
-        }
+        Matrix<std::unique_ptr<Cell>> cells(ring_grid.rows(), ring_grid.cols());
+        traverse_cells(cells, coords, ring_grid, m_areal);
 
         // Compute the fraction covered for all cells and assign it to
         // the area matrix
         // TODO avoid copying matrix when geometry has only one polygon, and polygon has only one ring
-        Matrix<float> areas(rows - 2, cols - 2, m_areal ? fill_values<float>::FILLABLE : fill_values<float>::EXTERIOR);
-
-        if (m_areal) {
-            FloodFill ff(context, ls, make_finite(ring_grid));
-
-            for (size_t i = 1; i <= areas.rows(); i++) {
-                for (size_t j = 1; j <= areas.cols(); j++) {
-                    if (cells(i, j) != nullptr) {
-                        // When we encounter a cell that has been processed (ie, it is not nullptr)
-                        // but has zero covered fraction, we have no way to know if that cell is on
-                        // the inside of the polygon. So we perform point-in-polygon test and set
-                        // the covered fraction to 1.0 if needed.
-                        auto frac = static_cast<float>(cells(i, j)->covered_fraction());
-
-                        if (frac == 0) {
-                            areas(i-1, j-1) = ff.cell_is_inside(i-1, j-1) ? fill_values<float>::INTERIOR : fill_values<float>::EXTERIOR;
-                        } else {
-                            areas(i - 1, j - 1) = frac;
-                        }
-                    }
-                }
-            }
-
-            ff.flood(areas);
-        } else {
-            for (size_t i = 1; i <= areas.rows(); i++) {
-                for (size_t j = 1; j <= areas.cols(); j++) {
-                    if (cells(i, j) != nullptr) {
-                        areas(i - 1, j - 1) = static_cast<float>(cells(i, j)->traversal_length());
-                    }
-                }
-            }
-        }
-
-
+        Matrix<float> areas = m_areal ?
+               collect_areas(cells, make_finite(ring_grid), context, ls) :
+               collect_lengths(cells);
 
         // Transfer these areas to our global set
         size_t i0 = ring_grid.row_offset(m_geometry_grid);
@@ -433,6 +454,62 @@ namespace exactextract {
                 m_results->increment(i0 + i, j0 + j, factor * areas(i, j));
             }
         }
+    }
+
+    void traverse_ring(Matrix<std::unique_ptr<Cell>> & cells, const Grid<infinite_extent>& grid, GEOSContextHandle_t context, const GEOSGeometry* g, bool want_ccw) {
+        const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, g);
+        auto coords = read(context, seq);
+
+        bool is_ccw = geos_is_ccw(context, seq);
+        if (want_ccw != is_ccw) {
+            std::reverse(coords.begin(), coords.end());
+        }
+
+        traverse_cells(cells, coords, grid, true);
+    }
+
+    geom_ptr_r
+    RasterCellIntersection::subdivide_polygon(const Grid<bounded_extent> & p_grid, GEOSContextHandle_t context, const GEOSGeometry* g)
+    {
+        Grid<infinite_extent> grid = make_infinite(p_grid);
+        Matrix<std::unique_ptr<Cell>> cells(grid.rows(), grid.cols());
+
+        int ngeoms = GEOSGetNumGeometries_r(context, g);
+        for (int i = 0; i < ngeoms; i++) {
+            const GEOSGeometry* gi = GEOSGetGeometryN_r(context, g, i);
+            const GEOSGeometry* shell = GEOSGetExteriorRing_r(context, gi);
+            traverse_ring(cells, grid, context, shell, true);
+
+            int nrings = GEOSGetNumInteriorRings_r(context, gi);
+            for (int j = 0; j < nrings; j++) {
+                traverse_ring(cells, grid, context, GEOSGetInteriorRingN_r(context, gi, j), false);
+            }
+        }
+
+        auto areas = collect_areas(cells, p_grid, context, g);
+
+        std::vector<GEOSGeometry*> geoms;
+
+        // consider including first and last row/column
+        for (std::size_t i = 1; i < cells.rows() - 1; i++) {
+            for (std::size_t j = 1; j < cells.cols() - 1; j++) {
+                if (cells(i, j) != nullptr) {
+                    if (areas(i-1, j-1) == fill_values<float>::INTERIOR) {
+                        // Cell is completely covered by polygon
+                        geoms.push_back(geos_make_box_polygon(context, cells(i, j)->box()).release());
+                    } else if (areas(i-1, j-1) != fill_values<float>::EXTERIOR) {
+                        // Cell is partly covered by polygon
+                        geoms.push_back(cells(i, j)->covered_polygons(context).release());
+                    }
+                } else if (areas(i-1, j-1) == fill_values<float>::INTERIOR) {
+                    // Cell is entirely covered by polygon
+                    geoms.push_back(geos_make_box_polygon(context, grid_cell(grid, i, j)).release());
+                }
+            }
+        }
+
+        return geos_ptr(context,
+                        GEOSGeom_createCollection_r(context, GEOS_GEOMETRYCOLLECTION, geoms.data(), geoms.size()));
     }
 
 }

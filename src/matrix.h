@@ -74,7 +74,7 @@ class Matrix {
             return m_data[row*m_cols + col];
         }
 
-        T operator()(size_t row, size_t col) const {
+        const T& operator()(size_t row, size_t col) const {
             check(row, col);
             return m_data[row*m_cols + col];
         }
