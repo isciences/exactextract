@@ -40,7 +40,7 @@ static std::vector<Operation> prepare_operations(const std::vector<std::string> 
         std::unordered_map<std::string, GDALRasterWrapper> & rasters);
 
 int main(int argc, char** argv) {
-    CLI::App app{"Zonal statistics using exactextract: build " + exactextract::version()};
+    CLI::App app{"Zonal statistics using exactextract: version " + exactextract::version()};
 
     std::string poly_descriptor, field_name, output_filename, strategy, id_type, id_name;
     std::vector<std::string> stats;
