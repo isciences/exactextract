@@ -65,6 +65,21 @@ test:geos312:
   image: isciences/exactextract-test-env:geos312
   <<: *unittest_definition
 
+test:cli:
+  stage: test
+  image: isciences/exactextract-test-env:geos312
+  script:
+    - geos-config --version
+    - mkdir build-coverage
+    - cd build-coverage
+    - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=YES ..
+    - make -j2 exactextract_bin
+    - pytest ../test
+  after_script:
+    - cd build-coverage
+    - lcov --capture --directory CMakeFiles --output-file coverage.info
+    - bash <(curl -s https://codecov.io/bash)
+
 build:
   stage: build
   script:

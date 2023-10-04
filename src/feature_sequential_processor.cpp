@@ -26,6 +26,8 @@ namespace exactextract {
             m_output.add_operation(op);
         }
 
+        bool store_values = StatsRegistry::requires_stored_values(m_operations);
+
         while (m_shp.next()) {
             std::string name{m_shp.feature_field(m_shp.id_field())};
             auto geom = geos_ptr(m_geos_context, m_shp.feature_geometry(m_geos_context));
@@ -75,9 +77,9 @@ namespace exactextract {
                         if (op.weighted()) {
                             auto weights = op.weights->read_box(subgrid.extent().intersection(op.weights->grid().extent()));
 
-                            m_reg.stats(name, op).process(*coverage, *values, *weights);
+                            m_reg.stats(name, op, store_values).process(*coverage, *values, *weights);
                         } else {
-                            m_reg.stats(name, op).process(*coverage, *values);
+                            m_reg.stats(name, op, store_values).process(*coverage, *values);
                         }
 
                         progress();

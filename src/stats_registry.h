@@ -24,7 +24,7 @@ namespace exactextract {
 
     class StatsRegistry {
     public:
-        RasterStats<double> &stats(const std::string &feature, const Operation &op) {
+        RasterStats<double> &stats(const std::string &feature, const Operation &op, bool store_values) {
             // TODO come up with a better storage method.
             auto& stats_for_feature = m_feature_stats[feature];
 
@@ -32,7 +32,7 @@ namespace exactextract {
             auto exists = stats_for_feature.count(op_key(op));
             if (!exists) {
                 // can't use emplace because this requires RasterStats be copy-constructible before C++17
-                RasterStats<double> new_stats(requires_stored_values(op.stat));
+                RasterStats<double> new_stats(store_values);
                 stats_for_feature[op_key(op)] = std::move(new_stats);
             }
 
@@ -77,6 +77,14 @@ namespace exactextract {
             return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety";
         }
 
+        template<typename T>
+        static bool requires_stored_values(const T& ops) {
+            return std::any_of(ops.begin(),
+                           ops.end(),
+                           [](const Operation& op) {
+                                return requires_stored_values(op.stat);
+            });
+        }
 
     private:
         std::unordered_map<std::string,
