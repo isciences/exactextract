@@ -22,8 +22,15 @@
 
 namespace exactextract {
 
+    /**
+     * @brief The StatsRegistry class stores an instance of a `RasterStats` object that can be associated
+     * with a feature and one or more Operations sharing a the same key.
+     */
     class StatsRegistry {
     public:
+        /**
+         * @brief Get the RasterStats object for a given feature id/operation, creating it if necessary.
+         */
         RasterStats<double> &stats(const std::string &feature, const Operation &op, bool store_values) {
             // TODO come up with a better storage method.
             auto& stats_for_feature = m_feature_stats[feature];
@@ -44,6 +51,9 @@ namespace exactextract {
             return m_feature_stats.at(feature).at(op_key(op));
         }
 
+        /**
+         * @brief Determine if a `RasterStats` object exists for a given feature id/operation
+         */
         bool contains (const std::string & feature, const Operation & op) const {
             const auto& m = m_feature_stats;
 
@@ -58,19 +68,14 @@ namespace exactextract {
             return m2.find(op_key(op)) != m2.end();
         }
 
+        /**
+         * @brief Remove RasterStats objects associated with a given feature id
+         */
         void flush_feature(const std::string &fid) {
             std::unordered_map<std::string, double> vals;
             // TODO assemble vals;
 
             m_feature_stats.erase(fid);
-        }
-
-        std::string op_key(const Operation & op) const {
-            if (op.weighted()) {
-                return op.values->name() + "|" + op.weights->name();
-            } else {
-                return op.values->name();
-            }
         }
 
         static bool requires_stored_values(const std::string & stat) {
@@ -87,6 +92,14 @@ namespace exactextract {
         }
 
     private:
+        std::string op_key(const Operation & op) const {
+            if (op.weighted()) {
+                return op.values->name() + "|" + op.weights->name();
+            } else {
+                return op.values->name();
+            }
+        }
+
         std::unordered_map<std::string,
         std::unordered_map<std::string, RasterStats <double>>> m_feature_stats{};
     };

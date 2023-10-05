@@ -22,6 +22,12 @@
 
 namespace exactextract {
 
+    /**
+     * @brief The RasterSequentialProcessor class iterates over chunks of the raster, fetching features that intersect each
+     * chunk and incrementally updating their statistics. It requires that all features and their associated statistics
+     * remain in memory at all times. It may be efficient for rasters that from which random rectangles cannot be
+     * efficiently read.
+     */
     class RasterSequentialProcessor : public Processor {
     public:
         using Processor::Processor;

@@ -37,10 +37,14 @@ static void errorHandler(const char *fmt, ...) {
 
 
 namespace exactextract {
+    /**
+     * @brief The Processor class applies one or more operations to all features in the input dataset,
+     *        writing the results to an OutputWriter. Subclasses define the manner in which this happens
+     *        by overriding the `process` method.
+     */
     class Processor {
 
     public:
-        // FIXME add GEOS error/notice handlers
         Processor(GDALDatasetWrapper & ds, OutputWriter & out, const std::vector<Operation> & ops) :
                 m_reg{},
                 m_geos_context{initGEOS_r(errorHandler, errorHandler)},

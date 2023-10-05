@@ -17,6 +17,12 @@
 #include "processor.h"
 
 namespace exactextract {
+
+    /**
+     * @brief The FeatureSequentialProcessor class iterates over the features in the input dataset, reading the necessary
+     * raster cells to complete the specified Operation on the feature, then writing those results before continuing onto
+     * the next feature. It is best-suited to raster datasets from which arbitrary rectangles can be read efficiently.
+    */
     class FeatureSequentialProcessor : public Processor {
     public:
         using Processor::Processor;
