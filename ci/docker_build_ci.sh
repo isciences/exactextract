@@ -25,7 +25,3 @@ docker push isciences/exactextract-test-env:geos311
 
 docker build --pull --build-arg GEOS_VERSION=3.12.0 --build-arg BUILD_TOOL=cmake -t isciences/exactextract-test-env:geos312 - < Dockerfile.unittest
 docker push isciences/exactextract-test-env:geos312
-
-# Build base image for exactextract build
-docker build --pull -t isciences/exactextract-build-env:latest - < Dockerfile.gitlabci
-docker push isciences/exactextract-build-env:latest

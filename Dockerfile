@@ -1,6 +1,19 @@
-FROM isciences/exactextract-build-env:latest
+FROM debian:bookworm-slim
 
 LABEL maintainer="dbaston@isciences.com"
+
+RUN apt-get update && apt-get install -y \
+  build-essential \
+  cmake \
+  curl \
+  doxygen \
+  gdal-bin \
+  git \
+  graphviz \
+  libgdal-dev \
+  libgeos-dev \
+  unzip \
+  wget
 
 COPY . /exactextract
 
