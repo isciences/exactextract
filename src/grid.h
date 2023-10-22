@@ -97,6 +97,10 @@ namespace exactextract {
                     get_row(m_extent.ymin));
         }
 
+        std::size_t get_cell(double x, double y) const {
+            return get_row(y)*cols() + get_column(x);
+        }
+
         bool empty() const { return m_num_rows <= 2*extent_tag::padding && m_num_cols <= 2*extent_tag::padding; }
 
         size_t rows() const { return m_num_rows; }
@@ -343,14 +347,14 @@ namespace exactextract {
         if (begin == end) {
             return Grid<bounded_extent>::make_empty();
         } else if (std::next(begin) == end) {
-            return begin->grid();
+            return (*begin)->grid();
         }
         return std::accumulate(
                 std::next(begin),
                 end,
-                begin->grid(),
+                (*begin)->grid(),
                 [](auto& acc, auto& op) {
-                    return acc.common_grid(op.grid());
+                    return acc.common_grid(op->grid());
                 });
     }
 

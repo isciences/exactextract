@@ -37,6 +37,8 @@ namespace exactextract {
 
         GDALRasterWrapper(const GDALRasterWrapper &) = delete;
         GDALRasterWrapper(GDALRasterWrapper &&) noexcept;
+
+        bool cartesian() const;
     private:
         using GDALDatasetH=void*;
         using GDALRasterBandH=void*;

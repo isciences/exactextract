@@ -45,12 +45,12 @@ namespace exactextract {
     class Processor {
 
     public:
-        Processor(GDALDatasetWrapper & ds, OutputWriter & out, const std::vector<Operation> & ops) :
+        Processor(GDALDatasetWrapper & ds, OutputWriter & out, std::vector<std::unique_ptr<Operation>> ops) :
                 m_reg{},
                 m_geos_context{initGEOS_r(errorHandler, errorHandler)},
                 m_output{out},
                 m_shp{ds},
-                m_operations{ops}
+                m_operations{std::move(ops)}
         {
             m_output.set_registry(&m_reg);
         }
@@ -92,7 +92,7 @@ namespace exactextract {
 
         bool m_show_progress=false;
 
-        std::vector<Operation> m_operations;
+        std::vector<std::unique_ptr<Operation>> m_operations;
 
         size_t m_max_cells_in_memory = 1000000L;
     };

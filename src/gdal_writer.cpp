@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -13,6 +13,9 @@
 
 #include "gdal_writer.h"
 #include "gdal_dataset_wrapper.h"
+#include "gdal_feature.h"
+#include "coverage_operation.h"
+#include "operation.h"
 #include "stats_registry.h"
 #include "utils.h"
 
@@ -26,7 +29,7 @@ namespace exactextract {
     GDALWriter::GDALWriter(const std::string & filename)
     {
         auto driver_name = get_driver_name(filename);
-        auto driver = GDALGetDriverByName(driver_name.c_str());
+        auto driver = OGRGetDriverByName(driver_name.c_str());
 
         if (driver == nullptr) {
             throw std::runtime_error("Could not load output driver: " + driver_name);
@@ -88,44 +91,37 @@ namespace exactextract {
             throw std::runtime_error("Must define ID field before adding operations.");
         }
 
-        // TODO set type here?
-        auto def = OGR_Fld_Create(op.name.c_str(), OFTReal);
-        OGR_L_CreateField(m_layer, def, true);
-        OGR_Fld_Destroy(def);
+        for (const auto& field_name : op.field_names()) {
+            // TODO set type here
+            auto def = OGR_Fld_Create(field_name.c_str(), OFTReal);
+            OGR_L_CreateField(m_layer, def, true);
+            OGR_Fld_Destroy(def);
+        }
 
         m_ops.push_back(&op);
     }
 
     void GDALWriter::set_registry(const StatsRegistry* reg) {
+
         m_reg = reg;
     }
 
-    void GDALWriter::write(const std::string & fid) {
-        auto feature = OGR_F_Create(OGR_L_GetLayerDefn(m_layer));
 
-        OGR_F_SetFieldString(feature, 0, fid.c_str());
+    void GDALWriter::write(const std::string & fid) {
+        auto feature_raw = OGR_F_Create(OGR_L_GetLayerDefn(m_layer));
+
+        OGR_F_SetFieldString(feature_raw, 0, fid.c_str());
+
+        GDALFeature feature(feature_raw);
 
         for (const auto &op : m_ops) {
-            if (m_reg->contains(fid, *op)) {
-                const auto field_pos = OGR_F_GetFieldIndex(feature, op->name.c_str());
-                const auto &stats = m_reg->stats(fid, *op);
-
-                // TODO store between features
-                auto fetcher = op->result_fetcher();
-
-                auto val = fetcher(stats);
-                if (val.has_value()) {
-                    OGR_F_SetFieldDouble(feature, field_pos, val.value());
-                } else {
-                    OGR_F_SetFieldDouble(feature, field_pos, std::numeric_limits<double>::quiet_NaN());
-                }
-            }
+            op->set_result(*m_reg, fid, feature);
         }
 
-        if (OGR_L_CreateFeature(m_layer, feature) != OGRERR_NONE) {
+        if (OGR_L_CreateFeature(m_layer, feature_raw) != OGRERR_NONE) {
             throw std::runtime_error("Error writing results for record: " + fid);
         }
-        OGR_F_Destroy(feature);
+        OGR_F_Destroy(feature_raw);
     }
 
     std::string GDALWriter::get_driver_name(const std::string & filename) {
@@ -137,6 +133,8 @@ namespace exactextract {
             return "NetCDF";
         } else if (starts_with(filename, "PG:")) {
             return "PostgreSQL";
+        } else if (ends_with(filename, ".parquet")) {
+            return "Parquet";
         } else {
             throw std::runtime_error("Unknown output format: " + filename);
         }

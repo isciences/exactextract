@@ -18,6 +18,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace exactextract {
 
@@ -26,6 +27,7 @@ namespace exactextract {
         std::string values;
         std::string weights;
         std::string stat;
+        std::vector<double> quantiles;
     };
 
     std::pair<std::string, std::string> parse_dataset_descriptor(const std::string &descriptor);

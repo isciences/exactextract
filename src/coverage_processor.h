@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,29 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_MEASURES_H
-#define EXACTEXTRACT_MEASURES_H
+#pragma once
 
-#include <cmath>
-#include <vector>
-#include <cstddef>
-
-#include "coordinate.h"
+#include "processor.h"
 
 namespace exactextract {
 
-    enum class AreaMethods {
-        NONE,
-        CARTESIAN,
-        SPHERICAL
-    };
+class CoverageProcessor : public Processor
+{
+  public:
+    using Processor::Processor;
 
-    double area_signed(const std::vector<Coordinate> &ring);
-
-    double area(const std::vector<Coordinate> &ring);
-
-    double length(const std::vector<Coordinate> & coords);
+    void process() override;
+};
 
 }
-
-#endif

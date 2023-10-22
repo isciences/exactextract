@@ -83,12 +83,14 @@ namespace exactextract {
 
          StatDescriptor ret;
 
+         // Parse optional name for stat, specified as NAME=stat(...)
          const std::regex re_result_name("^(\\w+)=");
          std::smatch result_name_match;
          if (std::regex_search(descriptor, result_name_match, re_result_name)) {
              ret.name = result_name_match[1].str();
          }
 
+         // Parse name of value raster
          const std::regex re_func_name("=?(\\w+)\\(");
          std::smatch func_name_match;
          if (std::regex_search(descriptor, func_name_match, re_func_name)) {
@@ -97,6 +99,7 @@ namespace exactextract {
              throw std::runtime_error("Invalid stat descriptor.");
          }
 
+         // Parse name of weight raster
          const std::regex re_args(R"(\(([,\w]+)+\)$)");
          std::smatch arg_names_match;
          if (std::regex_search(descriptor, arg_names_match, re_args)) {
@@ -113,6 +116,7 @@ namespace exactextract {
              throw std::runtime_error("Invalid stat descriptor.");
          }
 
+         // Construct a name if one was not specified
          if (ret.name.empty()) {
              std::ostringstream ss;
              ss << ret.values << '_' << ret.stat;

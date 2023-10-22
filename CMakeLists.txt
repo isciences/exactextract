@@ -62,9 +62,12 @@ if(BUILD_CLI)
         src/gdal_raster_wrapper.cpp
         src/gdal_dataset_wrapper.h
         src/gdal_dataset_wrapper.cpp
+        src/gdal_feature.h
         src/gdal_writer.h
         src/gdal_writer.cpp
         src/processor.h
+        src/coverage_processor.h
+        src/coverage_processor.cpp
         src/feature_sequential_processor.cpp
         src/feature_sequential_processor.h
         src/raster_sequential_processor.cpp
@@ -203,7 +206,9 @@ set(PROJECT_SOURCES
         src/cell.h
         src/coordinate.cpp
         src/coordinate.h
+        src/coverage_operation.h
         src/crossing.h
+        src/feature.h
         src/floodfill.cpp
         src/floodfill.h
         src/geos_utils.cpp
@@ -218,6 +223,7 @@ set(PROJECT_SOURCES
         src/raster_cell_intersection.cpp
         src/raster_cell_intersection.h
         src/raster_stats.h
+        src/raster_coverage_iterator.h
         src/side.cpp
         src/side.h
         src/traversal.cpp
@@ -227,8 +233,10 @@ set(PROJECT_SOURCES
         src/output_writer.h
         src/output_writer.cpp
         src/operation.h
+        src/operation.cpp
         src/raster_source.h
         src/stats_registry.h
+        src/stats_registry.cpp
         src/utils.h
         src/utils.cpp
         src/weighted_quantiles.h

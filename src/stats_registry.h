@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -16,9 +16,13 @@
 
 #include <string>
 #include <unordered_map>
+#include <set>
 
-#include "operation.h"
 #include "raster_stats.h"
+
+namespace exactextract {
+    class Operation;
+}
 
 namespace exactextract {
 
@@ -31,50 +35,19 @@ namespace exactextract {
         /**
          * @brief Get the RasterStats object for a given feature id/operation, creating it if necessary.
          */
-        RasterStats<double> &stats(const std::string &feature, const Operation &op, bool store_values) {
-            // TODO come up with a better storage method.
-            auto& stats_for_feature = m_feature_stats[feature];
+        RasterStats<double> &stats(const std::string &feature, const Operation &op, bool store_values);
 
-            // can't use find because this requires RasterStats to be copy-constructible before C++ 17
-            auto exists = stats_for_feature.count(op_key(op));
-            if (!exists) {
-                // can't use emplace because this requires RasterStats be copy-constructible before C++17
-                RasterStats<double> new_stats(store_values);
-                stats_for_feature[op_key(op)] = std::move(new_stats);
-            }
-
-            return stats_for_feature[op_key(op)];
-        }
-
-        const RasterStats<double> &stats(const std::string &feature, const Operation &op) const {
-            // TODO come up with a better storage method.
-            return m_feature_stats.at(feature).at(op_key(op));
-        }
+        const RasterStats<double>& stats(const std::string &feature, const Operation &op) const;
 
         /**
          * @brief Determine if a `RasterStats` object exists for a given feature id/operation
          */
-        bool contains (const std::string & feature, const Operation & op) const {
-            const auto& m = m_feature_stats;
-
-            auto it = m.find(feature);
-
-            if (it == m.end()) {
-                return false;
-            }
-
-            const auto& m2 = it->second;
-
-            return m2.find(op_key(op)) != m2.end();
-        }
+        bool contains(const std::string & feature, const Operation & op) const;
 
         /**
          * @brief Remove RasterStats objects associated with a given feature id
          */
         void flush_feature(const std::string &fid) {
-            std::unordered_map<std::string, double> vals;
-            // TODO assemble vals;
-
             m_feature_stats.erase(fid);
         }
 
@@ -86,19 +59,12 @@ namespace exactextract {
         static bool requires_stored_values(const T& ops) {
             return std::any_of(ops.begin(),
                            ops.end(),
-                           [](const Operation& op) {
-                                return requires_stored_values(op.stat);
+                           [](const auto& op) {
+                                return requires_stored_values(op->stat);
             });
         }
 
     private:
-        std::string op_key(const Operation & op) const {
-            if (op.weighted()) {
-                return op.values->name() + "|" + op.weights->name();
-            } else {
-                return op.values->name();
-            }
-        }
 
         std::unordered_map<std::string,
         std::unordered_map<std::string, RasterStats <double>>> m_feature_stats{};

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2018-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <gdal.h>
+#include <ogr_srs_api.h>
 
 #include "gdal_raster_wrapper.h"
 
@@ -36,12 +37,19 @@ namespace exactextract {
         set_name(filename);
         compute_raster_grid();
     }
+
     
     GDALRasterWrapper::~GDALRasterWrapper() {
         // We can't use a std::unique_ptr because GDALDatasetH is an incomplete type.
         // So we include a destructor and move constructor to manage the resource.
         if (m_rast != nullptr)
             GDALClose(m_rast);
+    }
+
+    bool
+    GDALRasterWrapper::cartesian() const {
+        const auto& srs = GDALGetSpatialRef(m_rast);
+        return !OSRIsGeographic(srs);
     }
 
     std::unique_ptr<AbstractRaster<double>> GDALRasterWrapper::read_box(const Box &box) {

@@ -18,12 +18,13 @@
 #include "feature_sequential_processor.h"
 #include "geos_utils.h"
 #include "grid.h"
+#include "operation.h"
 
 namespace exactextract {
 
     void FeatureSequentialProcessor::process() {
         for (const auto& op : m_operations) {
-            m_output.add_operation(op);
+            m_output.add_operation(*op);
         }
 
         bool store_values = StatsRegistry::requires_stored_values(m_operations);
@@ -51,18 +52,18 @@ namespace exactextract {
                         // TODO avoid reading same values/weights multiple times. Just use a map?
 
                         // Avoid processing same values/weights for different stats
-                        auto key = std::make_pair(op.weights, op.values);
+                        auto key = std::make_pair(op->weights, op->values);
                         if (processed.find(key) != processed.end()) {
                             continue;
                         } else {
                             processed.insert(key);
                         }
 
-                        if (!op.values->grid().extent().contains(subgrid.extent())) {
+                        if (!op->values->grid().extent().contains(subgrid.extent())) {
                             continue;
                         }
 
-                        if (op.weighted() && !op.weights->grid().extent().contains(subgrid.extent())) {
+                        if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
                             continue;
                         }
 
@@ -72,14 +73,14 @@ namespace exactextract {
                                     raster_cell_intersection(subgrid, m_geos_context, geom.get()));
                         }
 
-                        auto values = op.values->read_box(subgrid.extent().intersection(op.values->grid().extent()));
+                        auto values = op->values->read_box(subgrid.extent().intersection(op->values->grid().extent()));
 
-                        if (op.weighted()) {
-                            auto weights = op.weights->read_box(subgrid.extent().intersection(op.weights->grid().extent()));
+                        if (op->weighted()) {
+                            auto weights = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
 
-                            m_reg.stats(name, op, store_values).process(*coverage, *values, *weights);
+                            m_reg.stats(name, *op, store_values).process(*coverage, *values, *weights);
                         } else {
-                            m_reg.stats(name, op, store_values).process(*coverage, *values);
+                            m_reg.stats(name, *op, store_values).process(*coverage, *values);
                         }
 
                         progress();

@@ -11,7 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "operation.h"
 #include "raster_sequential_processor.h"
+#include "raster_source.h"
 
 #include <map>
 #include <memory>
@@ -40,7 +42,7 @@ namespace exactextract {
         populate_index();
 
         for (const auto& op : m_operations) {
-            m_output.add_operation(op);
+            m_output.add_operation(*op);
         }
 
         bool store_values = StatsRegistry::requires_stored_values(m_operations);
@@ -67,18 +69,18 @@ namespace exactextract {
 
                 for (const auto &op : m_operations) {
                     // Avoid processing same values/weights for different stats
-                    auto key = std::make_pair(op.weights, op.values);
+                    auto key = std::make_pair(op->weights, op->values);
                     if (processed.find(key) != processed.end()) {
                         continue;
                     } else {
                         processed.insert(key);
                     }
 
-                    if (!op.values->grid().extent().contains(subgrid.extent())) {
+                    if (!op->values->grid().extent().contains(subgrid.extent())) {
                         continue;
                     }
 
-                    if (op.weighted() && !op.weights->grid().extent().contains(subgrid.extent())) {
+                    if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
                         continue;
                     }
 
@@ -90,22 +92,22 @@ namespace exactextract {
 
                     // FIXME need to ensure that no values are read from a raster that have already been read.
                     // This may be possible when reading box is expanded slightly from floating-point roundoff problems.
-                    auto values = raster_values[op.values].get();
+                    auto values = raster_values[op->values].get();
                     if (values == nullptr) {
-                        raster_values[op.values] = op.values->read_box(subgrid.extent().intersection(op.values->grid().extent()));
-                        values = raster_values[op.values].get();
+                        raster_values[op->values] = op->values->read_box(subgrid.extent().intersection(op->values->grid().extent()));
+                        values = raster_values[op->values].get();
                     }
 
-                    if (op.weighted()) {
-                        auto weights = raster_values[op.weights].get();
+                    if (op->weighted()) {
+                        auto weights = raster_values[op->weights].get();
                         if (weights == nullptr) {
-                            raster_values[op.weights] = op.weights->read_box(subgrid.extent().intersection(op.weights->grid().extent()));
-                            weights = raster_values[op.weights].get();
+                            raster_values[op->weights] = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
+                            weights = raster_values[op->weights].get();
                         }
 
-                        m_reg.stats(f->first, op, store_values).process(*coverage, *values, *weights);
+                        m_reg.stats(f->first, *op, store_values).process(*coverage, *values, *weights);
                     } else {
-                        m_reg.stats(f->first, op, store_values).process(*coverage, *values);
+                        m_reg.stats(f->first, *op, store_values).process(*coverage, *values);
                     }
 
                     progress();
