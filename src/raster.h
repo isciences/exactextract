@@ -148,8 +148,14 @@ namespace exactextract {
             return !(operator==(other));
         }
 
-        class Iterator : public std::iterator<std::forward_iterator_tag, T> {
+        class Iterator {
         public:
+            using iterator_category = std::forward_iterator_tag;
+            using value_type = T;
+            using reference = T&;
+            using difference_type = std::ptrdiff_t;
+            using pointer = T*;
+
             Iterator(const AbstractRaster<T>* r, size_t i, size_t j) :
                     m_rast(r), m_row(i), m_col(j) {}
 
@@ -157,6 +163,7 @@ namespace exactextract {
                 m_val = m_rast->operator()(m_row, m_col);
                 return m_val;
             }
+
 
             Iterator& operator++() {
                 m_col++;
