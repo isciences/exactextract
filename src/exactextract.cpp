@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
         auto operations = prepare_operations(stats, rasters, coverage_opts);
         bool defer_writing = false;
         for (const auto& op : operations) {
-            if (op->stat == "frac") {
+            if (op->stat == "frac" || op->stat == "weighted_frac") {
                 defer_writing = true;
             }
         }

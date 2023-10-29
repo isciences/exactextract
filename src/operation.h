@@ -133,6 +133,15 @@ namespace exactextract {
 
                     f_out.set(s.str(), stats.frac(value).value_or(0));
                 }
+            } else if (stat == "weighted_frac") {
+                for (const auto& value : stats) {
+                    std::stringstream s;
+                    s << "weighted_frac_" << value;
+
+                    f_out.set(s.str(), stats.weighted_frac(value).value_or(0));
+                }
+            } else {
+                throw std::runtime_error("Unhandled stat: " + stat);
             }
         }
 
