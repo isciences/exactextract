@@ -11,22 +11,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string>
-
 #pragma once
 
+#include "gdal_writer.h"
+#include "map_feature.h"
+#include "ogr_api.h"
+
+#include <map>
+#include <string>
 
 namespace exactextract {
 
-class Feature
+class DeferredGDALWriter : public GDALWriter
 {
-
   public:
-    virtual void set(const std::string& name, double value) = 0;
-    virtual void set(const std::string& name, float value) = 0;
-    virtual void set(const std::string& name, std::size_t value) = 0;
-    virtual void set(const std::string& name, std::string value) = 0;
+    using GDALWriter::GDALWriter;
+
+    void add_operation(const Operation& op) override;
+
+    void write(const std::string& fid) override;
+
+    void finish() override;
+
+  private:
+    std::map<std::string, OGRFieldDefnH> m_fields;
+    std::vector<MapFeature> m_features;
 };
-
 }
-

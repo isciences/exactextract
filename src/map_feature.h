@@ -15,54 +15,42 @@
 
 #include "feature.h"
 
-#include "ogr_api.h"
-
-#include <stdexcept>
+#include <any>
+#include <unordered_map>
 
 namespace exactextract {
 
-class GDALFeature : public Feature
+class MapFeature : public Feature
 {
-  public:
-    explicit GDALFeature(OGRFeatureH feature)
-      : m_feature(feature)
-    {
-    }
 
+  public:
     void set(const std::string& name, double value) override
     {
-        OGR_F_SetFieldDouble(m_feature, field_index(name), value);
+        m_map[name] = value;
     }
 
     void set(const std::string& name, float value) override
     {
-        OGR_F_SetFieldDouble(m_feature, field_index(name), static_cast<double>(value));
+        m_map[name] = value;
     }
 
     void set(const std::string& name, std::size_t value) override
     {
-        if (value > std::numeric_limits<std::int64_t>::max()) {
-            throw std::runtime_error("Value too large to write");
-        }
-        OGR_F_SetFieldInteger64(m_feature, field_index(name), static_cast<std::int64_t>(value));
+        m_map[name] = value;
     }
 
     void set(const std::string& name, std::string value) override
     {
-        OGR_F_SetFieldString(m_feature, field_index(name), value.c_str());
+        m_map[name] = std::move(value);
+    }
+
+    const std::unordered_map<std::string, std::any>& map() const
+    {
+        return m_map;
     }
 
   private:
-    int field_index(const std::string& name)
-    {
-        auto ret = OGR_F_GetFieldIndex(m_feature, name.c_str());
-        if (ret == -1) {
-            throw std::runtime_error("Unexpected field name");
-        }
-        return ret;
-    }
-
-    OGRFeatureH m_feature;
+    std::unordered_map<std::string, std::any> m_map;
 };
 
 }

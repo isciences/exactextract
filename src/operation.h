@@ -127,7 +127,12 @@ namespace exactextract {
                     f_out.set(m_field_names[i], stats.quantile(m_quantiles[i]).value_or(std::numeric_limits<double>::quiet_NaN()));
                 }
             } else if (stat == "frac") {
-                // FIXME complete
+                for (const auto& value : stats) {
+                    std::stringstream s;
+                    s << "frac_" << value;
+
+                    f_out.set(s.str(), stats.frac(value).value_or(0));
+                }
             }
         }
 

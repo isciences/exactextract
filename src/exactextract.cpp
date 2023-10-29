@@ -24,6 +24,7 @@
 #include "gdal_raster_wrapper.h"
 #include "gdal_writer.h"
 #include "coverage_operation.h"
+#include "deferred_gdal_writer.h"
 #include "operation.h"
 #include "processor.h"
 #include "coverage_processor.h"
@@ -99,7 +100,7 @@ int main(int argc, char** argv) {
 
         GDALDatasetWrapper shp = load_dataset(poly_descriptor, field_name);
 
-        auto gdal_writer = std::make_unique<exactextract::GDALWriter>(output_filename);
+        auto gdal_writer = std::make_unique<exactextract::DeferredGDALWriter>(output_filename);
         if (!id_name.empty() && !id_type.empty()) {
             gdal_writer->add_id_field(id_name, id_type);
         } else {

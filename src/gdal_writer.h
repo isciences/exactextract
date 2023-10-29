@@ -39,7 +39,7 @@ namespace exactextract {
 
         void copy_id_field(const GDALDatasetWrapper & w);
 
-    private:
+    protected:
         using GDALDatasetH = void*;
         using OGRLayerH = void*;
 

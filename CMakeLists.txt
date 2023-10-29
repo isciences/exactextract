@@ -5,7 +5,7 @@ set(DEFAULT_BUILD_TYPE "Release")
 set(LIB_NAME exactextract)
 set(BIN_NAME exactextract_bin)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -58,6 +58,8 @@ if(BUILD_CLI)
 
     #Configure the exactextract CLI target
     add_library(exactextract_gdal OBJECT
+        src/deferred_gdal_writer.h
+        src/deferred_gdal_writer.cpp
         src/gdal_raster_wrapper.h
         src/gdal_raster_wrapper.cpp
         src/gdal_dataset_wrapper.h
@@ -216,6 +218,7 @@ set(PROJECT_SOURCES
         src/grid.h
         src/grid.cpp
         src/matrix.h
+        src/map_feature.h
         src/perimeter_distance.cpp
         src/perimeter_distance.h
         src/raster.h
