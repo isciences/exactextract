@@ -67,13 +67,6 @@ if(BUILD_CLI)
         src/gdal_feature.h
         src/gdal_writer.h
         src/gdal_writer.cpp
-        src/processor.h
-        src/coverage_processor.h
-        src/coverage_processor.cpp
-        src/feature_sequential_processor.cpp
-        src/feature_sequential_processor.h
-        src/raster_sequential_processor.cpp
-        src/raster_sequential_processor.h
     )
 
     target_link_libraries(exactextract_gdal
@@ -154,6 +147,7 @@ if(BUILD_TEST)
     test/test_geos_utils.cpp
     test/test_grid.cpp
     test/test_main.cpp
+    test/test_operation.cpp
     test/test_perimeter_distance.cpp
     test/test_raster.cpp
     test/test_raster_area.cpp
@@ -209,8 +203,13 @@ set(PROJECT_SOURCES
         src/coordinate.cpp
         src/coordinate.h
         src/coverage_operation.h
+        src/coverage_processor.h
+        src/coverage_processor.cpp
         src/crossing.h
         src/feature.h
+        src/feature_sequential_processor.cpp
+        src/feature_sequential_processor.h
+        src/feature_source.h
         src/floodfill.cpp
         src/floodfill.h
         src/geos_utils.cpp
@@ -221,10 +220,13 @@ set(PROJECT_SOURCES
         src/map_feature.h
         src/perimeter_distance.cpp
         src/perimeter_distance.h
+        src/processor.h
         src/raster.h
         src/raster_area.h
         src/raster_cell_intersection.cpp
         src/raster_cell_intersection.h
+        src/raster_sequential_processor.cpp
+        src/raster_sequential_processor.h
         src/raster_stats.h
         src/raster_coverage_iterator.h
         src/side.cpp

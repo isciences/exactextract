@@ -100,7 +100,22 @@ int main(int argc, char** argv) {
 
         GDALDatasetWrapper shp = load_dataset(poly_descriptor, field_name);
 
-        auto gdal_writer = std::make_unique<exactextract::DeferredGDALWriter>(output_filename);
+        if (include_area) {
+            const GDALRasterWrapper& rast = rasters.begin()->second;
+            coverage_opts.area_method = rast.cartesian() ? exactextract::CoverageOperation::AreaMethod::CARTESIAN : exactextract::CoverageOperation::AreaMethod::SPHERICAL;
+        }
+
+        auto operations = prepare_operations(stats, rasters, coverage_opts);
+        bool defer_writing = false;
+        for (const auto& op : operations) {
+            if (op->stat == "frac") {
+                defer_writing = true;
+            }
+        }
+
+        std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing ?
+                    std::make_unique<exactextract::DeferredGDALWriter>(output_filename) :
+                    std::make_unique<exactextract::GDALWriter>(output_filename);
         if (!id_name.empty() && !id_type.empty()) {
             gdal_writer->add_id_field(id_name, id_type);
         } else {
@@ -108,12 +123,6 @@ int main(int argc, char** argv) {
         }
         writer = std::move(gdal_writer);
 
-        if (include_area) {
-            const GDALRasterWrapper& rast = rasters.begin()->second;
-            coverage_opts.area_method = rast.cartesian() ? exactextract::CoverageOperation::AreaMethod::CARTESIAN : exactextract::CoverageOperation::AreaMethod::SPHERICAL;
-        }
-
-        auto operations = prepare_operations(stats, rasters, coverage_opts);
 
         if (operations.size() == 1 && operations.front()->stat == "coverage") {
             proc = std::make_unique<exactextract::CoverageProcessor>(shp, *writer, std::move(operations));

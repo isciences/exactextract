@@ -14,10 +14,11 @@
 #ifndef EXACTEXTRACT_PROCESSOR_H
 #define EXACTEXTRACT_PROCESSOR_H
 
+#include <cstdarg>
 #include <iostream>
 #include <string>
 
-#include "gdal_dataset_wrapper.h"
+#include "feature_source.h"
 #include "output_writer.h"
 #include "stats_registry.h"
 
@@ -45,7 +46,7 @@ namespace exactextract {
     class Processor {
 
     public:
-        Processor(GDALDatasetWrapper & ds, OutputWriter & out, std::vector<std::unique_ptr<Operation>> ops) :
+        Processor(FeatureSource& ds, OutputWriter & out, std::vector<std::unique_ptr<Operation>> ops) :
                 m_reg{},
                 m_geos_context{initGEOS_r(errorHandler, errorHandler)},
                 m_output{out},
@@ -88,7 +89,7 @@ namespace exactextract {
 
         OutputWriter& m_output;
 
-        GDALDatasetWrapper& m_shp;
+        FeatureSource& m_shp;
 
         bool m_show_progress=false;
 

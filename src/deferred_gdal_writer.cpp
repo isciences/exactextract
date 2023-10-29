@@ -55,6 +55,8 @@ DeferredGDALWriter::finish()
                     field_type = OFTString;
                 } else if (value.type() == typeid(double) || value.type() == typeid(float)) {
                     field_type = OFTReal;
+                } else if (value.type() == typeid(std::int64_t) || value.type() == typeid(std::uint64_t)) {
+                    field_type = OFTInteger64;
                 }
 
                 ogr_fields[field_name] = OGR_Fld_Create(field_name.c_str(), field_type);
@@ -89,6 +91,14 @@ DeferredGDALWriter::finish()
                 OGR_F_SetFieldDouble(f, pos, static_cast<double>(std::any_cast<float>(value)));
             } else if (value.type() == typeid(double)) {
                 OGR_F_SetFieldDouble(f, pos, std::any_cast<double>(value));
+            } else if (value.type() == typeid(std::int64_t)) {
+                OGR_F_SetFieldInteger64(f, pos, std::any_cast<std::int64_t>(value));
+            } else if (value.type() == typeid(std::uint64_t)) {
+                auto intval = std::any_cast<std::uint64_t>(value);
+                if (intval > std::numeric_limits<std::int64_t>::max()) {
+                    throw std::runtime_error("Unhandled int64 value.");
+                }
+                OGR_F_SetFieldInteger64(f, pos, static_cast<std::int64_t>(intval));
             } else {
                 throw std::runtime_error("Unhandled type: " + std::string(value.type().name()));
             }

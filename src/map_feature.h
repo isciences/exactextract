@@ -49,6 +49,11 @@ class MapFeature : public Feature
         return m_map;
     }
 
+    template<typename T>
+    T get(const std::string& field) const {
+        return std::any_cast<T>(m_map.at(field));
+    }
+
   private:
     std::unordered_map<std::string, std::any> m_map;
 };

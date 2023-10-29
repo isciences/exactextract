@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,35 +11,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_OUTPUT_WRITER_H
-#define EXACTEXTRACT_OUTPUT_WRITER_H
+#pragma once
 
+#include <geos_c.h>
 #include <string>
-#include <vector>
 
 namespace exactextract {
 
-    class Operation;
-    class StatsRegistry;
+class FeatureSource
+{
 
-    class OutputWriter {
-    public:
-        virtual void write(const std::string & fid) = 0;
+  public:
+    virtual bool next() = 0;
 
-        virtual void add_operation(const Operation & op) {
-            m_ops.push_back(&op);
-        }
+    virtual GEOSGeometry* feature_geometry(const GEOSContextHandle_t&) const = 0;
 
-        virtual void set_registry(const StatsRegistry* reg) = 0;
+    virtual std::string feature_field(const std::string& field_name) const = 0;
 
-        virtual void finish() {};
-
-        virtual ~OutputWriter()= default;
-
-    protected:
-        std::vector<const Operation*> m_ops;
-    };
+    virtual const std::string& id_field() const = 0;
+};
 
 }
-
-#endif //EXACTEXTRACT_OUTPUT_WRITER_H

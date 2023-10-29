@@ -48,8 +48,8 @@ namespace exactextract {
 
     bool
     GDALRasterWrapper::cartesian() const {
-        const auto& srs = GDALGetSpatialRef(m_rast);
-        return !OSRIsGeographic(srs);
+        OGRSpatialReferenceH srs = GDALGetSpatialRef(m_rast);
+        return srs == nullptr || !OSRIsGeographic(srs);
     }
 
     std::unique_ptr<AbstractRaster<double>> GDALRasterWrapper::read_box(const Box &box) {

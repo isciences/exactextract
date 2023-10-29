@@ -143,6 +143,10 @@ namespace exactextract {
             return xmin == other.xmin && xmax == other.xmax && ymin == other.ymin && ymax == other.ymax;
         }
 
+        bool operator!=(const Box& other) const {
+            return !(*this == other);
+        }
+
         friend std::ostream &operator<<(std::ostream &os, const Box &c);
     };
 
