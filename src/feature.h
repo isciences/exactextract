@@ -12,20 +12,35 @@
 // limitations under the License.
 
 #include <string>
+#include <typeinfo>
+
+#include <geos_c.h>
 
 #pragma once
-
 
 namespace exactextract {
 
 class Feature
 {
-
   public:
+    virtual ~Feature() {}
+
     virtual void set(const std::string& name, double value) = 0;
     virtual void set(const std::string& name, float value) = 0;
     virtual void set(const std::string& name, std::size_t value) = 0;
     virtual void set(const std::string& name, std::string value) = 0;
+
+    virtual const std::type_info& field_type(const std::string& name) const = 0;
+
+    virtual void set(const std::string& name, const Feature& other) = 0;
+
+    virtual std::string get_string(const std::string& name) const = 0;
+    virtual double get_double(const std::string& name) const = 0;
+    virtual float get_float(const std::string& name) const = 0;
+
+    virtual void copy_to(Feature& dst) const = 0;
+
+    virtual const GEOSGeometry* geometry() const = 0;
 };
 
 }

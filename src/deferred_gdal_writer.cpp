@@ -17,27 +17,20 @@
 namespace exactextract {
 
 void
-DeferredGDALWriter::write(const std::string& fid)
+DeferredGDALWriter::write(const Feature& f)
 {
-    MapFeature feature;
-
-    OGRFeatureDefnH defn = OGR_L_GetLayerDefn(m_layer);
-    OGRFieldDefnH fld = OGR_FD_GetFieldDefn(defn, 0);
-    std::string fid_name = OGR_Fld_GetNameRef(fld);
-
-    feature.set(fid_name, fid);
-
-    for (const auto& op : m_ops) {
-        op->set_result(*m_reg, fid, feature);
-    }
-
-    m_features.push_back(std::move(feature));
+    m_features.emplace_back(f);
 }
 
 void
 DeferredGDALWriter::add_operation(const Operation& op)
 {
     m_ops.push_back(&op);
+}
+
+std::unique_ptr<Feature>
+DeferredGDALWriter::create_feature() {
+    return std::make_unique<MapFeature>();
 }
 
 void

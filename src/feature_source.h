@@ -13,20 +13,20 @@
 
 #pragma once
 
-#include <geos_c.h>
 #include <string>
 
 namespace exactextract {
 
+class Feature;
+
 class FeatureSource
 {
-
   public:
+    virtual ~FeatureSource() = default;
+
+    virtual const Feature& feature() const = 0;
+
     virtual bool next() = 0;
-
-    virtual GEOSGeometry* feature_geometry(const GEOSContextHandle_t&) const = 0;
-
-    virtual std::string feature_field(const std::string& field_name) const = 0;
 
     virtual const std::string& id_field() const = 0;
 };

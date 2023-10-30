@@ -94,7 +94,8 @@ def write_features(tmp_path):
     return writer
 
 
-def test_multiple_stats(run, write_raster, write_features):
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+def test_multiple_stats(strategy, run, write_raster, write_features):
 
     data = np.array([
         [1, 2, 3, 4],
@@ -105,13 +106,64 @@ def test_multiple_stats(run, write_raster, write_features):
             polygons=write_features({"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}),
             fid="id",
             raster=f"metric:{write_raster(data)}",
-            stat=["mean(metric)", "variety(metric)"]
+            stat=["mean(metric)", "variety(metric)"],
+            strategy=strategy
             )
 
     assert len(rows) == 1
     assert list(rows[0].keys()) == ['id', 'metric_mean', 'metric_variety']
     assert float(rows[0]['metric_mean']) == pytest.approx(2.16667, 1e-3)
     assert rows[0]['metric_variety'] == '3'
+
+
+def test_stats_deferred(run, write_raster, write_features):
+    data = np.array([
+        [1, 2, 3],
+        [1, 2, 2],
+        [3, 3, 3]], np.int16)
+
+    rows = run(
+            polygons=write_features(
+                [{"id": 1, "geom": "POLYGON ((0 0, 3 0, 3 0.5, 0 0.5, 0 0))"},
+                {"id": 2, "geom": "POLYGON ((1.5 1.5, 2.5 1.5, 2.5 2.5, 1.5 2.5, 1.5 1.5))"}]),
+            fid="id",
+            raster=f"class:{write_raster(data)}",
+            stat="frac(class)")
+
+    assert len(rows) == 2
+    assert list(rows[0].keys()) == ['id', 'frac_2', 'frac_3']
+
+    assert rows[0]['frac_2'] == ""
+    assert float(rows[0]['frac_3']) == 1
+
+    assert float(rows[1]['frac_2']) == 0.75
+    assert float(rows[1]['frac_3']) == 0.25
+
+
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+def test_include_cols(strategy, run, write_raster, write_features):
+
+    data = np.array([
+        [1, 2, 3, 4],
+        [1, 2, 2, 5],
+        [3, 3, 3, 2]], np.int16)
+
+    rows = run(
+            polygons=write_features([
+                {"id": 1, "name": "A", "class": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"},
+                {"id": 2, "name": "B", "class": 2, "geom": "POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))"}]),
+            fid="id",
+            raster=f"metric:{write_raster(data)}",
+            stat=["variety(metric)"],
+            include_col=["name", "class"],
+            strategy=strategy
+            )
+
+    assert len(rows) == 2
+    assert list(rows[0].keys()) == ['id', 'name', 'class', 'metric_variety']
+
+    assert [row["name"] for row in rows] == ["A", "B"]
+    assert [row["class"] for row in rows] == ["1", "2"]
 
 
 def test_coverage_fractions(run, write_raster, write_features):
@@ -143,17 +195,22 @@ def test_coverage_fraction_args(run, write_raster, write_features):
     data = np.arange(9, dtype=np.int32).reshape(3, 3)
 
     rows = run(
-            polygons=write_features({"id":1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))"}),
+            polygons=write_features({"id":1, "class":3, "type":"B", "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))"}),
             fid="id",
             raster=f"values:{write_raster(data)}",
             stat=["coverage(values)"],
             include_cell=True,
             include_xy=True,
-            include_area=True
+            include_area=True,
+            include_col=["class", "type"]
         )
 
     assert len(rows) == 9
-    assert list(rows[0].keys()) == ['id', 'cell', 'x', 'y', 'area', 'coverage_fraction', 'values']
+    assert list(rows[0].keys()) == ['id', 'class', 'type', 'cell', 'x', 'y', 'area', 'coverage_fraction', 'values']
+
+    assert [row['class'] for row in rows] == ['3']*len(rows)
+
+    assert [row['type'] for row in rows] == ['B']*len(rows)
 
     cells = [row['cell'] for row in rows]
     assert cells == ['0','1', '2', '3', '4', '5', '6', '7', '8']

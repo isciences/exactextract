@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
     std::string poly_descriptor, field_name, output_filename, strategy, id_type, id_name;
     std::vector<std::string> stats;
     std::vector<std::string> raster_descriptors;
+    std::vector<std::string> include_cols;
     size_t max_cells_in_memory = 30;
     bool progress = false;
 
@@ -73,6 +74,7 @@ int main(int argc, char** argv) {
     app.add_flag("--include-xy", coverage_opts.include_xy, "include cell center coordinates with coverage fractions");
     app.add_flag("--include-cell", coverage_opts.include_cell, "include cell identifier with coverage fractions");
     app.add_flag("--include-area", include_area, "include cell area with coverage fractions");
+    app.add_option("--include-col", include_cols, "columns from input to include in output");
 
     app.add_flag("--progress", progress);
     app.set_config("--config");
@@ -121,8 +123,11 @@ int main(int argc, char** argv) {
         } else {
             gdal_writer->copy_id_field(shp);
         }
-        writer = std::move(gdal_writer);
+        for (const auto& field : include_cols) {
+            gdal_writer->copy_field(shp, field);
+        }
 
+        writer = std::move(gdal_writer);
 
         if (operations.size() == 1 && operations.front()->stat == "coverage") {
             proc = std::make_unique<exactextract::CoverageProcessor>(shp, *writer, std::move(operations));
@@ -132,6 +137,10 @@ int main(int argc, char** argv) {
             proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer, std::move(operations));
         } else {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
+        }
+
+        for (const auto& field: include_cols) {
+            proc->include_col(field);
         }
 
         proc->set_max_cells_in_memory(max_cells_in_memory);

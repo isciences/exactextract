@@ -15,6 +15,7 @@
 #define EXACTEXTRACT_GDAL_DATASET_WRAPPER_H
 
 #include "feature_source.h"
+#include "gdal_feature.h"
 
 #include <gdal.h>
 #include <geos_c.h>
@@ -22,27 +23,27 @@
 
 namespace exactextract {
 
+    class Feature;
+
     class GDALDatasetWrapper : public FeatureSource {
     public:
         GDALDatasetWrapper(const std::string &filename, const std::string & layer, std::string id_field);
 
+        const Feature& feature() const override;
+
         bool next() override;
-
-        GEOSGeometry* feature_geometry(const GEOSContextHandle_t &geos_context) const override;
-
-        std::string feature_field(const std::string &field_name) const override;
 
         const std::string& id_field() const override { return m_id_field; }
 
         void copy_field(const std::string & field_name, OGRLayerH to) const;
 
-        ~GDALDatasetWrapper();
+        ~GDALDatasetWrapper() override;
 
     private:
         GDALDatasetH m_dataset;
-        OGRFeatureH m_feature;
         OGRLayerH m_layer;
         std::string m_id_field;
+        GDALFeature m_feature;
     };
 
 }

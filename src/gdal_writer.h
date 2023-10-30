@@ -31,11 +31,13 @@ namespace exactextract {
 
         void add_operation(const Operation & op) override;
 
-        void set_registry(const StatsRegistry* reg) override;
+        std::unique_ptr<Feature> create_feature() override;
 
-        void write(const std::string & fid) override;
+        void write(const Feature& f) override;
 
         void add_id_field(const std::string & field_name, const std::string & field_type);
+
+        void copy_field(const GDALDatasetWrapper& w, const std::string& field_name);
 
         void copy_id_field(const GDALDatasetWrapper & w);
 
@@ -45,7 +47,6 @@ namespace exactextract {
 
         GDALDatasetH m_dataset;
         OGRLayerH m_layer;
-        const StatsRegistry* m_reg;
         bool id_field_defined = false;
     };
 

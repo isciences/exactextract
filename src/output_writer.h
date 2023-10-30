@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -14,23 +14,27 @@
 #ifndef EXACTEXTRACT_OUTPUT_WRITER_H
 #define EXACTEXTRACT_OUTPUT_WRITER_H
 
+#include "feature.h"
+
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace exactextract {
 
     class Operation;
-    class StatsRegistry;
 
     class OutputWriter {
     public:
-        virtual void write(const std::string & fid) = 0;
 
+        virtual std::unique_ptr<Feature> create_feature() = 0;
+
+        virtual void write(const Feature&) = 0;
+
+        /// Add an Operation which can output values for a given feature.
         virtual void add_operation(const Operation & op) {
             m_ops.push_back(&op);
         }
-
-        virtual void set_registry(const StatsRegistry* reg) = 0;
 
         virtual void finish() {};
 

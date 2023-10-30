@@ -41,8 +41,14 @@ class WKTFeatureSource : public FeatureSource
 {
   public:
     WKTFeatureSource(const std::string& wkt)
-      : m_count(0), m_wkt(wkt)
+      : m_count(0), m_wkt(wkt), m_context(initGEOS_r(nullptr, nullptr))
     {
+        m_feature.set("fid", "myfid");
+        m_feature.set_geometry(geos_ptr(m_context, GEOSGeomFromWKT_r(m_context, m_wkt.c_str())));
+    }
+
+    ~WKTFeatureSource() {
+        finishGEOS_r(m_context);
     }
 
     bool next() override
@@ -50,14 +56,8 @@ class WKTFeatureSource : public FeatureSource
         return m_count++ < 1;
     }
 
-    GEOSGeometry* feature_geometry(const GEOSContextHandle_t& context) const override
-    {
-        return GEOSGeomFromWKT_r(context, m_wkt.c_str());
-    }
-
-    std::string feature_field(const std::string& field_name) const override
-    {
-        return field_name + "_value";
+    const Feature& feature() const override {
+        return m_feature;
     }
 
     const std::string& id_field() const override
@@ -69,27 +69,22 @@ class WKTFeatureSource : public FeatureSource
   private:
     std::size_t m_count;
     std::string m_wkt;
+    GEOSContextHandle_t m_context;
+    MapFeature m_feature;
 };
 
 class TestWriter : public OutputWriter
 {
   public:
-    void write(const std::string& fid) override
-    {
-        for (const auto& op : m_ops) {
-            op->set_result(*m_sr, fid, m_feature);
-        }
+    std::unique_ptr<Feature> create_feature() override {
+        return std::make_unique<MapFeature>();
     }
 
-    void set_registry(const StatsRegistry* sr) override
-    {
-        m_sr = sr;
+    void write(const Feature& f) override {
+        m_feature = MapFeature(f);
     }
 
     MapFeature m_feature;
-
-  private:
-    const StatsRegistry* m_sr;
 };
 
 TEST_CASE("frac sets appropriate column names", "[operation]")

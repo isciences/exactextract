@@ -53,7 +53,6 @@ namespace exactextract {
                 m_shp{ds},
                 m_operations{std::move(ops)}
         {
-            m_output.set_registry(&m_reg);
         }
 
         virtual ~Processor() {
@@ -61,6 +60,10 @@ namespace exactextract {
         }
 
         virtual void process()= 0;
+
+        void include_col(const std::string& col) {
+            m_include_cols.push_back(col);
+        }
 
         void set_max_cells_in_memory(size_t n) {
             m_max_cells_in_memory = n;
@@ -94,6 +97,8 @@ namespace exactextract {
         bool m_show_progress=false;
 
         std::vector<std::unique_ptr<Operation>> m_operations;
+
+        std::vector<std::string> m_include_cols;
 
         size_t m_max_cells_in_memory = 1000000L;
     };

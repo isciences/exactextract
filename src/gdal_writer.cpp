@@ -53,6 +53,11 @@ namespace exactextract {
         }
     }
 
+    std::unique_ptr<Feature> GDALWriter::create_feature() {
+        auto defn = OGR_L_GetLayerDefn(m_layer);
+        return std::make_unique<GDALFeature>(OGR_F_Create(defn));
+    }
+
     void GDALWriter::copy_id_field(const GDALDatasetWrapper & w) {
         if (id_field_defined) {
             throw std::runtime_error("ID field already defined.");
@@ -60,6 +65,10 @@ namespace exactextract {
 
         w.copy_field(w.id_field(), m_layer);
         id_field_defined = true;
+    }
+
+    void GDALWriter::copy_field(const GDALDatasetWrapper& w, const std::string& name) {
+        w.copy_field(name, m_layer);
     }
 
     void GDALWriter::add_id_field(const std::string & field_name, const std::string & field_type) {
@@ -101,27 +110,18 @@ namespace exactextract {
         m_ops.push_back(&op);
     }
 
-    void GDALWriter::set_registry(const StatsRegistry* reg) {
+    void GDALWriter::write(const Feature& f) {
+        OGRErr err = OGRERR_NONE;
 
-        m_reg = reg;
-    }
-
-
-    void GDALWriter::write(const std::string & fid) {
-        auto feature_raw = OGR_F_Create(OGR_L_GetLayerDefn(m_layer));
-
-        OGR_F_SetFieldString(feature_raw, 0, fid.c_str());
-
-        GDALFeature feature(feature_raw);
-
-        for (const auto &op : m_ops) {
-            op->set_result(*m_reg, fid, feature);
+        if (const GDALFeature* gf = dynamic_cast<const GDALFeature*>(&f)) {
+            err = OGR_L_CreateFeature(m_layer, gf->raw());
+        } else {
+            throw std::runtime_error("not supported yet");
         }
 
-        if (OGR_L_CreateFeature(m_layer, feature_raw) != OGRERR_NONE) {
-            throw std::runtime_error("Error writing results for record: " + fid);
+        if (err != OGRERR_NONE) {
+            throw std::runtime_error("Error writing results.");
         }
-        OGR_F_Destroy(feature_raw);
     }
 
     std::string GDALWriter::get_driver_name(const std::string & filename) {

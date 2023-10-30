@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 ISciences, LLC.
+// Copyright (c) 2019-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -15,6 +15,7 @@
 #include "raster_sequential_processor.h"
 #include "raster_source.h"
 
+#include <cassert>
 #include <map>
 #include <memory>
 #include <set>
@@ -23,17 +24,18 @@ namespace exactextract {
 
     void RasterSequentialProcessor::read_features() {
         while (m_shp.next()) {
-            Feature feature = std::make_pair(
-                    m_shp.feature_field(m_shp.id_field()),
-                    geos_ptr(m_geos_context, m_shp.feature_geometry(m_geos_context)));
-            m_features.push_back(std::move(feature));
+            const Feature& feature = m_shp.feature();
+            MapFeature mf(feature);
+            m_features.push_back(std::move(mf));
         }
     }
 
     void RasterSequentialProcessor::populate_index() {
-        for (const Feature& f : m_features) {
+        assert(m_feature_tree != nullptr);
+
+        for (const auto& f : m_features) {
             // TODO compute envelope of dataset, and crop raster by that extent before processing?
-            GEOSSTRtree_insert_r(m_geos_context, m_feature_tree.get(), f.second.get(), (void *) &f);
+            GEOSSTRtree_insert_r(m_geos_context, m_feature_tree.get(), f.geometry(), (void *) &f);
         }
     }
 
@@ -64,6 +66,7 @@ namespace exactextract {
             std::map<RasterSource*, std::unique_ptr<AbstractRaster<double>>> raster_values;
 
             for (const auto &f : hits) {
+                std::string fid = f->get_string(m_shp.id_field());
                 std::unique_ptr<Raster<float>> coverage;
                 std::set<std::pair<RasterSource*, RasterSource*>> processed;
 
@@ -87,7 +90,7 @@ namespace exactextract {
                     // Lazy-initialize coverage
                     if (coverage == nullptr) {
                         coverage = std::make_unique<Raster<float>>(
-                                raster_cell_intersection(subgrid, m_geos_context, f->second.get()));
+                                raster_cell_intersection(subgrid, m_geos_context, f->geometry()));
                     }
 
                     // FIXME need to ensure that no values are read from a raster that have already been read.
@@ -105,9 +108,9 @@ namespace exactextract {
                             weights = raster_values[op->weights].get();
                         }
 
-                        m_reg.stats(f->first, *op, store_values).process(*coverage, *values, *weights);
+                        m_reg.stats(fid, *op, store_values).process(*coverage, *values, *weights);
                     } else {
-                        m_reg.stats(f->first, *op, store_values).process(*coverage, *values);
+                        m_reg.stats(fid, *op, store_values).process(*coverage, *values);
                     }
 
                     progress();
@@ -117,9 +120,18 @@ namespace exactextract {
             progress(subgrid.extent());
         }
 
-        for (const auto& f : m_features) {
-            m_output.write(f.first);
-            m_reg.flush_feature(f.first);
+        for (const auto& f_in : m_features) {
+            auto f_out = m_output.create_feature();
+            std::string fid = f_in.get_string(m_shp.id_field());
+            f_out->set(m_shp.id_field(), fid);
+            for (const auto& col: m_include_cols) {
+                f_out->set(col, f_in);
+            }
+            for (const auto& op : m_operations) {
+                op->set_result(m_reg, fid, *f_out);
+            }
+            m_output.write(*f_out);
+            m_reg.flush_feature(fid);
         }
     }
 

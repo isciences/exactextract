@@ -17,6 +17,7 @@
 #define EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
 
 
+#include "map_feature.h"
 #include "geos_utils.h"
 #include "processor.h"
 
@@ -38,9 +39,7 @@ namespace exactextract {
         void process() override;
 
     private:
-        using Feature=std::pair<std::string, geom_ptr_r>;
-
-        std::vector<Feature> m_features;
+        std::vector<MapFeature> m_features;
         tree_ptr_r m_feature_tree{geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10))};
     };
 

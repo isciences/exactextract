@@ -30,12 +30,14 @@ namespace exactextract {
         bool store_values = StatsRegistry::requires_stored_values(m_operations);
 
         while (m_shp.next()) {
-            std::string name{m_shp.feature_field(m_shp.id_field())};
-            auto geom = geos_ptr(m_geos_context, m_shp.feature_geometry(m_geos_context));
+            const Feature& f_in = m_shp.feature();
+            std::string name = f_in.get_string(m_shp.id_field());
+
+            auto geom = f_in.geometry();
 
             progress(name);
 
-            Box feature_bbox = exactextract::geos_get_box(m_geos_context, geom.get());
+            Box feature_bbox = exactextract::geos_get_box(m_geos_context, geom);
 
             auto grid = common_grid(m_operations.begin(), m_operations.end());
 
@@ -70,7 +72,7 @@ namespace exactextract {
                         // Lazy-initialize coverage
                         if (coverage == nullptr) {
                             coverage = std::make_unique<Raster<float>>(
-                                    raster_cell_intersection(subgrid, m_geos_context, geom.get()));
+                                    raster_cell_intersection(subgrid, m_geos_context, geom));
                         }
 
                         auto values = op->values->read_box(subgrid.extent().intersection(op->values->grid().extent()));
@@ -88,7 +90,16 @@ namespace exactextract {
                 }
             }
 
-            m_output.write(name);
+            auto f_out = m_output.create_feature();
+            f_out->set(m_shp.id_field(), f_in.get_string(m_shp.id_field()));
+            for (const auto& col: m_include_cols) {
+                f_out->set(col, f_in);
+            }
+            for (const auto& op : m_operations) {
+                op->set_result(m_reg, name, *f_out);
+            }
+            m_output.write(*f_out);
+
             m_reg.flush_feature(name);
         }
     }

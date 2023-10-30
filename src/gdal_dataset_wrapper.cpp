@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 ISciences, LLC.
+// Copyright (c) 2018-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "gdal_dataset_wrapper.h"
+#include "gdal_feature.h"
 
 #include <algorithm>
 #include <memory>
@@ -19,8 +20,14 @@
 
 namespace exactextract {
 
+    const Feature&
+    GDALDatasetWrapper::feature() const {
+        return m_feature;
+    }
+
     GDALDatasetWrapper::GDALDatasetWrapper(const std::string & filename, const std::string & layer, std::string id_field) :
-    m_id_field{std::move(id_field)}
+        m_id_field{std::move(id_field)},
+        m_feature(nullptr)
     {
         m_dataset = GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
         if (m_dataset == nullptr) {
@@ -41,7 +48,6 @@ namespace exactextract {
         }
 
         OGR_L_ResetReading(m_layer);
-        m_feature = nullptr;
 
         auto defn = OGR_L_GetLayerDefn(m_layer);
         auto index = OGR_FD_GetFieldIndex(defn, m_id_field.c_str());
@@ -52,27 +58,9 @@ namespace exactextract {
     }
 
     bool GDALDatasetWrapper::next() {
-        if (m_feature != nullptr) {
-            OGR_F_Destroy(m_feature);
-        }
-        m_feature = OGR_L_GetNextFeature(m_layer);
-        return m_feature != nullptr;
-    }
-
-    GEOSGeometry* GDALDatasetWrapper::feature_geometry(const GEOSContextHandle_t &geos_context) const {
-        OGRGeometryH geom = OGR_F_GetGeometryRef(m_feature);
-
-        auto sz = static_cast<size_t>(OGR_G_WkbSize(geom));
-        auto buff = std::make_unique<unsigned char[]>(sz);
-        OGR_G_ExportToWkb(geom, wkbXDR, buff.get());
-
-        return GEOSGeomFromWKB_buf_r(geos_context, buff.get(), sz);
-    }
-
-    std::string GDALDatasetWrapper::feature_field(const std::string &field_name) const {
-        int index = OGR_F_GetFieldIndex(m_feature, field_name.c_str());
-        // TODO check handling of invalid field name
-        return OGR_F_GetFieldAsString(m_feature, index);
+        OGRFeatureH raw_feature = OGR_L_GetNextFeature(m_layer);
+        m_feature = GDALFeature(raw_feature);
+        return raw_feature != nullptr;
     }
 
     void GDALDatasetWrapper::copy_field(const std::string & name, OGRLayerH copy_to) const {
@@ -88,11 +76,7 @@ namespace exactextract {
         OGR_L_CreateField(copy_to, src_field_defn, true);
     }
 
-    GDALDatasetWrapper::~GDALDatasetWrapper(){
+    GDALDatasetWrapper::~GDALDatasetWrapper() {
         GDALClose(m_dataset);
-
-        if (m_feature != nullptr) {
-            OGR_F_Destroy(m_feature);
-        }
     }
 }

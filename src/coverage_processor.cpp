@@ -39,20 +39,22 @@ CoverageProcessor::process()
     const auto& opts = op.options();
 
     auto grid = common_grid(m_operations.begin(), m_operations.end());
+    StatsRegistry dummy; // TODO remove need for this;
 
     while (m_shp.next()) {
-        std::string name{ m_shp.feature_field(m_shp.id_field()) };
+        const Feature& f_in = m_shp.feature();
+        std::string name = f_in.get_string(m_shp.id_field());
 
         progress(name);
 
-        auto geom = geos_ptr(m_geos_context, m_shp.feature_geometry(m_geos_context));
-        auto feature_bbox = geos_get_box(m_geos_context, geom.get());
+        auto geom = f_in.geometry();
+        auto feature_bbox = geos_get_box(m_geos_context, geom);
 
         // Crop grid to portion overlapping feature
         auto cropped_grid = grid.crop(feature_bbox);
 
         for (const auto& subgrid : subdivide(cropped_grid, m_max_cells_in_memory)) {
-            auto coverage_fractions = raster_cell_intersection(subgrid, m_geos_context, geom.get());
+            auto coverage_fractions = raster_cell_intersection(subgrid, m_geos_context, geom);
 
             RasterSource* values = opts.include_values ? op.values : nullptr;
             RasterSource* weights = opts.include_weights ? op.weights : nullptr;
@@ -65,8 +67,15 @@ CoverageProcessor::process()
             }
 
             for (const auto& loc : RasterCoverageIteration<double, double>(coverage_fractions, values, weights, grid, areas.get())) {
+                auto f_out = m_output.create_feature();
+                f_out->set(m_shp.id_field(), name);
+                for (const auto& col: m_include_cols) {
+                    f_out->set(col, f_in);
+                }
+
                 op.save_coverage(loc);
-                m_output.write(name);
+                op.set_result(dummy, name, *f_out);
+                m_output.write(*f_out);
             }
 
             progress();
