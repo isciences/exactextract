@@ -16,6 +16,7 @@
 
 #include <functional>
 #include <string>
+#include <sstream>
 
 #include "feature.h"
 #include "grid.h"
