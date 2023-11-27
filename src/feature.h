@@ -32,7 +32,7 @@ class Feature
 
     virtual const std::type_info& field_type(const std::string& name) const = 0;
 
-    virtual void set(const std::string& name, const Feature& other) = 0;
+    virtual void set(const std::string& name, const Feature& other);
 
     virtual std::string get_string(const std::string& name) const = 0;
     virtual double get_double(const std::string& name) const = 0;

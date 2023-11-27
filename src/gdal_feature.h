@@ -96,16 +96,6 @@ class GDALFeature : public Feature
         }
     }
 
-    void set(const std::string& name, const Feature& f) override {
-        const auto& type = f.field_type(name);
-
-        if (type == typeid(std::string)) {
-            set(name, f.get_string(name));
-        } else {
-            throw std::runtime_error("Unhandled type.");
-        }
-    }
-
     void set(const std::string& name, double value) override
     {
         OGR_F_SetFieldDouble(m_feature, field_index(name), value);

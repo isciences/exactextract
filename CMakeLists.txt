@@ -207,6 +207,7 @@ set(PROJECT_SOURCES
         src/coverage_processor.cpp
         src/crossing.h
         src/feature.h
+        src/feature.cpp
         src/feature_sequential_processor.cpp
         src/feature_sequential_processor.h
         src/feature_source.h

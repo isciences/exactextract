@@ -64,20 +64,6 @@ class MapFeature : public Feature
         m_map[name] = std::move(value);
     }
 
-    void set(const std::string& name, const Feature& f) override {
-        const auto& type = f.field_type(name);
-
-        if (type == typeid(std::string)) {
-            m_map[name] = f.get_string(name);
-        } else if (type == typeid(double)) {
-            m_map[name] = f.get_double(name);
-        } else if (type == typeid(float)) {
-            m_map[name] = f.get_float(name);
-        } else {
-            throw std::runtime_error("Unhandled type: " + std::string(type.name()));
-        }
-    }
-
     void copy_to(Feature& dst) const override {
         for (const auto& [k, v] : m_map) {
             dst.set(k, *this);
