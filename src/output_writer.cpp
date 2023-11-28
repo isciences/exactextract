@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -12,5 +12,13 @@
 // limitations under the License.
 
 #include "output_writer.h"
+#include "map_feature.h"
 
-namespace exactextract {}
+namespace exactextract {
+
+std::unique_ptr<Feature>
+OutputWriter::create_feature() {
+    return std::make_unique<MapFeature>();
+}
+
+}

@@ -27,9 +27,11 @@ class DeferredGDALWriter : public GDALWriter
   public:
     using GDALWriter::GDALWriter;
 
-    void add_operation(const Operation& op) override;
+    std::unique_ptr<Feature> create_feature() override {
+        return OutputWriter::create_feature();
+    }
 
-    std::unique_ptr<Feature> create_feature() override;
+    void add_operation(const Operation& op) override;
 
     void write(const Feature& f) override;
 

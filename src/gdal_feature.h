@@ -155,7 +155,7 @@ class GDALFeature : public Feature
     {
         auto ret = OGR_F_GetFieldIndex(m_feature, name.c_str());
         if (ret == -1) {
-            throw std::runtime_error("Unexpected field name");
+            throw std::runtime_error("Unexpected field name: " + name);
         }
         return ret;
     }

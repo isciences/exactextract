@@ -27,21 +27,24 @@ namespace exactextract {
     class OutputWriter {
     public:
 
-        virtual std::unique_ptr<Feature> create_feature() = 0;
+        /// Create a new feature to which attributes can be assigned
+        /// An implementation may override this to that the provided
+        /// feature is of a class that can be efficiently consumed
+        /// by the `write` method.
+        virtual std::unique_ptr<Feature> create_feature();
 
+        /// Write the provided feature
         virtual void write(const Feature&) = 0;
 
-        /// Add an Operation which can output values for a given feature.
-        virtual void add_operation(const Operation & op) {
-            m_ops.push_back(&op);
-        }
+        /// Method to be called for each `Operation` whose results will
+        /// be written. May be used to create necessary fields, etc.
+        virtual void add_operation(const Operation &) {}
 
-        virtual void finish() {};
+        /// Method to be called after all `write` has been called
+        /// for the last time.
+        virtual void finish() {}
 
         virtual ~OutputWriter()= default;
-
-    protected:
-        std::vector<const Operation*> m_ops;
     };
 
 }

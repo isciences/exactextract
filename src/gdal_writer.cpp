@@ -106,8 +106,6 @@ namespace exactextract {
             OGR_L_CreateField(m_layer, def, true);
             OGR_Fld_Destroy(def);
         }
-
-        m_ops.push_back(&op);
     }
 
     void GDALWriter::write(const Feature& f) {

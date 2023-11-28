@@ -23,15 +23,7 @@ DeferredGDALWriter::write(const Feature& f)
 }
 
 void
-DeferredGDALWriter::add_operation(const Operation& op)
-{
-    m_ops.push_back(&op);
-}
-
-std::unique_ptr<Feature>
-DeferredGDALWriter::create_feature() {
-    return std::make_unique<MapFeature>();
-}
+DeferredGDALWriter::add_operation(const Operation&) {}
 
 void
 DeferredGDALWriter::finish()
@@ -50,6 +42,8 @@ DeferredGDALWriter::finish()
                     field_type = OFTReal;
                 } else if (value.type() == typeid(std::int64_t) || value.type() == typeid(std::uint64_t)) {
                     field_type = OFTInteger64;
+                } else if (value.type() == typeid(std::int32_t) || value.type() == typeid(std::uint32_t)) {
+                    field_type = OFTInteger;
                 }
 
                 ogr_fields[field_name] = OGR_Fld_Create(field_name.c_str(), field_type);
