@@ -36,7 +36,7 @@ The weighting raster does not need to have the same resolution and extent as the
 
 `exactextract` requires the following:
 
-* A C++14 compiler (e.g., gcc 5.0+)
+* A C++17 compiler (e.g., gcc 7+)
 * CMake 3.8+
 * [GEOS](https://github.com/libgeos/geos) version 3.5+
 * [GDAL](https://github.com/osgeo/GDAL) version 2.0+ (For CLI binary)
