@@ -17,7 +17,7 @@ variables:
     - geos-config --version
     - mkdir build-coverage
     - cd build-coverage
-    - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=NO ..
+    - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=NO -DBUILD_PYTHON=NO ..
     - make -j2 catch_tests
     - valgrind --leak-check=full --error-exitcode=1 ./catch_tests
   after_script:
@@ -72,9 +72,25 @@ test:cli:
     - geos-config --version
     - mkdir build-coverage
     - cd build-coverage
-    - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=YES ..
+    - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=YES -DBUILD_PYTHON=NO ..
     - make -j2 exactextract_bin subdivide
     - pytest ../test
+  after_script:
+    - cd build-coverage
+    - lcov --capture --directory CMakeFiles --output-file coverage.info
+    - bash <(curl -s https://codecov.io/bash)
+
+test:python:
+  stage: test
+  image: isciences/exactextract-test-env:geos312
+  script:
+    - apt-get install -y python3-dev pybind11-dev
+    - geos-config --version
+    - mkdir build-coverage
+    - cd build-coverage
+    - cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=NO -DBUILD_PYTHON=YES ..
+    - cmake --build . -j2
+    - ctest -R pybindings --output-on-failure
   after_script:
     - cd build-coverage
     - lcov --capture --directory CMakeFiles --output-file coverage.info

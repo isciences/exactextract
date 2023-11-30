@@ -9,6 +9,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+include(CTest)
 include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
@@ -19,6 +21,7 @@ find_package(GEOS REQUIRED)
 #Configure some options the various components this module can build
 option(BUILD_CLI "Build the exactextract cli binary" ON) #requires gdal, cli11
 option(BUILD_TEST "Build the exactextract tests" ON) #requires catch
+option(BUILD_PYTHON "Build the exactextract Python bindings" ON) # requires pybind11
 option(BUILD_DOC "Build documentation" ON) #requires doxygen
 
 if(BUILD_CLI)
@@ -246,6 +249,7 @@ set(PROJECT_SOURCES
 
 add_library(${LIB_NAME} ${PROJECT_SOURCES})
 
+
 # Check matrix bounds for debug builds
 set_target_properties(${LIB_NAME}
         PROPERTIES COMPILE_DEFINITIONS $<$<CONFIG:Debug>:MATRIX_CHECK_BOUNDS>)
@@ -276,6 +280,10 @@ target_link_libraries(
 )
 
 set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME ${LIB_NAME})
+
+if (BUILD_PYTHON)
+    add_subdirectory(python)
+endif() # BUILD_PYTHON
 
 if(BUILD_DOC)
     # Doxygen configuration from https://vicrucann.github.io/tutorials/quick-cmake-doxygen/
