@@ -19,6 +19,7 @@
 #include <string>
 
 #include "feature_source.h"
+#include "operation.h"
 #include "output_writer.h"
 #include "stats_registry.h"
 
@@ -46,12 +47,11 @@ namespace exactextract {
     class Processor {
 
     public:
-        Processor(FeatureSource& ds, OutputWriter & out, std::vector<std::unique_ptr<Operation>> ops) :
+        Processor(FeatureSource& ds, OutputWriter & out) :
                 m_reg{},
                 m_geos_context{initGEOS_r(errorHandler, errorHandler)},
                 m_output{out},
-                m_shp{ds},
-                m_operations{std::move(ops)}
+                m_shp{ds}
         {
         }
 
@@ -60,6 +60,10 @@ namespace exactextract {
         }
 
         virtual void process()= 0;
+
+        void add_operation(const Operation& op) {
+            m_operations.push_back(op.clone());
+        }
 
         void include_col(const std::string& col) {
             m_include_cols.push_back(col);

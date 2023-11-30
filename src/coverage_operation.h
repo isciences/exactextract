@@ -71,6 +71,10 @@ class CoverageOperation : public Operation
         }
     }
 
+    virtual std::unique_ptr<Operation> clone() const {
+        return std::make_unique<CoverageOperation>(*this);
+    }
+
     /// Method which which a CoverateProcessor can save a value to be applied
     /// the next time set_result is called. A bit of a kludge.
     void save_coverage(const CoverageValue<double, double>& last_coverage)

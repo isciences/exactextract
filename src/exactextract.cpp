@@ -130,13 +130,17 @@ int main(int argc, char** argv) {
         writer = std::move(gdal_writer);
 
         if (operations.size() == 1 && operations.front()->stat == "coverage") {
-            proc = std::make_unique<exactextract::CoverageProcessor>(shp, *writer, std::move(operations));
+            proc = std::make_unique<exactextract::CoverageProcessor>(shp, *writer);
         } else if (strategy == "feature-sequential") {
-            proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer, std::move(operations));
+            proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer);
         } else if (strategy == "raster-sequential") {
-            proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer, std::move(operations));
+            proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer);
         } else {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
+        }
+
+        for (const auto& op: operations) {
+            proc->add_operation(*op);
         }
 
         for (const auto& field: include_cols) {

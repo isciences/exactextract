@@ -57,6 +57,10 @@ namespace exactextract {
             }
         }
 
+        virtual std::unique_ptr<Operation> clone() const {
+            return std::make_unique<Operation>(*this);
+        }
+
         /// Returns the list of field names that are assigned by this `Operation`
         virtual const std::vector<std::string>& field_names() const {
             return m_field_names;

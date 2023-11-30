@@ -104,7 +104,10 @@ TEST_CASE("frac sets appropriate column names", "[operation]")
 
     TestWriter writer;
 
-    FeatureSequentialProcessor fsp(ds, writer, std::move(ops));
+    FeatureSequentialProcessor fsp(ds, writer);
+    for (const auto& op : ops) {
+        fsp.add_operation(*op);
+    }
 
     fsp.process();
 
@@ -140,7 +143,10 @@ TEST_CASE("weighted_frac sets appropriate column names", "[operation]")
 
     TestWriter writer;
 
-    FeatureSequentialProcessor fsp(ds, writer, std::move(ops));
+    FeatureSequentialProcessor fsp(ds, writer);
+    for (const auto& op : ops) {
+        fsp.add_operation(*op);
+    }
 
     fsp.process();
 
