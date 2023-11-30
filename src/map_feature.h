@@ -59,6 +59,11 @@ class MapFeature : public Feature
         m_map[name] = value;
     }
 
+    void set(const std::string& name, std::int32_t value) override
+    {
+        m_map[name] = value;
+    }
+
     void set(const std::string& name, std::string value) override
     {
         m_map[name] = std::move(value);
@@ -98,6 +103,10 @@ class MapFeature : public Feature
 
     float get_float(const std::string& name) const override {
         return get<float>(name);
+    }
+
+    std::int32_t get_int(const std::string& name) const override {
+        return get<std::int32_t>(name);
     }
 
   private:
