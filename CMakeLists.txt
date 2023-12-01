@@ -249,7 +249,7 @@ set(PROJECT_SOURCES
         src/weighted_quantiles.cpp
         src/variance.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h
-        vend/optional.hpp)
+        )
 
 add_library(${LIB_NAME} ${PROJECT_SOURCES})
 

@@ -17,13 +17,12 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <unordered_map>
 
 #include "raster_cell_intersection.h"
 #include "weighted_quantiles.h"
 #include "variance.h"
-
-#include "../vend/optional.hpp"
 
 namespace exactextract {
 
@@ -173,9 +172,9 @@ namespace exactextract {
          * cover the same number of cells, the greatest value will
          * be returned. Weights are not taken into account.
          */
-        nonstd::optional<T> mode() const {
+        std::optional<T> mode() const {
             if (variety() == 0) {
-                return nonstd::nullopt;
+                return std::nullopt;
             }
 
             return std::max_element(m_freq.cbegin(),
@@ -189,9 +188,9 @@ namespace exactextract {
          * The minimum value in any raster cell wholly or partially covered
          * by the polygon. Weights are not taken into account.
          */
-        nonstd::optional<T> min() const {
+        std::optional<T> min() const {
             if (m_sum_ci == 0) {
-                return nonstd::nullopt;
+                return std::nullopt;
             }
             return m_min;
         }
@@ -200,9 +199,9 @@ namespace exactextract {
          * The maximum value in any raster cell wholly or partially covered
          * by the polygon. Weights are not taken into account.
          */
-        nonstd::optional<T> max() const {
+        std::optional<T> max() const {
             if (m_sum_ci == 0) {
-                return nonstd::nullopt;
+                return std::nullopt;
             }
             return m_max;
         }
@@ -211,9 +210,9 @@ namespace exactextract {
          * The given quantile (0-1) of raster cell values. Coverage fractions
          * are taken into account but weights are not.
          */
-        nonstd::optional<T> quantile(double q) const {
+        std::optional<T> quantile(double q) const {
             if (m_sum_ci == 0) {
-                return nonstd::nullopt;
+                return std::nullopt;
             }
 
             // The weighted quantile computation is not processed incrementally.
@@ -263,11 +262,11 @@ namespace exactextract {
          * covered by the polygon. Weights are not taken
          * into account.
          */
-        nonstd::optional<float> count(const T& value) const {
+        std::optional<float> count(const T& value) const {
             const auto& entry = m_freq.find(value);
 
             if (entry == m_freq.end()) {
-                return nonstd::nullopt;
+                return std::nullopt;
             }
 
             return static_cast<float>(entry->second.m_sum_ci);
@@ -278,7 +277,7 @@ namespace exactextract {
          * a value that equals the specified value.
          * Weights are not taken into account.
          */
-        nonstd::optional<float> frac(const T& value) const {
+        std::optional<float> frac(const T& value) const {
             auto count_for_value = count(value);
 
             if (!count_for_value.has_value()) {
@@ -293,7 +292,7 @@ namespace exactextract {
          * a value that equals the specified value.
          * Weights are not taken into account.
          */
-        nonstd::optional<float> weighted_frac(const T& value) const {
+        std::optional<float> weighted_frac(const T& value) const {
             auto count_for_value = weighted_count(value);
 
             if (!count_for_value.has_value()) {
@@ -372,11 +371,11 @@ namespace exactextract {
          * caller should replace undefined weights with a suitable default
          * before computing statistics.
          */
-        nonstd::optional<float> weighted_count(const T& value) const {
+        std::optional<float> weighted_count(const T& value) const {
             const auto& entry = m_freq.find(value);
 
             if (entry == m_freq.end()) {
-                return nonstd::nullopt;
+                return std::nullopt;
             }
 
             return static_cast<float>(entry->second.m_sum_ciwi);
@@ -390,9 +389,9 @@ namespace exactextract {
          *
          * Cell weights are not taken into account.
          */
-        nonstd::optional<T> minority() const {
+        std::optional<T> minority() const {
             if (variety() == 0) {
-                return nonstd::nullopt;
+                return std::nullopt;
             }
 
             return std::min_element(m_freq.cbegin(),
