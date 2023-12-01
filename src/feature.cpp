@@ -30,6 +30,8 @@ Feature::set(const std::string& name, const Feature& f)
         set(name, f.get_float(name));
     } else if (type == typeid(std::int32_t)) {
         set(name, f.get_int(name));
+    } else if (type == typeid(std::size_t)) {
+        set(name, f.get_int(name));
     } else {
         throw std::runtime_error("Unhandled type: " + std::string(type.name()));
     }

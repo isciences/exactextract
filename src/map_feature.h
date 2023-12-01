@@ -106,7 +106,17 @@ class MapFeature : public Feature
     }
 
     std::int32_t get_int(const std::string& name) const override {
-        return get<std::int32_t>(name);
+        const auto& typ = field_type(name);
+        if (typ == typeid(std::int32_t)) {
+            return get<std::int32_t>(name);
+        } else if(typ == typeid(std::size_t)) {
+            auto val = get<std::size_t>(name);
+            if (val <= std::numeric_limits<std::int32_t>::max()) {
+                return static_cast<std::int32_t>(val);
+            }
+        }
+
+        throw std::runtime_error("Unexpected type/value in MapFeature::get_int");
     }
 
   private:
