@@ -52,7 +52,7 @@ namespace exactextract {
         }
 
         static bool requires_stored_values(const std::string & stat) {
-            return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "frac" || stat == "weighted_frac";
+            return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "median" || stat == "frac" || stat == "weighted_frac";
         }
 
         template<typename T>

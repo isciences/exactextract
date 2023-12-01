@@ -115,7 +115,7 @@ namespace exactextract {
                 f_out.set(m_field_names[0], stats.min().value_or(missing));
             } else if (stat == "max") {
                 f_out.set(m_field_names[0], stats.max().value_or(missing));
-            } else if (stat == "majority") {
+            } else if (stat == "majority" || stat == "mode") {
                 f_out.set(m_field_names[0], stats.mode().value_or(missing));
             } else if (stat == "minority") {
                 f_out.set(m_field_names[0], stats.minority().value_or(missing));
@@ -125,8 +125,10 @@ namespace exactextract {
                 f_out.set(m_field_names[0], stats.stdev());
             } else if (stat == "variance") {
                 f_out.set(m_field_names[0], stats.variance());
-            } else if (stat == "coeffecient_of_variation") {
+            } else if (stat == "coefficient_of_variation") {
                 f_out.set(m_field_names[0], stats.coefficient_of_variation());
+            } else if (stat == "median") {
+                f_out.set(m_field_names[0], stats.quantile(0.5).value_or(std::numeric_limits<double>::quiet_NaN()));
             } else if (stat == "quantile") {
                 for (std::size_t i = 0; i < m_quantiles.size(); i++) {
                     f_out.set(m_field_names[i], stats.quantile(m_quantiles[i]).value_or(std::numeric_limits<double>::quiet_NaN()));
