@@ -9,13 +9,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
-    # gcc 4.9 doesn't fully support C++14, yet CMake doesn't bail when we
-    # set CMAKE_CXX_STANDARD_REQUIRED
-    # https://cmake.org/pipermail/cmake/2017-March/065102.html
-    message(FATAL_ERROR "gcc 5.0+ is required to build exactextract")
-endif()
-
 include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
