@@ -12,7 +12,7 @@ def make_square_raster(n):
 
 def make_rect(xmin, ymin, xmax, ymax, fid=1):
     return {
-        "id": str(fid),
+        "id": fid,
         "geometry": {
             "type": "Polygon",
             "coordinates": [

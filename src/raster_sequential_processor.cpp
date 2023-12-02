@@ -66,7 +66,6 @@ namespace exactextract {
             std::map<RasterSource*, std::unique_ptr<AbstractRaster<double>>> raster_values;
 
             for (const auto &f : hits) {
-                std::string fid = f->get_string(m_shp.id_field());
                 std::unique_ptr<Raster<float>> coverage;
                 std::set<std::pair<RasterSource*, RasterSource*>> processed;
 
@@ -108,9 +107,9 @@ namespace exactextract {
                             weights = raster_values[op->weights].get();
                         }
 
-                        m_reg.stats(fid, *op, store_values).process(*coverage, *values, *weights);
+                        m_reg.stats(*f, *op, store_values).process(*coverage, *values, *weights);
                     } else {
-                        m_reg.stats(fid, *op, store_values).process(*coverage, *values);
+                        m_reg.stats(*f, *op, store_values).process(*coverage, *values);
                     }
 
                     progress();
@@ -122,16 +121,15 @@ namespace exactextract {
 
         for (const auto& f_in : m_features) {
             auto f_out = m_output.create_feature();
-            std::string fid = f_in.get_string(m_shp.id_field());
-            f_out->set(m_shp.id_field(), fid);
+            f_out->set(m_shp.id_field(), f_in);
             for (const auto& col: m_include_cols) {
                 f_out->set(col, f_in);
             }
             for (const auto& op : m_operations) {
-                op->set_result(m_reg, fid, *f_out);
+                op->set_result(m_reg, f_in, *f_out);
             }
             m_output.write(*f_out);
-            m_reg.flush_feature(fid);
+            m_reg.flush_feature(f_in);
         }
     }
 

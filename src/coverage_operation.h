@@ -71,7 +71,7 @@ class CoverageOperation : public Operation
         }
     }
 
-    virtual std::unique_ptr<Operation> clone() const {
+    std::unique_ptr<Operation> clone() const override {
         return std::make_unique<CoverageOperation>(*this);
     }
 
@@ -82,7 +82,7 @@ class CoverageOperation : public Operation
         m_last_coverage = last_coverage;
     }
 
-    virtual void set_result(const StatsRegistry& reg, const std::string& fid, Feature& f_out) const
+    void set_result(const StatsRegistry& reg, const Feature& fid, Feature& f_out) const override
     {
         (void)reg;
         (void)fid;

@@ -85,6 +85,16 @@ namespace exactextract {
                 std::cout << std::endl << "Processing " << name << std::flush;
         }
 
+        void progress(const Feature& f, const std::string& field) const {
+            if (m_show_progress) {
+                std::cout << std::endl << "Processing ";
+                std::visit([](auto&& value) {
+                    std::cout << value;
+                }, f.get(field));
+                std::cout << std::flush;
+            }
+        }
+
         void progress() const {
             if (m_show_progress)
                 std::cout << "." << std::flush;
