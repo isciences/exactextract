@@ -38,11 +38,6 @@ class PyFeatureBase : public Feature
     // plumbing to connect python-specifc abstract methods
     // to Feature abstract methods
 
-    float get_float(const std::string& name) const override
-    {
-        return get_py(name).cast<float>();
-    }
-
     double get_double(const std::string& name) const override
     {
         return get_py(name).cast<double>();
@@ -58,20 +53,9 @@ class PyFeatureBase : public Feature
         return get_py(name).cast<std::string>();
     }
 
-    void set(const std::string& name, std::size_t value) override
-    {
-        // TODO handle value > max python int
-        set_py(name, py::int_(value));
-    }
-
     void set(const std::string& name, std::string value) override
     {
         set_py(name, py::str(value));
-    }
-
-    void set(const std::string& name, float value) override
-    {
-        set_py(name, py::float_(value));
     }
 
     void set(const std::string& name, double value) override
@@ -197,7 +181,6 @@ bind_feature(py::module& m)
 
     py::class_<PyFeatureBase, Feature>(m, "PyFeatureBase")
       // debugging methods
-      .def("get_float", &PyFeature::get_float)
       .def("get_double", &PyFeature::get_double)
       .def("get_string", &PyFeature::get_string)
       .def("check", &PyFeatureBase::check);

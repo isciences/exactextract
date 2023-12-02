@@ -19,11 +19,9 @@
 namespace exactextract {
 
 RasterStats<double>&
-StatsRegistry::stats(const std::string& feature, const Operation& op, bool store_values)
+StatsRegistry::stats(const Feature& feature, const Operation& op, bool store_values)
 {
-
-    // TODO come up with a better storage method.
-    auto& stats_for_feature = m_feature_stats[feature];
+    auto& stats_for_feature = m_feature_stats[&feature];
 
     // can't use find because this requires RasterStats to be copy-constructible before C++ 17
     auto exists = stats_for_feature.count(op.key());
@@ -37,11 +35,11 @@ StatsRegistry::stats(const std::string& feature, const Operation& op, bool store
 }
 
 bool
-StatsRegistry::contains(const std::string& feature, const Operation& op) const
+StatsRegistry::contains(const Feature& feature, const Operation& op) const
 {
     const auto& m = m_feature_stats;
 
-    auto it = m.find(feature);
+    auto it = m.find(&feature);
 
     if (it == m.end()) {
         return false;
@@ -53,10 +51,9 @@ StatsRegistry::contains(const std::string& feature, const Operation& op) const
 }
 
 const RasterStats<double>&
-StatsRegistry::stats(const std::string& feature, const Operation& op) const
+StatsRegistry::stats(const Feature& feature, const Operation& op) const
 {
-    // TODO come up with a better storage method.
-    return m_feature_stats.at(feature).at(op.key());
+    return m_feature_stats.at(&feature).at(op.key());
 }
 
 }

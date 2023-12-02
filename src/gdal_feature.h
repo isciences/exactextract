@@ -101,11 +101,6 @@ class GDALFeature : public Feature
         OGR_F_SetFieldDouble(m_feature, field_index(name), value);
     }
 
-    void set(const std::string& name, float value) override
-    {
-        OGR_F_SetFieldDouble(m_feature, field_index(name), static_cast<double>(value));
-    }
-
     void set(const std::string& name, std::int32_t value) override
     {
         OGR_F_SetFieldInteger(m_feature, field_index(name), value);
@@ -130,10 +125,6 @@ class GDALFeature : public Feature
 
     double get_double(const std::string& name) const override {
         return OGR_F_GetFieldAsDouble(m_feature, field_index(name));
-    }
-
-    float get_float(const std::string& name) const override {
-        return static_cast<float>(OGR_F_GetFieldAsDouble(m_feature, field_index(name)));
     }
 
     std::int32_t get_int(const std::string& name) const override {

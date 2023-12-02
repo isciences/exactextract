@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <variant>
 #include <cstdint>
 #include <string>
 #include <typeinfo>
@@ -24,22 +25,23 @@ namespace exactextract {
 class Feature
 {
   public:
-    virtual ~Feature() {}
+    using FieldValue = std::variant<std::string, double, std::int32_t>;
 
-    virtual void set(const std::string& name, double value) = 0;
-    virtual void set(const std::string& name, float value) = 0;
-    virtual void set(const std::string& name, std::int32_t value) = 0;
-    virtual void set(const std::string& name, std::size_t value) = 0;
-    virtual void set(const std::string& name, std::string value) = 0;
+    virtual ~Feature() {}
 
     virtual const std::type_info& field_type(const std::string& name) const = 0;
 
+    virtual void set(const std::string& name, std::string value) = 0;
+    virtual void set(const std::string& name, double value) = 0;
+    virtual void set(const std::string& name, std::int32_t value) = 0;
+
+    virtual void set(const std::string& name, std::size_t value);
     virtual void set(const std::string& name, const Feature& other);
 
     virtual std::string get_string(const std::string& name) const = 0;
     virtual double get_double(const std::string& name) const = 0;
-    virtual float get_float(const std::string& name) const = 0;
     virtual std::int32_t get_int(const std::string& name) const = 0;
+    virtual FieldValue get(const std::string& name) const;
 
     virtual void copy_to(Feature& dst) const = 0;
 

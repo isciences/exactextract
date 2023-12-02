@@ -43,9 +43,8 @@ CoverageProcessor::process()
 
     while (m_shp.next()) {
         const Feature& f_in = m_shp.feature();
-        std::string name = f_in.get_string(m_shp.id_field());
 
-        progress(name);
+        progress(f_in, m_shp.id_field());
 
         auto geom = f_in.geometry();
         auto feature_bbox = geos_get_box(m_geos_context, geom);
@@ -68,13 +67,13 @@ CoverageProcessor::process()
 
             for (const auto& loc : RasterCoverageIteration<double, double>(coverage_fractions, values, weights, grid, areas.get())) {
                 auto f_out = m_output.create_feature();
-                f_out->set(m_shp.id_field(), name);
+                f_out->set(m_shp.id_field(), f_in);
                 for (const auto& col: m_include_cols) {
                     f_out->set(col, f_in);
                 }
 
                 op.save_coverage(loc);
-                op.set_result(dummy, name, *f_out);
+                op.set_result(dummy, f_in, *f_out);
                 m_output.write(*f_out);
             }
 

@@ -40,24 +40,22 @@ class MemoryRasterSource : public RasterSource
 class WKTFeatureSource : public FeatureSource
 {
   public:
-    WKTFeatureSource(const std::string& wkt)
-      : m_count(0), m_wkt(wkt), m_context(initGEOS_r(nullptr, nullptr))
+    WKTFeatureSource()
+      : m_count(0)
     {
-        m_feature.set("fid", "myfid");
-        m_feature.set_geometry(geos_ptr(m_context, GEOSGeomFromWKT_r(m_context, m_wkt.c_str())));
     }
 
-    ~WKTFeatureSource() {
-        finishGEOS_r(m_context);
+    void add_feature(MapFeature m) {
+        m_features.emplace_back(std::move(m));
     }
 
     bool next() override
     {
-        return m_count++ < 1;
+        return m_count++ < m_features.size();
     }
 
     const Feature& feature() const override {
-        return m_feature;
+        return m_features[m_count-1];
     }
 
     const std::string& id_field() const override
@@ -68,9 +66,7 @@ class WKTFeatureSource : public FeatureSource
 
   private:
     std::size_t m_count;
-    std::string m_wkt;
-    GEOSContextHandle_t m_context;
-    MapFeature m_feature;
+    std::vector<MapFeature> m_features;
 };
 
 class TestWriter : public OutputWriter
@@ -87,8 +83,20 @@ class TestWriter : public OutputWriter
     MapFeature m_feature;
 };
 
+static GEOSContextHandle_t init_geos() {
+    static GEOSContextHandle_t context = nullptr;
+
+    if (context == nullptr) {
+        context = initGEOS_r(nullptr, nullptr);
+    }
+
+    return context;
+}
+
 TEST_CASE("frac sets appropriate column names", "[operation]")
 {
+    GEOSContextHandle_t context = init_geos();
+
     Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
     Matrix<double> values{ { { 9, 1, 1 },
                              { 2, 2, 2 },
@@ -97,7 +105,11 @@ TEST_CASE("frac sets appropriate column names", "[operation]")
     Raster<double> value_rast(std::move(values), ex.extent());
     MemoryRasterSource<double> value_src(value_rast);
 
-    WKTFeatureSource ds("POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 0.5))");
+    WKTFeatureSource ds;
+    MapFeature mf;
+    mf.set("fid", "15");
+    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 0.5))")));
+    ds.add_feature(std::move(mf));
 
     std::vector<std::unique_ptr<Operation>> ops;
     ops.emplace_back(std::make_unique<Operation>("frac", "x", &value_src, nullptr));
@@ -113,15 +125,17 @@ TEST_CASE("frac sets appropriate column names", "[operation]")
 
     const MapFeature& f = writer.m_feature;
 
-    CHECK(f.get<float>("frac_1") == 0.0625f);
-    CHECK(f.get<float>("frac_2") == 0.50f);
-    CHECK(f.get<float>("frac_3") == 0.4375f);
+    CHECK(f.get<double>("frac_1") == 0.0625);
+    CHECK(f.get<double>("frac_2") == 0.50);
+    CHECK(f.get<double>("frac_3") == 0.4375);
 
-    CHECK_THROWS(f.get<float>("frac_9"));
+    CHECK_THROWS(f.get<double>("frac_9"));
 }
 
 TEST_CASE("weighted_frac sets appropriate column names", "[operation]")
 {
+    GEOSContextHandle_t context = init_geos();
+
     Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
     Matrix<double> values{ { { 9, 1, 1 },
                              { 2, 2, 2 },
@@ -136,7 +150,11 @@ TEST_CASE("weighted_frac sets appropriate column names", "[operation]")
     Raster<double> weight_rast(std::move(weights), ex.extent());
     MemoryRasterSource<double> weight_src(weight_rast);
 
-    WKTFeatureSource ds("POLYGON ((0 0, 3 0, 3 3, 0 0))");
+    WKTFeatureSource ds;
+    MapFeature mf;
+    mf.set("fid", 15);
+    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0 0, 3 0, 3 3, 0 0))")));
+    ds.add_feature(std::move(mf));
 
     std::vector<std::unique_ptr<Operation>> ops;
     ops.emplace_back(std::make_unique<Operation>("weighted_frac", "x", &value_src, &weight_src));
@@ -152,9 +170,9 @@ TEST_CASE("weighted_frac sets appropriate column names", "[operation]")
 
     const MapFeature& f = writer.m_feature;
 
-    CHECK(f.get<float>("weighted_frac_1") == 0.00f);
-    CHECK(f.get<float>("weighted_frac_2") == 0.50f);
-    CHECK(f.get<float>("weighted_frac_3") == 0.50f);
+    CHECK(f.get<double>("weighted_frac_1") == 0.00f);
+    CHECK(f.get<double>("weighted_frac_2") == 0.50f);
+    CHECK(f.get<double>("weighted_frac_3") == 0.50f);
 
-    CHECK_THROWS(f.get<float>("weighted_frac_9"));
+    CHECK_THROWS(f.get<double>("weighted_frac_9"));
 }

@@ -16,7 +16,6 @@
 #include "feature.h"
 #include "geos_utils.h"
 
-#include <any>
 #include <unordered_map>
 
 namespace exactextract {
@@ -36,25 +35,17 @@ class MapFeature : public Feature
         }
     }
 
-    explicit MapFeature (MapFeature && other) = default;
+    MapFeature (MapFeature && other) = default;
     MapFeature& operator=(MapFeature&& other) = default;
 
     const std::type_info& field_type(const std::string& name) const override
     {
-        return m_map.at(name).type();
+        const Feature::FieldValue& val = m_map.at(name);
+        // https://stackoverflow.com/a/53697591/2171894
+        return std::visit([](auto&& x) -> decltype(auto) { return typeid(x); }, val);
     }
 
     void set(const std::string& name, double value) override
-    {
-        m_map[name] = value;
-    }
-
-    void set(const std::string& name, float value) override
-    {
-        m_map[name] = value;
-    }
-
-    void set(const std::string& name, std::size_t value) override
     {
         m_map[name] = value;
     }
@@ -83,14 +74,14 @@ class MapFeature : public Feature
         return m_geom.get();
     }
 
-    const std::unordered_map<std::string, std::any>& map() const
+    const std::unordered_map<std::string, Feature::FieldValue>& map() const
     {
         return m_map;
     }
 
     template<typename T>
     T get(const std::string& field) const {
-        return std::any_cast<T>(m_map.at(field));
+        return std::get<T>(m_map.at(field));
     }
 
     std::string get_string(const std::string& name) const override {
@@ -101,28 +92,14 @@ class MapFeature : public Feature
         return get<double>(name);
     }
 
-    float get_float(const std::string& name) const override {
-        return get<float>(name);
-    }
-
     std::int32_t get_int(const std::string& name) const override {
-        const auto& typ = field_type(name);
-        if (typ == typeid(std::int32_t)) {
-            return get<std::int32_t>(name);
-        } else if(typ == typeid(std::size_t)) {
-            auto val = get<std::size_t>(name);
-            if (val <= std::numeric_limits<std::int32_t>::max()) {
-                return static_cast<std::int32_t>(val);
-            }
-        }
-
-        throw std::runtime_error("Unexpected type/value in MapFeature::get_int");
+        return get<std::int32_t>(name);
     }
 
   private:
     inline static GEOSContextHandle_t m_geos_context = initGEOS_r(nullptr, nullptr);
 
-    std::unordered_map<std::string, std::any> m_map;
+    std::unordered_map<std::string, Feature::FieldValue> m_map;
     geom_ptr_r m_geom;
 };
 

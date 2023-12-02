@@ -31,11 +31,10 @@ namespace exactextract {
 
         while (m_shp.next()) {
             const Feature& f_in = m_shp.feature();
-            std::string name = f_in.get_string(m_shp.id_field());
 
             auto geom = f_in.geometry();
 
-            progress(name);
+            progress(f_in, m_shp.id_field());
 
             Box feature_bbox = exactextract::geos_get_box(m_geos_context, geom);
 
@@ -80,9 +79,9 @@ namespace exactextract {
                         if (op->weighted()) {
                             auto weights = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
 
-                            m_reg.stats(name, *op, store_values).process(*coverage, *values, *weights);
+                            m_reg.stats(f_in, *op, store_values).process(*coverage, *values, *weights);
                         } else {
-                            m_reg.stats(name, *op, store_values).process(*coverage, *values);
+                            m_reg.stats(f_in, *op, store_values).process(*coverage, *values);
                         }
 
                         progress();
@@ -91,16 +90,16 @@ namespace exactextract {
             }
 
             auto f_out = m_output.create_feature();
-            f_out->set(m_shp.id_field(), f_in.get_string(m_shp.id_field()));
+            f_out->set(m_shp.id_field(), f_in);
             for (const auto& col: m_include_cols) {
                 f_out->set(col, f_in);
             }
             for (const auto& op : m_operations) {
-                op->set_result(m_reg, name, *f_out);
+                op->set_result(m_reg, f_in, *f_out);
             }
             m_output.write(*f_out);
 
-            m_reg.flush_feature(name);
+            m_reg.flush_feature(f_in);
         }
     }
 }

@@ -96,8 +96,8 @@ namespace exactextract {
         }
 
 
-        virtual void set_result(const StatsRegistry& reg, const std::string& fid, Feature& f_out) const {
-            const RasterStats<double>& stats = reg.stats(fid, *this);
+        virtual void set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const {
+            const RasterStats<double>& stats = reg.stats(f_in, *this);
 
             auto missing = std::numeric_limits<double>::quiet_NaN();
 
