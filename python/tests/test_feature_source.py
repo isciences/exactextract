@@ -21,7 +21,7 @@ def test_gdal_feature_source():
         feat["id"] = i
         lyr.CreateFeature(feat)
 
-    fs = GDALFeatureSource(lyr, "id")
+    fs = GDALFeatureSource(lyr)
 
     assert fs.count() == 5
 
@@ -38,6 +38,6 @@ def test_python_feature_source():
             }
         )
 
-    fs = JSONFeatureSource(features, "id")
+    fs = JSONFeatureSource(features)
 
     assert fs.count() == 5
