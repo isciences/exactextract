@@ -90,7 +90,7 @@ def prep_processor(strategy):
     return processors[strategy]
 
 
-def exact_extract(rast, vec, ops, *, weights=None, strategy="feature-sequential"):
+def exact_extract(rast, vec, ops, *, weights=None, include_cols=None, strategy="feature-sequential"):
     rast = prep_raster(rast)
     vec = prep_vec(vec)
     # TODO: check CRS and transform if necessary/possible?
@@ -102,6 +102,9 @@ def exact_extract(rast, vec, ops, *, weights=None, strategy="feature-sequential"
     writer = JSONWriter()
 
     processor = Processor(vec, writer, ops)
+    if include_cols:
+        for col in include_cols:
+            processor.add_col(col)
     processor.process()
 
     return writer.features()
