@@ -123,8 +123,12 @@ namespace exactextract {
                 f_out.set(m_field_names[0], stats.variety());
             } else if (stat == "stdev") {
                 f_out.set(m_field_names[0], stats.stdev());
+            } else if (stat == "weighted_stdev") {
+                f_out.set(m_field_names[0], stats.weighted_stdev());
             } else if (stat == "variance") {
                 f_out.set(m_field_names[0], stats.variance());
+            } else if (stat == "weighted_variance") {
+                f_out.set(m_field_names[0], stats.weighted_variance());
             } else if (stat == "coefficient_of_variation") {
                 f_out.set(m_field_names[0], stats.coefficient_of_variation());
             } else if (stat == "median") {
