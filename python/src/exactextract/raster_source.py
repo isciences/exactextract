@@ -42,10 +42,15 @@ class GDALRasterSource(RasterSource):
 
 
 class NumPyRasterSource(RasterSource):
-    def __init__(self, mat, xmin, ymin, xmax, ymax):
+    def __init__(self, mat, xmin=None, ymin=None, xmax=None, ymax=None):
         super().__init__()
         self.mat = mat
-        self.ext = (xmin, ymin, xmax, ymax)
+
+        assert (xmin is None) == (ymin is None) == (xmax is None) == (ymax is None)
+        if xmin is None:
+            self.ext = (0, 0, self.mat.shape[1], self.mat.shape[0])
+        else:
+            self.ext = (xmin, ymin, xmax, ymax)
 
     def res(self):
         ny, nx = self.mat.shape

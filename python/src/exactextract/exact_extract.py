@@ -6,7 +6,7 @@ from .writer import JSONWriter
 
 
 def prep_raster(rast):
-    # TODO add some hooks to allow RasterSource implementations 
+    # TODO add some hooks to allow RasterSource implementations
     # defined outside this library to handle other input types.
     if isinstance(rast, RasterSource):
         return rast
@@ -23,7 +23,7 @@ def prep_raster(rast):
 
 
 def prep_vec(vec):
-    # TODO add some hooks to allow FeatureSource implementations 
+    # TODO add some hooks to allow FeatureSource implementations
     # defined outside this library to handle other input types.
     if isinstance(vec, FeatureSource):
         return vec
@@ -61,12 +61,12 @@ def prep_processor(strategy):
     return processors[strategy]
 
 
-def exact_extract(rast, vec, ops, *, strategy="feature-sequential"):
+def exact_extract(rast, vec, ops, *, weights=None, strategy="feature-sequential"):
     rast = prep_raster(rast)
     vec = prep_vec(vec)
     # TODO: check CRS and transform if necessary/possible?
 
-    ops = prep_ops(ops, rast)
+    ops = prep_ops(ops, rast, weights)
 
     Processor = prep_processor(strategy)
 
