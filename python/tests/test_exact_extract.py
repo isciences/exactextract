@@ -10,9 +10,10 @@ def make_square_raster(n):
     return NumPyRasterSource(values, 0, 0, n, n)
 
 
-def make_rect(xmin, ymin, xmax, ymax, fid=1):
-    return {
-        "id": fid,
+def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
+
+    f = {
+        "type": "Feature",
         "geometry": {
             "type": "Polygon",
             "coordinates": [
@@ -21,6 +22,13 @@ def make_rect(xmin, ymin, xmax, ymax, fid=1):
         },
     }
 
+
+    if id is not None:
+        f["id"] = id
+    if properties is not None:
+        f["properties"] = properties
+
+    return f
 
 @pytest.mark.parametrize(
     "stat,expected",
@@ -284,3 +292,18 @@ def test_rasterio_inputs(tmp_path):
     }
 
 
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+def test_include_cols(strategy):
+    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
+
+    features = []
+    features.append(make_rect(0.5, 0.5, 2.5, 2.5, id=1, properties={"type": "apple", "a": 4.1}))
+    features.append(make_rect(0.5, 0.5, 2.5, 2.5, id=2, properties={"type": "pear", "a": 4.2}))
+
+    results = exact_extract(rast, features, "count", include_cols=["a", "type", "id"])
+
+    assert results[0]["id"] == 1
+    assert results[0]["properties"] == {"a": 4.1, "type": "apple", "count": 4.0}
+
+    assert results[1]["id"] == 2
+    assert results[1]["properties"] == {"a": 4.2, "type": "pear", "count": 4.0}
