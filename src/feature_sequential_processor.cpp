@@ -90,7 +90,9 @@ namespace exactextract {
             }
 
             auto f_out = m_output.create_feature();
-            f_out->set(m_shp.id_field(), f_in);
+            if (m_shp.id_field() != "") {
+                f_out->set(m_shp.id_field(), f_in);
+            }
             for (const auto& col: m_include_cols) {
                 f_out->set(col, f_in);
             }
