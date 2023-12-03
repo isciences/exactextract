@@ -4,7 +4,12 @@
 
 from .exact_extract import exact_extract
 from .feature import Feature, GDALFeature, JSONFeature
-from .feature_source import FeatureSource, GDALFeatureSource, JSONFeatureSource
+from .feature_source import (
+    FeatureSource,
+    GDALFeatureSource,
+    JSONFeatureSource,
+    GeoPandasFeatureSource,
+)
 from .operation import Operation
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
 from .raster_source import RasterSource, GDALRasterSource, NumPyRasterSource

@@ -64,3 +64,29 @@ class NumPyRasterSource(RasterSource):
 
     def read_window(self, x0, y0, nx, ny):
         return self.mat[y0 : y0 + ny, x0 : x0 + ny]
+
+
+class RasterioRasterSource(RasterSource):
+    def __init__(self, ds, band_idx=1):
+        super().__init__()
+        self.ds = ds
+        self.band_idx = band_idx
+
+    def res(self):
+        dx = (self.ds.bounds.right - self.ds.bounds.left) / self.ds.width
+        dy = (self.ds.bounds.top - self.ds.bounds.bottom) / self.ds.height
+
+        return (dx, dy)
+
+    def extent(self):
+        return (
+            self.ds.bounds.left,
+            self.ds.bounds.bottom,
+            self.ds.bounds.right,
+            self.ds.bounds.top,
+        )
+
+    def read_window(self, x0, y0, nx, ny):
+        from rasterio.windows import Window
+
+        return self.ds.read(self.band_idx, window=Window(x0, y0, nx, ny))

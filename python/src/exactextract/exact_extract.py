@@ -1,5 +1,10 @@
-from .feature_source import FeatureSource, GDALFeatureSource, JSONFeatureSource
-from .raster_source import RasterSource, GDALRasterSource
+from .feature_source import (
+    FeatureSource,
+    GDALFeatureSource,
+    JSONFeatureSource,
+    GeoPandasFeatureSource,
+)
+from .raster_source import RasterSource, GDALRasterSource, RasterioRasterSource
 from .operation import Operation
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
 from .writer import JSONWriter
@@ -16,6 +21,14 @@ def prep_raster(rast):
 
         if isinstance(rast, gdal.Dataset):
             return GDALRasterSource(rast)
+    except ImportError:
+        pass
+
+    try:
+        import rasterio
+
+        if isinstance(rast, rasterio.DatasetReader):
+            return RasterioRasterSource(rast)
     except ImportError:
         pass
 
@@ -37,7 +50,23 @@ def prep_vec(vec):
         pass
 
     if type(vec) is list and len(vec) > 0 and "geometry" in vec[0]:
-        return JSONFeatureSource(vec, "id")
+        return JSONFeatureSource(vec)
+
+    try:
+        import fiona
+
+        if isinstance(vec, fiona.Collection):
+            return JSONFeatureSource(vec)
+    except ImportError:
+        pass
+
+    try:
+        import geopandas
+
+        if isinstance(vec, geopandas.GeoDataFrame):
+            return GeoPandasFeatureSource(vec)
+    except ImportError:
+        pass
 
     raise Exception("Unhandled feature datatype")
 
