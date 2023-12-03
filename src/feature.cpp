@@ -45,6 +45,12 @@ Feature::set(const std::string& name, std::size_t value)
     set(name, static_cast<std::int32_t>(value));
 }
 
+void
+Feature::set(const std::string& name, float value)
+{
+    set(name, static_cast<double>(value));
+}
+
 Feature::FieldValue
 Feature::get(const std::string& name) const
 {
