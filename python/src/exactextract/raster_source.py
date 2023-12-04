@@ -11,7 +11,7 @@ from _exactextract import RasterSource
 
 
 class GDALRasterSource(RasterSource):
-    def __init__(self, ds, band_idx: int = 1):
+    def __init__(self, ds, band_idx: int = 1, *, name=None):
         super().__init__()
         self.ds = ds
 
@@ -20,6 +20,9 @@ class GDALRasterSource(RasterSource):
             raise ValueError("Raster band index starts from 1!")
 
         self.band = self.ds.GetRasterBand(band_idx)
+
+        if name:
+            self.set_name(name)
 
     def res(self):
         gt = self.ds.GetGeoTransform()
@@ -42,7 +45,7 @@ class GDALRasterSource(RasterSource):
 
 
 class NumPyRasterSource(RasterSource):
-    def __init__(self, mat, xmin=None, ymin=None, xmax=None, ymax=None):
+    def __init__(self, mat, xmin=None, ymin=None, xmax=None, ymax=None, *, name=None):
         super().__init__()
         self.mat = mat
 
@@ -51,6 +54,9 @@ class NumPyRasterSource(RasterSource):
             self.ext = (0, 0, self.mat.shape[1], self.mat.shape[0])
         else:
             self.ext = (xmin, ymin, xmax, ymax)
+
+        if name:
+            self.set_name(name)
 
     def res(self):
         ny, nx = self.mat.shape
@@ -67,10 +73,13 @@ class NumPyRasterSource(RasterSource):
 
 
 class RasterioRasterSource(RasterSource):
-    def __init__(self, ds, band_idx=1):
+    def __init__(self, ds, band_idx=1, *, name=None):
         super().__init__()
         self.ds = ds
         self.band_idx = band_idx
+
+        if name:
+            self.set_name(name)
 
     def res(self):
         dx = (self.ds.bounds.right - self.ds.bounds.left) / self.ds.width

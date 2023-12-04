@@ -11,7 +11,6 @@ def make_square_raster(n):
 
 
 def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
-
     f = {
         "type": "Feature",
         "geometry": {
@@ -22,13 +21,13 @@ def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
         },
     }
 
-
     if id is not None:
         f["id"] = id
     if properties is not None:
         f["properties"] = properties
 
     return f
+
 
 @pytest.mark.parametrize(
     "stat,expected",
@@ -105,7 +104,8 @@ def test_weighted_stats_unequal_weights(stat, expected):
 def test_frac():
     rast = NumPyRasterSource(np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]]))
     squares = JSONFeatureSource(
-        [make_rect(0.5, 0.5, 1.0, 1.0, "a"), make_rect(0.5, 0.5, 2.5, 2.5, "b")])
+        [make_rect(0.5, 0.5, 1.0, 1.0, "a"), make_rect(0.5, 0.5, 2.5, 2.5, "b")]
+    )
 
     results = exact_extract(rast, squares, ["count", "frac"])
 
@@ -130,7 +130,8 @@ def test_weighted_frac():
     rast = NumPyRasterSource(np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]]))
     weights = NumPyRasterSource(np.array([[3, 3, 3], [2, 2, 2], [1, 1, 1]]))
     squares = JSONFeatureSource(
-        [make_rect(0.5, 0.5, 1.0, 1.0, "a"), make_rect(0.5, 0.5, 2.5, 2.5, "b")])
+        [make_rect(0.5, 0.5, 1.0, 1.0, "a"), make_rect(0.5, 0.5, 2.5, 2.5, "b")]
+    )
 
     results = exact_extract(rast, squares, ["weighted_frac", "sum"], weights=weights)
 
@@ -151,14 +152,124 @@ def test_weighted_frac():
     pytest.xfail("missing placeholder results for weighted_frac_1 and weighted_frac_2")
 
 
+def test_multiband():
+    rast = [
+        NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="a"),
+        NumPyRasterSource(2 * np.arange(1, 10).reshape(3, 3), name="b"),
+    ]
+
+    squares = [make_rect(0.5, 0.5, 1.0, 1.0), make_rect(0.5, 0.5, 2.5, 2.5)]
+
+    results = exact_extract(rast, squares, ["count", "mean"])
+
+    assert len(results) == len(squares)
+
+    assert results[0]["properties"] == {
+        "mean_a": 7.0,
+        "count_a": 0.25,
+        "mean_b": 14.0,
+        "count_b": 0.25,
+    }
+
+    assert results[1]["properties"] == {
+        "mean_a": 5.0,
+        "count_a": 4.0,
+        "mean_b": 10.0,
+        "count_b": 4.0,
+    }
+
+
+def test_weighted_multiband():
+    rast = [
+        NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="a"),
+        NumPyRasterSource(2 * np.arange(1, 10).reshape(3, 3), name="b"),
+    ]
+
+    weights = [
+        NumPyRasterSource(np.array([[0, 0, 0], [0, 0, 0], [0.5, 0, 0]]), name="w1"),
+        NumPyRasterSource(np.array([[0, 0, 0], [1, 1, 1], [0, 0, 0]]), name="w2"),
+    ]
+
+    squares = [make_rect(0.5, 0.5, 1.0, 1.0), make_rect(0.5, 0.5, 2.5, 2.5)]
+
+    results = exact_extract(rast, squares, ["mean", "weighted_mean"], weights=weights)
+
+    assert len(results) == len(squares)
+
+    assert results[0]["properties"] == pytest.approx(
+        {
+            "mean_a": 7.0,
+            "mean_b": 14.0,
+            "weighted_mean_a_w1": 7.0,
+            "weighted_mean_b_w2": float("nan"),
+        },
+        nan_ok=True,
+    )
+
+    assert results[1]["properties"] == {
+        "mean_a": 5.0,
+        "mean_b": 10.0,
+        "weighted_mean_a_w1": 7.0,
+        "weighted_mean_b_w2": 10.0,
+    }
+
+
+def test_weighted_multiband_values():
+    rast = [
+        NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="a"),
+        NumPyRasterSource(2 * np.arange(1, 10).reshape(3, 3), name="b"),
+    ]
+
+    weights = NumPyRasterSource(np.array([[0, 0, 0], [0, 0, 0], [0.5, 0, 0]]), name="w")
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    results = exact_extract(rast, square, ["mean", "weighted_mean"], weights=weights)
+
+    assert len(results) == 1
+
+    assert results[0]["properties"] == {
+        "mean_a": 5.0,
+        "mean_b": 10.0,
+        "weighted_mean_a_w": 7.0,
+        "weighted_mean_b_w": 14.0,
+    }
+
+
+def test_weighted_multiband_weights():
+    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="a")
+
+    weights = [
+        NumPyRasterSource(np.array([[0, 0, 0], [0, 0, 0], [0.5, 0, 0]]), name="w1"),
+        NumPyRasterSource(np.array([[0, 0, 0], [1, 1, 1], [0, 0, 0]]), name="w2"),
+    ]
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    results = exact_extract(rast, square, ["mean", "weighted_mean"], weights=weights)
+
+    assert len(results) == 1
+
+    assert results[0]["properties"] == {
+        "mean_a": 5.0,
+        "weighted_mean_a_w1": 7.0,
+        "weighted_mean_a_w2": 5.0,
+    }
+
 
 def create_gdal_raster(fname, values):
     gdal = pytest.importorskip("osgeo.gdal")
     drv = gdal.GetDriverByName("GTiff")
 
-    ds = drv.Create(str(fname), values.shape[1], values.shape[0])
-    ds.SetGeoTransform((0.0, 1.0, 0.0, values.shape[0], 0.0, -1.0))
-    ds.WriteArray(values)
+    bands = 1 if len(values.shape) == 2 else values.shape[0]
+
+    ds = drv.Create(str(fname), values.shape[-2], values.shape[-1], bands=bands)
+    ds.SetGeoTransform((0.0, 1.0, 0.0, values.shape[-2], 0.0, -1.0))
+    if len(values.shape) == 2:
+        ds.WriteArray(values)
+    else:
+        for i in range(bands):
+            ds.GetRasterBand(i + 1).WriteArray(values[i, :, :])
 
 
 def create_gdal_features(fname, features, name="test"):
@@ -166,130 +277,79 @@ def create_gdal_features(fname, features, name="test"):
 
     import tempfile
     import json
+
     with tempfile.NamedTemporaryFile(suffix=".geojson") as tf:
-        tf.write(json.dumps({
-            "type":"FeatureCollection",
-            "features": features
-        }).encode())
+        tf.write(
+            json.dumps({"type": "FeatureCollection", "features": features}).encode()
+        )
         tf.flush()
 
         ds = gdal.VectorTranslate(str(fname), tf.name)
-    
 
-def test_gdal_inputs(tmp_path):
-    gdal = pytest.importorskip("osgeo.gdal")
-    ogr = pytest.importorskip("osgeo.ogr")
 
+@pytest.mark.parametrize("rast_lib", ("gdal", "rasterio"))
+@pytest.mark.parametrize("vec_lib", ("gdal", "fiona", "geopandas"))
+@pytest.mark.parametrize(
+    "arr,expected",
+    [
+        (
+            np.arange(1, 10).reshape(3, 3),
+            [{"count": 0.25, "mean": 7.0}, {"count": 4.0, "mean": 5.0}],
+        ),
+        (
+            np.stack(
+                [np.arange(1, 10).reshape(3, 3), 2 * np.arange(1, 10).reshape(3, 3)]
+            ),
+            [
+                {
+                    "count_band_1": 0.25,
+                    "count_band_2": 0.25,
+                    "mean_band_1": 7.0,
+                    "mean_band_2": 14.0,
+                },
+                {
+                    "count_band_1": 4.0,
+                    "count_band_2": 4.0,
+                    "mean_band_1": 5.0,
+                    "mean_band_2": 10.0,
+                },
+            ],
+        ),
+    ],
+    ids=["singleband", "multiband"],
+)
+def test_library_inputs(tmp_path, vec_lib, rast_lib, arr, expected):
     raster_fname = str(tmp_path / "rast.tif")
-    create_gdal_raster(raster_fname, np.arange(1, 10).reshape(3, 3))
+    create_gdal_raster(raster_fname, arr)
 
     shp_fname = str(tmp_path / "geom.gpkg")
-    squares = [
-            make_rect(0.5, 0.5, 1.0, 1.0, "a"),
-            make_rect(0.5, 0.5, 2.5, 2.5, "b")]
+    squares = [make_rect(0.5, 0.5, 1.0, 1.0, "a"), make_rect(0.5, 0.5, 2.5, 2.5, "b")]
 
     create_gdal_features(shp_fname, squares)
 
-    rast = gdal.Open(raster_fname)
-    shp = ogr.Open(shp_fname)
+    if rast_lib == "gdal":
+        gdal = pytest.importorskip("osgeo.gdal")
+        rast = gdal.Open(raster_fname)
+    elif rast_lib == "rasterio":
+        rasterio = pytest.importorskip("rasterio")
+        rast = rasterio.open(raster_fname)
+
+    if vec_lib == "gdal":
+        ogr = pytest.importorskip("osgeo.ogr")
+        shp = ogr.Open(shp_fname)
+    elif vec_lib == "fiona":
+        fiona = pytest.importorskip("fiona")
+        shp = fiona.open(shp_fname)
+    elif vec_lib == "geopandas":
+        gp = pytest.importorskip("geopandas")
+        shp = gp.read_file(shp_fname)
 
     results = exact_extract(rast, shp, ["mean", "count"])
 
-    assert len(results) == 2
+    assert len(results) == len(expected)
 
-    assert results[0]['properties'] == {
-            'count' : 0.25, 
-            'mean' : 7.0
-    }
-
-    assert results[1]['properties'] == {
-            'count': 4.0,
-            'mean': 5.0
-    }
-
-
-def test_fiona_inputs(tmp_path):
-    fiona = pytest.importorskip("fiona")
-
-    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
-
-    shp_fname = str(tmp_path / "geom.gpkg")
-    squares = [
-            make_rect(0.5, 0.5, 1.0, 1.0, "a"),
-            make_rect(0.5, 0.5, 2.5, 2.5, "b")]
-    create_gdal_features(shp_fname, squares)
-
-    shp = fiona.open(shp_fname)
-
-    results = exact_extract(rast, shp, ["mean", "count"])
-
-    assert len(results) == 2
-
-    assert results[0]['properties'] == {
-            'count' : 0.25, 
-            'mean' : 7.0
-    }
-
-    assert results[1]['properties'] == {
-            'count': 4.0,
-            'mean': 5.0
-    }
-
-
-
-def test_geopandas_inputs(tmp_path):
-    gp = pytest.importorskip("geopandas")
-
-    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
-
-    shp_fname = str(tmp_path / "geom.gpkg")
-    squares = [
-            make_rect(0.5, 0.5, 1.0, 1.0, "a"),
-            make_rect(0.5, 0.5, 2.5, 2.5, "b")]
-    create_gdal_features(shp_fname, squares)
-    
-    shp = gp.read_file(shp_fname)
-
-    results = exact_extract(rast, shp, ["mean", "count"])
-
-    assert len(results) == 2
-
-    assert results[0]['properties'] == {
-            'count' : 0.25, 
-            'mean' : 7.0
-    }
-
-    assert results[1]['properties'] == {
-            'count': 4.0,
-            'mean': 5.0
-    }
-
-
-def test_rasterio_inputs(tmp_path):
-    rasterio = pytest.importorskip("rasterio")
-
-    raster_fname = str(tmp_path / "rast.tif")
-    create_gdal_raster(raster_fname, np.arange(1, 10).reshape(3, 3))
-
-    squares = [
-            make_rect(0.5, 0.5, 1.0, 1.0, "a"),
-            make_rect(0.5, 0.5, 2.5, 2.5, "b")]
-
-    rast = rasterio.open(raster_fname)
-    
-    results = exact_extract(rast, squares, ["mean", "count"])
-
-    assert len(results) == 2
-
-    assert results[0]['properties'] == {
-            'count' : 0.25, 
-            'mean' : 7.0
-    }
-
-    assert results[1]['properties'] == {
-            'count': 4.0,
-            'mean': 5.0
-    }
+    for a, e in zip(results, expected):
+        assert a["properties"] == e
 
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
@@ -297,8 +357,12 @@ def test_include_cols(strategy):
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
 
     features = []
-    features.append(make_rect(0.5, 0.5, 2.5, 2.5, id=1, properties={"type": "apple", "a": 4.1}))
-    features.append(make_rect(0.5, 0.5, 2.5, 2.5, id=2, properties={"type": "pear", "a": 4.2}))
+    features.append(
+        make_rect(0.5, 0.5, 2.5, 2.5, id=1, properties={"type": "apple", "a": 4.1})
+    )
+    features.append(
+        make_rect(0.5, 0.5, 2.5, 2.5, id=2, properties={"type": "pear", "a": 4.2})
+    )
 
     results = exact_extract(rast, features, "count", include_cols=["a", "type", "id"])
 
@@ -307,3 +371,12 @@ def test_include_cols(strategy):
 
     assert results[1]["id"] == 2
     assert results[1]["properties"] == {"a": 4.2, "type": "pear", "count": 4.0}
+
+
+def test_error_no_weights():
+    rast = NumPyRasterSource(np.arange(1, 13).reshape(3, 4))
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    with pytest.raises(Exception, match="No weights provided"):
+        exact_extract(rast, square, ["count", "weighted_mean"])
