@@ -29,3 +29,4 @@ class Operation(_Operation):
             weights (Optional[RasterSource], optional): Weight raster to use. Defaults to None.
         """
         super().__init__(stat_name, field_name, raster, weights)
+        assert raster is not None
