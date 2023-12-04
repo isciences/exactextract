@@ -257,14 +257,19 @@ def test_weighted_multiband_weights():
     }
 
 
-def create_gdal_raster(fname, values):
+def create_gdal_raster(fname, values, *, gt=None):
     gdal = pytest.importorskip("osgeo.gdal")
     drv = gdal.GetDriverByName("GTiff")
 
     bands = 1 if len(values.shape) == 2 else values.shape[0]
 
     ds = drv.Create(str(fname), values.shape[-2], values.shape[-1], bands=bands)
-    ds.SetGeoTransform((0.0, 1.0, 0.0, values.shape[-2], 0.0, -1.0))
+
+    if gt is None:
+        ds.SetGeoTransform((0.0, 1.0, 0.0, values.shape[-2], 0.0, -1.0))
+    else:
+        ds.SetGeoTransform(gt)
+
     if len(values.shape) == 2:
         ds.WriteArray(values)
     else:
@@ -287,8 +292,26 @@ def create_gdal_features(fname, features, name="test"):
         ds = gdal.VectorTranslate(str(fname), tf.name)
 
 
+def open_with_lib(fname, libname):
+    if libname == "gdal":
+        gdal = pytest.importorskip("osgeo.gdal")
+        return gdal.Open(fname)
+    elif libname == "rasterio":
+        rasterio = pytest.importorskip("rasterio")
+        return rasterio.open(fname)
+    elif libname == "ogr":
+        ogr = pytest.importorskip("osgeo.ogr")
+        return ogr.Open(fname)
+    elif libname == "fiona":
+        fiona = pytest.importorskip("fiona")
+        return fiona.open(fname)
+    elif libname == "geopandas":
+        gp = pytest.importorskip("geopandas")
+        return gp.read_file(fname)
+
+
 @pytest.mark.parametrize("rast_lib", ("gdal", "rasterio"))
-@pytest.mark.parametrize("vec_lib", ("gdal", "fiona", "geopandas"))
+@pytest.mark.parametrize("vec_lib", ("ogr", "fiona", "geopandas"))
 @pytest.mark.parametrize(
     "arr,expected",
     [
@@ -327,22 +350,8 @@ def test_library_inputs(tmp_path, vec_lib, rast_lib, arr, expected):
 
     create_gdal_features(shp_fname, squares)
 
-    if rast_lib == "gdal":
-        gdal = pytest.importorskip("osgeo.gdal")
-        rast = gdal.Open(raster_fname)
-    elif rast_lib == "rasterio":
-        rasterio = pytest.importorskip("rasterio")
-        rast = rasterio.open(raster_fname)
-
-    if vec_lib == "gdal":
-        ogr = pytest.importorskip("osgeo.ogr")
-        shp = ogr.Open(shp_fname)
-    elif vec_lib == "fiona":
-        fiona = pytest.importorskip("fiona")
-        shp = fiona.open(shp_fname)
-    elif vec_lib == "geopandas":
-        gp = pytest.importorskip("geopandas")
-        shp = gp.read_file(shp_fname)
+    rast = open_with_lib(raster_fname, rast_lib)
+    shp = open_with_lib(shp_fname, vec_lib)
 
     results = exact_extract(rast, shp, ["mean", "count"])
 
@@ -380,3 +389,21 @@ def test_error_no_weights():
 
     with pytest.raises(Exception, match="No weights provided"):
         exact_extract(rast, square, ["count", "weighted_mean"])
+
+
+@pytest.mark.parametrize("rast_lib", ("gdal", "rasterio"))
+def test_error_rotated_inputs(tmp_path, rast_lib):
+    raster_fname = str(tmp_path / "rast.tif")
+
+    create_gdal_raster(
+        raster_fname,
+        np.array([[1, 2], [3, 4]]),
+        gt=(10000.0, 42.402, 26.496, 200000.0, 26.496, -42.402),
+    )
+
+    square = make_rect(10150, 199872, 10224, 199950)
+
+    rast = open_with_lib(raster_fname, rast_lib)
+
+    with pytest.raises(ValueError, match="Rotated raster"):
+        exact_extract(rast, square, ["count"])
