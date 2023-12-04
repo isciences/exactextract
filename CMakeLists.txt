@@ -156,6 +156,8 @@ if(BUILD_TEST)
     # Create an executable to run the unit tests
     add_executable(catch_tests ${TEST_SOURCES})
 
+    add_test(NAME "catch_tests" COMMAND catch_tests)
+
     target_include_directories(
             catch_tests
             PRIVATE
