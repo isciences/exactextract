@@ -102,7 +102,9 @@ namespace exactextract {
 
 
         virtual void set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const {
-            const RasterStats<double>& stats = reg.stats(f_in, *this);
+            static const RasterStats<double> empty_stats;
+
+            const RasterStats<double>& stats = reg.contains(f_in, *this) ? reg.stats(f_in, *this) : empty_stats;
 
             auto missing = std::numeric_limits<double>::quiet_NaN();
 

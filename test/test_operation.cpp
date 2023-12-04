@@ -2,6 +2,7 @@
 
 #include "feature_sequential_processor.h"
 #include "feature_source.h"
+#include "raster_sequential_processor.h"
 #include "map_feature.h"
 #include "operation.h"
 #include "output_writer.h"
@@ -188,4 +189,34 @@ TEST_CASE("error thrown if no weights provided for weighted operation", "[operat
     MemoryRasterSource<double> value_src(value_rast);
 
     CHECK_THROWS( Operation("weighted_mean", "test", &value_src, nullptr) );
+}
+
+TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]", FeatureSequentialProcessor, RasterSequentialProcessor)
+{
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{ { 100, 100, 103, 103 }, 1, 1 }; // 3x3 grid
+    Matrix<double> values{ { { 9, 1, 1 },
+                             { 2, 2, 2 },
+                             { 3, 3, 3 } } };
+
+    Raster<double> value_rast(std::move(values), ex.extent());
+    MemoryRasterSource<double> value_src(value_rast);
+
+    WKTFeatureSource ds;
+    MapFeature mf;
+    mf.set("fid", "15");
+    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0 0, 3 0, 3 3, 0 0))")));
+    ds.add_feature(std::move(mf));
+
+    TestWriter writer;
+
+    TestType processor(ds, writer);
+    processor.add_operation(Operation("count", "count", &value_src, nullptr));
+    processor.add_operation(Operation("median", "median", &value_src, nullptr));
+    processor.process();
+
+    const MapFeature& f = writer.m_feature;
+    CHECK( f.get<double>("count") == 0 );
+    CHECK( std::isnan(f.get<double>("median")) );
 }
