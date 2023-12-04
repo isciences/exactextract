@@ -19,6 +19,11 @@ class GDALRasterSource(RasterSource):
         if band_idx is not None and band_idx <= 0:
             raise ValueError("Raster band index starts from 1!")
 
+        # Check for axis-aligned grid
+        gt = self.ds.GetGeoTransform()
+        if gt[2] != 0 or gt[4] != 0:
+            raise ValueError("Rotated rasters are not supported.")
+
         self.band = self.ds.GetRasterBand(band_idx)
 
         if name:
@@ -77,6 +82,10 @@ class RasterioRasterSource(RasterSource):
         super().__init__()
         self.ds = ds
         self.band_idx = band_idx
+
+        gt = self.ds.get_transform()
+        if gt[2] != 0 or gt[4] != 0:
+            raise ValueError("Rotated rasters are not supported.")
 
         if name:
             self.set_name(name)
