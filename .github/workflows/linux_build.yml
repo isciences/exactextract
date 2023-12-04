@@ -1,0 +1,75 @@
+name: Linux builds
+
+on:
+  - push
+  - pull_request
+
+jobs:
+
+  build-library:
+    strategy:
+      matrix:
+        ci:
+          - name: "GEOS 3.12, CLI"
+            tag: geos312
+            build_cli: YES
+
+          - name: "GEOS 3.11"
+            tag: geos311
+            build_cli: NO
+
+          - name: "GEOS 3.10"
+            tag: geos310
+            build_cli: NO
+
+          - name: "GEOS 3.9"
+            tag: geos39
+            build_cli: NO
+
+          - name: "GEOS 3.8"
+            tag: geos38
+            build_cli: NO
+
+          - name: "GEOS 3.7"
+            tag: geos37
+            build_cli: NO
+
+          - name: "GEOS 3.6"
+            tag: geos36
+            build_cli: NO
+
+          - name: "GEOS 3.5"
+            tag: geos35
+            build_cli: NO
+
+
+    name: ${{ matrix.ci.name }}
+    runs-on: ubuntu-latest
+
+    container: isciences/exactextract-test-env:${{ matrix.ci.tag }}
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: configure
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=${{ matrix.ci.build_cli }} ..
+    - name: build
+      run: |
+        cd build
+        cmake --build . -j $(nproc)
+    - name: test
+      run: |
+        cd build
+        valgrind --leak-check=full --error-exitcode=1 ./catch_tests
+        if pytest --version; then pytest ../test; else echo "pytest not available"; fi
+    - name: generate coverage report
+      run: |
+        cd build
+        lcov --capture --directory CMakeFiles --output-file coverage.info
+    - name: upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: build/coverage.info
