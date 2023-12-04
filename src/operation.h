@@ -24,6 +24,7 @@
 #include "raster_stats.h"
 #include "stats_registry.h"
 #include "raster_coverage_iterator.h"
+#include "utils.h"
 
 namespace exactextract {
 
@@ -48,6 +49,10 @@ namespace exactextract {
                 setQuantileFieldNames();
             } else {
                 m_field_names.push_back(name);
+            }
+
+            if (starts_with(stat, "weighted") && weights == nullptr) {
+                throw std::runtime_error("No weights provided for weighted stat: " + stat);
             }
 
             if (weighted()) {

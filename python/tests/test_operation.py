@@ -11,8 +11,6 @@ def test_valid_stat(np_raster_source):
         "count",
         "sum",
         "mean",
-        "weighted_sum",
-        "weighted_mean",
         "min",
         "max",
         "minority",

@@ -176,3 +176,16 @@ TEST_CASE("weighted_frac sets appropriate column names", "[operation]")
 
     CHECK_THROWS(f.get<double>("weighted_frac_9"));
 }
+
+TEST_CASE("error thrown if no weights provided for weighted operation", "[operation]")
+{
+    Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
+    Matrix<double> values{ { { 9, 1, 1 },
+                             { 2, 2, 2 },
+                             { 3, 3, 3 } } };
+
+    Raster<double> value_rast(std::move(values), ex.extent());
+    MemoryRasterSource<double> value_src(value_rast);
+
+    CHECK_THROWS( Operation("weighted_mean", "test", &value_src, nullptr) );
+}
