@@ -1,12 +1,11 @@
 # Build the Python bindings, which require pybind11
-find_package(pybind11 REQUIRED)
+find_package(pybind11 QUIET)
 if (pybind11_FOUND)
     # TODO: which pybind11 version
 endif() #pybind11_FOUND
 if (NOT pybind11_FOUND)
     message(FATAL_ERROR
-    "pybind11 was not found. It is still possible to build and test libexactextract, but the "
-    "exactextract Python bindings cannot be built or installed.")
+    "pybind11 was not found. It is still possible to build and test libexactextract using -DBUILD_PYTHON=NO.")
 endif() #NOT pybind11_FOUND
 
 
