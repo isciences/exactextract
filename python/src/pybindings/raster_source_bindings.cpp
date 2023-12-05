@@ -60,7 +60,15 @@ class PyRasterSourceBase : public RasterSource
             auto ny = cropped_grid.rows();
 
             py::array rast_values = read_window(x0, y0, nx, ny);
-            return std::make_unique<NumPyRaster<double>>(rast_values, cropped_grid);
+            py::object nodata = nodata_value();
+
+            auto rast = std::make_unique<NumPyRaster<double>>(rast_values, cropped_grid);
+
+            if (!nodata.is_none()) {
+                rast->set_nodata(nodata.cast<double>());
+            }
+
+            return rast;
         }
 
         return nullptr;
@@ -98,6 +106,8 @@ class PyRasterSourceBase : public RasterSource
 
     virtual py::object res() const = 0;
 
+    virtual py::object nodata_value() const = 0;
+
   private:
     mutable std::unique_ptr<Grid<bounded_extent>> m_grid;
 };
@@ -120,6 +130,10 @@ class PyRasterSource : public PyRasterSourceBase
     {
         PYBIND11_OVERRIDE_PURE(py::array, PyRasterSource, read_window, x0, y0, nx, ny);
     }
+
+    py::object nodata_value() const override {
+        PYBIND11_OVERRIDE_PURE(py::object, PyRasterSource, nodata_value);
+    }
 };
 
 void
@@ -135,6 +149,7 @@ bind_raster_source(py::module& m)
       .def(py::init<>())
       .def("extent", &PyRasterSource::extent)
       .def("res", &PyRasterSource::res)
+      .def("nodata_value", &PyRasterSource::nodata_value)
       .def("read_window", &PyRasterSource::read_window);
 }
 }

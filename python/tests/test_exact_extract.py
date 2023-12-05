@@ -257,6 +257,27 @@ def test_weighted_multiband_weights():
     }
 
 
+def test_nodata():
+    data = np.arange(1, 101).reshape(10, 10)
+    data[6:10, 0:4] = -999  # flag lower-left corner as nodata
+    rast = NumPyRasterSource(data, nodata=-999)
+
+    # square entirely within nodata region
+    square = make_rect(0, 0, 3, 3)
+    results = exact_extract(rast, square, ["sum", "mean"])
+
+    assert results[0]["properties"] == pytest.approx(
+        {"sum": 0, "mean": float("nan")}, nan_ok=True
+    )
+
+    # square partially within nodata region
+    square = make_rect(3.5, 3.5, 4.5, 4.5)
+
+    results = exact_extract(rast, square, ["sum", "mean"])
+
+    assert results[0]["properties"] == {"sum": 43.5, "mean": 58}
+
+
 def create_gdal_raster(fname, values, *, gt=None):
     gdal = pytest.importorskip("osgeo.gdal")
     drv = gdal.GetDriverByName("GTiff")
