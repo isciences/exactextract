@@ -10,38 +10,45 @@ jobs:
     strategy:
       matrix:
         ci:
-          - name: "GEOS 3.12, CLI"
+          - name: "GEOS 3.12, CLI, PYTHON"
             tag: geos312
             build_cli: YES
+            build_python: YES
 
           - name: "GEOS 3.11"
             tag: geos311
             build_cli: NO
+            build_python: NO
 
           - name: "GEOS 3.10"
             tag: geos310
             build_cli: NO
+            build_python: NO
 
           - name: "GEOS 3.9"
             tag: geos39
             build_cli: NO
+            build_python: NO
 
           - name: "GEOS 3.8"
             tag: geos38
             build_cli: NO
+            build_python: NO
 
           - name: "GEOS 3.7"
             tag: geos37
             build_cli: NO
+            build_python: NO
 
           - name: "GEOS 3.6"
             tag: geos36
             build_cli: NO
+            build_python: NO
 
           - name: "GEOS 3.5"
             tag: geos35
             build_cli: NO
-
+            build_python: NO
 
     name: ${{ matrix.ci.name }}
     runs-on: ubuntu-latest
@@ -54,7 +61,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=${{ matrix.ci.build_cli }} ..
+        cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=${{ matrix.ci.build_cli }} -DBUILD_PYTHON=${{ matrix.ci.build_python }} ..
     - name: build
       run: |
         cd build
@@ -64,6 +71,7 @@ jobs:
         cd build
         valgrind --leak-check=full --error-exitcode=1 ./catch_tests
         if pytest --version; then pytest ../test; else echo "pytest not available"; fi
+        if [[ "${BUILD_PYTHON}" == "YES" ]] ; then ctest -R pybindings; fi
     - name: generate coverage report
       run: |
         cd build
