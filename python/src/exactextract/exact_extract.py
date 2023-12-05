@@ -1,3 +1,5 @@
+import os
+
 from .feature_source import (
     FeatureSource,
     GDALFeatureSource,
@@ -25,6 +27,9 @@ def prep_raster(rast, band=None, name_root=None, names=None):
     try:
         from osgeo import gdal
 
+        if isinstance(rast, (str, os.PathLike)):
+            rast = gdal.Open(rast)
+
         if isinstance(rast, gdal.Dataset):
             if band:
                 return [GDALRasterSource(rast, band)]
@@ -40,6 +45,9 @@ def prep_raster(rast, band=None, name_root=None, names=None):
 
     try:
         import rasterio
+
+        if isinstance(rast, (str, os.PathLike)):
+            rast = rasterio.open(rast)
 
         if isinstance(rast, rasterio.DatasetReader):
             if band:
@@ -72,6 +80,9 @@ def prep_vec(vec):
     try:
         from osgeo import gdal, ogr
 
+        if isinstance(vec, (str, os.PathLike)):
+            vec = ogr.Open(vec)
+
         if isinstance(vec, gdal.Dataset) or isinstance(vec, ogr.DataSource):
             return GDALFeatureSource(vec)
     except ImportError:
@@ -79,6 +90,9 @@ def prep_vec(vec):
 
     try:
         import fiona
+
+        if isinstance(vec, (str, os.PathLike)):
+            vec = fiona.Open(vec)
 
         if isinstance(vec, fiona.Collection):
             return JSONFeatureSource(vec)

@@ -1,16 +1,25 @@
 from _exactextract import FeatureSource
 
+import os
+
 from .feature import GDALFeature, JSONFeature
 
 
 class GDALFeatureSource(FeatureSource):
     def __init__(self, src):
         super().__init__("")
+
+        if isinstance(src, (str, os.PathLike)):
+            from osgeo import ogr
+
+            src = ogr.Open(src)
+
         try:
             nlayers = src.GetLayerCount()
         except AttributeError:
             self.src = src
         else:
+            self.ds = src  # keep a reference to ds
             if nlayers > 1:
                 raise Exception(
                     "Can only process a single layer; call directly with ogr.Layer object."
