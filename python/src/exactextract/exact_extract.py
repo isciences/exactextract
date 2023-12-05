@@ -164,7 +164,14 @@ def prep_processor(strategy):
 
 
 def exact_extract(
-    rast, vec, ops, *, weights=None, include_cols=None, strategy="feature-sequential"
+    rast,
+    vec,
+    ops,
+    *,
+    weights=None,
+    include_cols=None,
+    strategy="feature-sequential",
+    max_cells_in_memory=30000000,
 ):
     rast = prep_raster(rast, name_root="band")
     weights = prep_raster(weights, name_root="weight")
@@ -178,6 +185,7 @@ def exact_extract(
     writer = JSONWriter()
 
     processor = Processor(vec, writer, ops)
+    processor.set_max_cells_in_memory(max_cells_in_memory)
     if include_cols:
         for col in include_cols:
             processor.add_col(col)
