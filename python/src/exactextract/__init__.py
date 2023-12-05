@@ -12,5 +12,10 @@ from .feature_source import (
 )
 from .operation import Operation
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
-from .raster_source import RasterSource, GDALRasterSource, NumPyRasterSource
+from .raster_source import (
+    RasterSource,
+    GDALRasterSource,
+    NumPyRasterSource,
+    RasterioRasterSource,
+)
 from .writer import Writer, JSONWriter, GDALWriter

@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from __future__ import annotations
-
+import os
 import pathlib
-from typing import Optional, Tuple, Union
-from osgeo import gdal
 
 from _exactextract import RasterSource
 
@@ -13,6 +10,10 @@ from _exactextract import RasterSource
 class GDALRasterSource(RasterSource):
     def __init__(self, ds, band_idx: int = 1, *, name=None):
         super().__init__()
+        if isinstance(ds, (str, os.PathLike)):
+            from osgeo import gdal
+
+            ds = gdal.Open(ds)
         self.ds = ds
 
         # Sanity check inputs
@@ -45,14 +46,20 @@ class GDALRasterSource(RasterSource):
 
         return (left, bottom, right, top)
 
+    def nodata_value(self):
+        return self.band.GetNoDataValue()
+
     def read_window(self, x0, y0, nx, ny):
         return self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
 
 
 class NumPyRasterSource(RasterSource):
-    def __init__(self, mat, xmin=None, ymin=None, xmax=None, ymax=None, *, name=None):
+    def __init__(
+        self, mat, xmin=None, ymin=None, xmax=None, ymax=None, *, nodata=None, name=None
+    ):
         super().__init__()
         self.mat = mat
+        self.nodata = nodata
 
         assert (xmin is None) == (ymin is None) == (xmax is None) == (ymax is None)
         if xmin is None:
@@ -73,6 +80,9 @@ class NumPyRasterSource(RasterSource):
     def extent(self):
         return self.ext
 
+    def nodata_value(self):
+        return self.nodata
+
     def read_window(self, x0, y0, nx, ny):
         return self.mat[y0 : y0 + ny, x0 : x0 + ny]
 
@@ -80,6 +90,11 @@ class NumPyRasterSource(RasterSource):
 class RasterioRasterSource(RasterSource):
     def __init__(self, ds, band_idx=1, *, name=None):
         super().__init__()
+        if isinstance(ds, (str, os.PathLike)):
+            import rasterio
+
+            ds = rasterio.open(ds)
+
         self.ds = ds
         self.band_idx = band_idx
 
@@ -103,6 +118,9 @@ class RasterioRasterSource(RasterSource):
             self.ds.bounds.right,
             self.ds.bounds.top,
         )
+
+    def nodata_value(self):
+        return self.ds.nodata
 
     def read_window(self, x0, y0, nx, ny):
         from rasterio.windows import Window

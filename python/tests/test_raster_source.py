@@ -3,7 +3,7 @@
 
 import pytest
 
-from exactextract import GDALRasterSource
+from exactextract import GDALRasterSource, RasterioRasterSource
 
 
 @pytest.fixture()
@@ -16,19 +16,19 @@ def global_half_degree(tmp_path):
     ds = drv.Create(fname, 720, 360)
     gt = (-180.0, 0.5, 0.0, 90.0, 0.0, -0.5)
     ds.SetGeoTransform(gt)
+    band = ds.GetRasterBand(1)
+    band.SetNoDataValue(6)
     ds = None
 
     return fname
 
 
-def test_gdal_raster(global_half_degree):
-    from osgeo import gdal
-
-    ds = gdal.Open(global_half_degree)
-
-    src = GDALRasterSource(ds, 1)
+@pytest.mark.parametrize("Source", (GDALRasterSource, RasterioRasterSource))
+def test_gdal_raster(global_half_degree, Source):
+    src = Source(global_half_degree, 1)
 
     assert src.res() == (0.50, 0.50)
     assert src.extent() == pytest.approx((-180, -90, 180, 90))
+    assert src.nodata_value() == 6
 
     assert src.read_window(0, 0, 10, 10).shape == (10, 10)
