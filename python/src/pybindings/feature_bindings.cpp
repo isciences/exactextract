@@ -23,9 +23,8 @@ namespace exactextract {
 class PyFeatureBase : public Feature
 {
   public:
-    PyFeatureBase()
+    PyFeatureBase() : m_context(initGEOS_r(nullptr, nullptr)), m_geom(nullptr)
     {
-        m_context = initGEOS_r(nullptr, nullptr);
     }
 
     virtual ~PyFeatureBase()
