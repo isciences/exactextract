@@ -38,7 +38,7 @@ if(BUILD_CLI)
     endif() #GDAL_FOUND
     if (NOT GDAL_FOUND)
         message(FATAL_ERROR
-        "GDAL version >= 2.0 was not found. It is still possible to build and test libexactextract, but the "
+        "GDAL version >= 2.0 was not found. It is still possible to build and test libexactextract using -DBUILD_CLI=NO, but the "
         "exactextract executable cannot be built or installed.")
     endif() #NOT GDAL_FOUND
 
