@@ -122,6 +122,9 @@ if(BUILD_CLI)
             RUNTIME
             DESTINATION bin)
 
+    add_test(NAME "cli_tests" 
+             COMMAND pytest ${CMAKE_CURRENT_LIST_DIR}/test)
+
 endif() #BUILD_CLI
 
 if(BUILD_TEST)
