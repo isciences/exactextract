@@ -18,38 +18,39 @@
 
 namespace exactextract {
 
-    class GDALDatasetWrapper;
+class GDALDatasetWrapper;
 
-    class GDALWriter : public OutputWriter {
+class GDALWriter : public OutputWriter
+{
 
-    public:
-        explicit GDALWriter(const std::string & filename);
+  public:
+    explicit GDALWriter(const std::string& filename);
 
-        ~GDALWriter() override;
+    ~GDALWriter() override;
 
-        static std::string get_driver_name(const std::string & filename);
+    static std::string get_driver_name(const std::string& filename);
 
-        void add_operation(const Operation & op) override;
+    void add_operation(const Operation& op) override;
 
-        std::unique_ptr<Feature> create_feature() override;
+    std::unique_ptr<Feature> create_feature() override;
 
-        void write(const Feature& f) override;
+    void write(const Feature& f) override;
 
-        void add_id_field(const std::string & field_name, const std::string & field_type);
+    void add_id_field(const std::string& field_name, const std::string& field_type);
 
-        void copy_field(const GDALDatasetWrapper& w, const std::string& field_name);
+    void copy_field(const GDALDatasetWrapper& w, const std::string& field_name);
 
-        void copy_id_field(const GDALDatasetWrapper & w);
+    void copy_id_field(const GDALDatasetWrapper& w);
 
-    protected:
-        using GDALDatasetH = void*;
-        using OGRLayerH = void*;
+  protected:
+    using GDALDatasetH = void*;
+    using OGRLayerH = void*;
 
-        GDALDatasetH m_dataset;
-        OGRLayerH m_layer;
-        bool id_field_defined = false;
-    };
+    GDALDatasetH m_dataset;
+    OGRLayerH m_layer;
+    bool id_field_defined = false;
+};
 
 }
 
-#endif //EXACTEXTRACT_GDAL_WRITER_H
+#endif // EXACTEXTRACT_GDAL_WRITER_H

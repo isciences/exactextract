@@ -24,7 +24,9 @@ DeferredGDALWriter::write(const Feature& f)
 }
 
 void
-DeferredGDALWriter::add_operation(const Operation&) {}
+DeferredGDALWriter::add_operation(const Operation&)
+{
+}
 
 void
 DeferredGDALWriter::finish()

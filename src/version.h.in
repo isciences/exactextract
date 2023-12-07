@@ -16,11 +16,13 @@
 #include <string>
 
 namespace exactextract {
-    inline std::string version() {
-        return { "@EXACTEXTRACT_VERSION_SOURCE@" };
-    }
+inline std::string
+version()
+{
+    return { "@EXACTEXTRACT_VERSION_SOURCE@" };
+}
 }
 
 #define EXACTEXTRACT_VERSION_H
 
-#endif //EXACTEXTRACT_VERSION_H
+#endif // EXACTEXTRACT_VERSION_H

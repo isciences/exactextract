@@ -14,38 +14,43 @@
 #include <exception>
 #include <iostream>
 #include <memory>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "CLI11.hpp"
 
+#include "coverage_operation.h"
+#include "coverage_processor.h"
+#include "deferred_gdal_writer.h"
+#include "feature_sequential_processor.h"
 #include "gdal_dataset_wrapper.h"
 #include "gdal_raster_wrapper.h"
 #include "gdal_writer.h"
-#include "coverage_operation.h"
-#include "deferred_gdal_writer.h"
 #include "operation.h"
 #include "processor.h"
-#include "coverage_processor.h"
-#include "feature_sequential_processor.h"
 #include "raster_sequential_processor.h"
 #include "utils.h"
 #include "version.h"
 
+using exactextract::CoverageOperation;
 using exactextract::GDALDatasetWrapper;
 using exactextract::GDALRasterWrapper;
-using exactextract::CoverageOperation;
 using exactextract::Operation;
 
-static GDALDatasetWrapper load_dataset(const std::string & descriptor, const std::string & field_name);
-static std::unordered_map<std::string, GDALRasterWrapper> load_rasters(const std::vector<std::string> & descriptors);
-static std::vector<std::unique_ptr<Operation>> prepare_operations(const std::vector<std::string> & descriptors,
-        std::unordered_map<std::string, GDALRasterWrapper> & rasters,
-        const CoverageOperation::Options coverage_opts);
+static GDALDatasetWrapper
+load_dataset(const std::string& descriptor, const std::string& field_name);
+static std::unordered_map<std::string, GDALRasterWrapper>
+load_rasters(const std::vector<std::string>& descriptors);
+static std::vector<std::unique_ptr<Operation>>
+prepare_operations(const std::vector<std::string>& descriptors,
+                   std::unordered_map<std::string, GDALRasterWrapper>& rasters,
+                   const CoverageOperation::Options coverage_opts);
 
-int main(int argc, char** argv) {
-    CLI::App app{"Zonal statistics using exactextract: version " + exactextract::version()};
+int
+main(int argc, char** argv)
+{
+    CLI::App app{ "Zonal statistics using exactextract: version " + exactextract::version() };
 
     std::string poly_descriptor, field_name, output_filename, strategy, id_type, id_name;
     std::vector<std::string> stats;
@@ -115,9 +120,7 @@ int main(int argc, char** argv) {
             }
         }
 
-        std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing ?
-                    std::make_unique<exactextract::DeferredGDALWriter>(output_filename) :
-                    std::make_unique<exactextract::GDALWriter>(output_filename);
+        std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing ? std::make_unique<exactextract::DeferredGDALWriter>(output_filename) : std::make_unique<exactextract::GDALWriter>(output_filename);
         if (!id_name.empty() && !id_type.empty()) {
             gdal_writer->add_id_field(id_name, id_type);
         } else {
@@ -139,11 +142,11 @@ int main(int argc, char** argv) {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
         }
 
-        for (const auto& op: operations) {
+        for (const auto& op : operations) {
             proc->add_operation(*op);
         }
 
-        for (const auto& field: include_cols) {
+        for (const auto& field : include_cols) {
             proc->include_col(field);
         }
 
@@ -154,7 +157,7 @@ int main(int argc, char** argv) {
         writer->finish();
 
         return 0;
-    } catch (const std::exception & e) {
+    } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
 
         return 1;
@@ -165,37 +168,43 @@ int main(int argc, char** argv) {
     }
 }
 
-static GDALDatasetWrapper load_dataset(const std::string & descriptor, const std::string & field_name) {
+static GDALDatasetWrapper
+load_dataset(const std::string& descriptor, const std::string& field_name)
+{
     auto parsed = exactextract::parse_dataset_descriptor(descriptor);
 
-    return GDALDatasetWrapper{parsed.first, parsed.second, field_name};
+    return GDALDatasetWrapper{ parsed.first, parsed.second, field_name };
 }
 
-static std::unordered_map<std::string, GDALRasterWrapper> load_rasters(const std::vector<std::string> & descriptors) {
+static std::unordered_map<std::string, GDALRasterWrapper>
+load_rasters(const std::vector<std::string>& descriptors)
+{
     std::unordered_map<std::string, GDALRasterWrapper> rasters;
 
-    for (const auto &descriptor : descriptors) {
+    for (const auto& descriptor : descriptors) {
         auto parsed = exactextract::parse_raster_descriptor(descriptor);
 
         auto name = std::get<0>(parsed);
 
-        rasters.emplace(name, GDALRasterWrapper{std::get<1>(parsed), std::get<2>(parsed)});
+        rasters.emplace(name, GDALRasterWrapper{ std::get<1>(parsed), std::get<2>(parsed) });
         rasters.at(name).set_name(name);
     }
 
     return rasters;
 }
 
-static std::vector<std::unique_ptr<Operation>> prepare_operations(
-        const std::vector<std::string> & descriptors,
-        std::unordered_map<std::string, GDALRasterWrapper> & rasters,
-        const CoverageOperation::Options coverage_opts) {
+static std::vector<std::unique_ptr<Operation>>
+prepare_operations(
+  const std::vector<std::string>& descriptors,
+  std::unordered_map<std::string, GDALRasterWrapper>& rasters,
+  const CoverageOperation::Options coverage_opts)
+{
     std::vector<std::unique_ptr<Operation>> ops;
 
     bool found_coverage = false;
     bool found_stat = false;
 
-    for (const auto &descriptor : descriptors) {
+    for (const auto& descriptor : descriptors) {
         auto stat = exactextract::parse_stat_descriptor(descriptor);
 
         auto values_it = rasters.find(stat.values);

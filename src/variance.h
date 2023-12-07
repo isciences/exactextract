@@ -18,25 +18,27 @@
 
 namespace exactextract {
 
-class WestVariance {
+class WestVariance
+{
     /** \brief Implements an incremental algorithm for weighted standard
      * deviation, variance, and coefficient of variation, as described in
      * formula WV2 of West, D.H.D. (1979) "Updating Mean and Variance
      * Estimates: An Improved Method". Communications of the ACM 22(9).
      */
 
-private:
+  private:
     double sum_w = 0;
     double mean = 0;
     double t = 0;
 
-public:
+  public:
     /** \brief Update variance estimate with another value
      *
      * @param x value to add
      * @param w weight of `x`
      */
-    void process(double x, double w) {
+    void process(double x, double w)
+    {
         if (w == 0) {
             return;
         }
@@ -50,24 +52,26 @@ public:
 
     /** \brief Return the population variance.
      */
-    constexpr double variance() const {
+    constexpr double variance() const
+    {
         return t / sum_w;
     }
 
     /** \brief Return the population standard deviation
      */
-    double stdev() const {
+    double stdev() const
+    {
         return std::sqrt(variance());
     }
 
     /** \brief Return the population coefficient of variation
      */
-    double coefficent_of_variation() const {
+    double coefficent_of_variation() const
+    {
         return stdev() / mean;
     }
-
 };
 
 }
 
-#endif //EXACTEXTRACT_VARIANCE_H
+#endif // EXACTEXTRACT_VARIANCE_H

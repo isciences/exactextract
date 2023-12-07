@@ -23,29 +23,30 @@
 
 namespace exactextract {
 
-    class Feature;
+class Feature;
 
-    class GDALDatasetWrapper : public FeatureSource {
-    public:
-        GDALDatasetWrapper(const std::string &filename, const std::string & layer, std::string id_field);
+class GDALDatasetWrapper : public FeatureSource
+{
+  public:
+    GDALDatasetWrapper(const std::string& filename, const std::string& layer, std::string id_field);
 
-        const Feature& feature() const override;
+    const Feature& feature() const override;
 
-        bool next() override;
+    bool next() override;
 
-        const std::string& id_field() const override { return m_id_field; }
+    const std::string& id_field() const override { return m_id_field; }
 
-        void copy_field(const std::string & field_name, OGRLayerH to) const;
+    void copy_field(const std::string& field_name, OGRLayerH to) const;
 
-        ~GDALDatasetWrapper() override;
+    ~GDALDatasetWrapper() override;
 
-    private:
-        GDALDatasetH m_dataset;
-        OGRLayerH m_layer;
-        std::string m_id_field;
-        GDALFeature m_feature;
-    };
+  private:
+    GDALDatasetH m_dataset;
+    OGRLayerH m_layer;
+    std::string m_id_field;
+    GDALFeature m_feature;
+};
 
 }
 
-#endif //EXACTEXTRACT_GDAL_DATASET_WRAPPER_H
+#endif // EXACTEXTRACT_GDAL_DATASET_WRAPPER_H

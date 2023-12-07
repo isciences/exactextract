@@ -11,10 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <variant>
 #include <cstdint>
 #include <string>
 #include <typeinfo>
+#include <variant>
 
 #include <geos_c.h>
 
@@ -50,4 +50,3 @@ class Feature
 };
 
 }
-

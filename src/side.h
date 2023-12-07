@@ -18,15 +18,17 @@
 
 namespace exactextract {
 
-    enum class Side {
-        NONE,
-        LEFT,
-        RIGHT,
-        TOP,
-        BOTTOM
-    };
+enum class Side
+{
+    NONE,
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTOM
+};
 
-    std::ostream &operator<<(std::ostream &os, const Side &s);
+std::ostream&
+operator<<(std::ostream& os, const Side& s);
 
 }
 

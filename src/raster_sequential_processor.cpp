@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "operation.h"
 #include "raster_sequential_processor.h"
+#include "operation.h"
 #include "raster_source.h"
 
 #include <cassert>
@@ -22,117 +22,125 @@
 
 namespace exactextract {
 
-    void RasterSequentialProcessor::read_features() {
-        while (m_shp.next()) {
-            const Feature& feature = m_shp.feature();
-            MapFeature mf(feature);
-            m_features.push_back(std::move(mf));
-        }
+void
+RasterSequentialProcessor::read_features()
+{
+    while (m_shp.next()) {
+        const Feature& feature = m_shp.feature();
+        MapFeature mf(feature);
+        m_features.push_back(std::move(mf));
+    }
+}
+
+void
+RasterSequentialProcessor::populate_index()
+{
+    assert(m_feature_tree != nullptr);
+
+    for (const auto& f : m_features) {
+        // TODO compute envelope of dataset, and crop raster by that extent before processing?
+        GEOSSTRtree_insert_r(m_geos_context, m_feature_tree.get(), f.geometry(), (void*)&f);
+    }
+}
+
+void
+RasterSequentialProcessor::process()
+{
+    read_features();
+    populate_index();
+
+    for (const auto& op : m_operations) {
+        m_output.add_operation(*op);
     }
 
-    void RasterSequentialProcessor::populate_index() {
-        assert(m_feature_tree != nullptr);
+    bool store_values = StatsRegistry::requires_stored_values(m_operations);
 
-        for (const auto& f : m_features) {
-            // TODO compute envelope of dataset, and crop raster by that extent before processing?
-            GEOSSTRtree_insert_r(m_geos_context, m_feature_tree.get(), f.geometry(), (void *) &f);
-        }
-    }
+    auto grid = common_grid(m_operations.begin(), m_operations.end());
 
-    void RasterSequentialProcessor::process() {
-        read_features();
-        populate_index();
+    for (const auto& subgrid : subdivide(grid, m_max_cells_in_memory)) {
+        std::vector<const Feature*> hits;
 
-        for (const auto& op : m_operations) {
-            m_output.add_operation(*op);
-        }
+        auto query_rect = geos_make_box_polygon(m_geos_context, subgrid.extent());
 
-        bool store_values = StatsRegistry::requires_stored_values(m_operations);
+        GEOSSTRtree_query_r(
+          m_geos_context, m_feature_tree.get(), query_rect.get(), [](void* hit, void* userdata) {
+              auto feature = static_cast<const Feature*>(hit);
+              auto vec = static_cast<std::vector<const Feature*>*>(userdata);
 
-        auto grid = common_grid(m_operations.begin(), m_operations.end());
+              vec->push_back(feature);
+          },
+          &hits);
 
-        for (const auto &subgrid : subdivide(grid, m_max_cells_in_memory)) {
-            std::vector<const Feature *> hits;
+        std::map<RasterSource*, std::unique_ptr<AbstractRaster<double>>> raster_values;
 
-            auto query_rect = geos_make_box_polygon(m_geos_context, subgrid.extent());
+        for (const auto& f : hits) {
+            std::unique_ptr<Raster<float>> coverage;
+            std::set<std::pair<RasterSource*, RasterSource*>> processed;
 
-            GEOSSTRtree_query_r(m_geos_context, m_feature_tree.get(), query_rect.get(), [](void *hit, void *userdata) {
-                auto feature = static_cast<const Feature *>(hit);
-                auto vec = static_cast<std::vector<const Feature *> *>(userdata);
-
-                vec->push_back(feature);
-            }, &hits);
-
-            std::map<RasterSource*, std::unique_ptr<AbstractRaster<double>>> raster_values;
-
-            for (const auto &f : hits) {
-                std::unique_ptr<Raster<float>> coverage;
-                std::set<std::pair<RasterSource*, RasterSource*>> processed;
-
-                for (const auto &op : m_operations) {
-                    // Avoid processing same values/weights for different stats
-                    auto key = std::make_pair(op->weights, op->values);
-                    if (processed.find(key) != processed.end()) {
-                        continue;
-                    } else {
-                        processed.insert(key);
-                    }
-
-                    if (!op->values->grid().extent().contains(subgrid.extent())) {
-                        continue;
-                    }
-
-                    if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
-                        continue;
-                    }
-
-                    // Lazy-initialize coverage
-                    if (coverage == nullptr) {
-                        coverage = std::make_unique<Raster<float>>(
-                                raster_cell_intersection(subgrid, m_geos_context, f->geometry()));
-                    }
-
-                    // FIXME need to ensure that no values are read from a raster that have already been read.
-                    // This may be possible when reading box is expanded slightly from floating-point roundoff problems.
-                    auto values = raster_values[op->values].get();
-                    if (values == nullptr) {
-                        raster_values[op->values] = op->values->read_box(subgrid.extent().intersection(op->values->grid().extent()));
-                        values = raster_values[op->values].get();
-                    }
-
-                    if (op->weighted()) {
-                        auto weights = raster_values[op->weights].get();
-                        if (weights == nullptr) {
-                            raster_values[op->weights] = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
-                            weights = raster_values[op->weights].get();
-                        }
-
-                        m_reg.stats(*f, *op, store_values).process(*coverage, *values, *weights);
-                    } else {
-                        m_reg.stats(*f, *op, store_values).process(*coverage, *values);
-                    }
-
-                    progress();
-                }
-            }
-
-            progress(subgrid.extent());
-        }
-
-        for (const auto& f_in : m_features) {
-            auto f_out = m_output.create_feature();
-            if (m_shp.id_field() != "") {
-                f_out->set(m_shp.id_field(), f_in);
-            }
-            for (const auto& col: m_include_cols) {
-                f_out->set(col, f_in);
-            }
             for (const auto& op : m_operations) {
-                op->set_result(m_reg, f_in, *f_out);
+                // Avoid processing same values/weights for different stats
+                auto key = std::make_pair(op->weights, op->values);
+                if (processed.find(key) != processed.end()) {
+                    continue;
+                } else {
+                    processed.insert(key);
+                }
+
+                if (!op->values->grid().extent().contains(subgrid.extent())) {
+                    continue;
+                }
+
+                if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
+                    continue;
+                }
+
+                // Lazy-initialize coverage
+                if (coverage == nullptr) {
+                    coverage = std::make_unique<Raster<float>>(
+                      raster_cell_intersection(subgrid, m_geos_context, f->geometry()));
+                }
+
+                // FIXME need to ensure that no values are read from a raster that have already been read.
+                // This may be possible when reading box is expanded slightly from floating-point roundoff problems.
+                auto values = raster_values[op->values].get();
+                if (values == nullptr) {
+                    raster_values[op->values] = op->values->read_box(subgrid.extent().intersection(op->values->grid().extent()));
+                    values = raster_values[op->values].get();
+                }
+
+                if (op->weighted()) {
+                    auto weights = raster_values[op->weights].get();
+                    if (weights == nullptr) {
+                        raster_values[op->weights] = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
+                        weights = raster_values[op->weights].get();
+                    }
+
+                    m_reg.stats(*f, *op, store_values).process(*coverage, *values, *weights);
+                } else {
+                    m_reg.stats(*f, *op, store_values).process(*coverage, *values);
+                }
+
+                progress();
             }
-            m_output.write(*f_out);
-            m_reg.flush_feature(f_in);
         }
+
+        progress(subgrid.extent());
     }
+
+    for (const auto& f_in : m_features) {
+        auto f_out = m_output.create_feature();
+        if (m_shp.id_field() != "") {
+            f_out->set(m_shp.id_field(), f_in);
+        }
+        for (const auto& col : m_include_cols) {
+            f_out->set(col, f_in);
+        }
+        for (const auto& op : m_operations) {
+            op->set_result(m_reg, f_in, *f_out);
+        }
+        m_output.write(*f_out);
+        m_reg.flush_feature(f_in);
+    }
+}
 
 }

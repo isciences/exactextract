@@ -27,20 +27,22 @@ class GDALFeature : public Feature
 {
   public:
     explicit GDALFeature(OGRFeatureH feature)
-      : m_feature(feature), m_context(nullptr)
+      : m_feature(feature)
+      , m_context(nullptr)
     {
     }
 
-    GDALFeature(GDALFeature&& other) :
-        m_feature(other.m_feature),
-        m_geom(std::move(other.m_geom)),
-        m_context(other.m_context)
+    GDALFeature(GDALFeature&& other)
+      : m_feature(other.m_feature)
+      , m_geom(std::move(other.m_geom))
+      , m_context(other.m_context)
     {
         other.m_context = nullptr;
         other.m_feature = nullptr;
     }
 
-    GDALFeature& operator=(GDALFeature&& other) {
+    GDALFeature& operator=(GDALFeature&& other)
+    {
         if (m_feature != nullptr) {
             OGR_F_Destroy(m_feature);
         }
@@ -59,7 +61,8 @@ class GDALFeature : public Feature
         return *this;
     }
 
-    ~GDALFeature() override {
+    ~GDALFeature() override
+    {
         if (m_feature != nullptr) {
             OGR_F_Destroy(m_feature);
         }
@@ -72,7 +75,8 @@ class GDALFeature : public Feature
     GDALFeature(const GDALFeature& other) = delete;
     GDALFeature& operator=(const GDALFeature& other) = delete;
 
-    const std::type_info& field_type(const std::string& name) const override {
+    const std::type_info& field_type(const std::string& name) const override
+    {
         auto pos = field_index(name);
         OGRFieldDefnH defn = OGR_F_GetFieldDefnRef(m_feature, pos);
         auto type = OGR_Fld_GetType(defn);
@@ -86,7 +90,8 @@ class GDALFeature : public Feature
         }
     }
 
-    void copy_to(Feature& dst) const override {
+    void copy_to(Feature& dst) const override
+    {
         int n = OGR_F_GetFieldCount(m_feature);
 
         for (int i = 0; i < n; i++) {
@@ -119,19 +124,23 @@ class GDALFeature : public Feature
         OGR_F_SetFieldString(m_feature, field_index(name), value.c_str());
     }
 
-    std::string get_string(const std::string& name) const override {
+    std::string get_string(const std::string& name) const override
+    {
         return std::string(OGR_F_GetFieldAsString(m_feature, field_index(name)));
     }
 
-    double get_double(const std::string& name) const override {
+    double get_double(const std::string& name) const override
+    {
         return OGR_F_GetFieldAsDouble(m_feature, field_index(name));
     }
 
-    std::int32_t get_int(const std::string& name) const override {
+    std::int32_t get_int(const std::string& name) const override
+    {
         return OGR_F_GetFieldAsInteger(m_feature, field_index(name));
     }
 
-    const GEOSGeometry* geometry() const override {
+    const GEOSGeometry* geometry() const override
+    {
         if (m_geom == nullptr) {
             OGRGeometryH geom = OGR_F_GetGeometryRef(m_feature);
 
@@ -146,7 +155,8 @@ class GDALFeature : public Feature
         return m_geom.get();
     }
 
-    OGRFeatureH raw() const {
+    OGRFeatureH raw() const
+    {
         return m_feature;
     }
 

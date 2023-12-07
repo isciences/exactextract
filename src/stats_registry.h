@@ -14,63 +14,67 @@
 #ifndef EXACTEXTRACT_STATS_REGISTRY_H
 #define EXACTEXTRACT_STATS_REGISTRY_H
 
+#include <set>
 #include <string>
 #include <unordered_map>
-#include <set>
 
 #include "raster_stats.h"
 
 namespace exactextract {
-    class Feature;
-    class Operation;
+class Feature;
+class Operation;
 }
 
 namespace exactextract {
 
+/**
+ * @brief The StatsRegistry class stores an instance of a `RasterStats` object that can be associated
+ * with a feature and one or more Operations sharing a the same key.
+ */
+class StatsRegistry
+{
+  public:
     /**
-     * @brief The StatsRegistry class stores an instance of a `RasterStats` object that can be associated
-     * with a feature and one or more Operations sharing a the same key.
+     * @brief Get the RasterStats object for a given feature/operation, creating it if necessary.
      */
-    class StatsRegistry {
-    public:
-        /**
-         * @brief Get the RasterStats object for a given feature/operation, creating it if necessary.
-         */
-        RasterStats<double> &stats(const Feature& feature, const Operation &op, bool store_values);
+    RasterStats<double>& stats(const Feature& feature, const Operation& op, bool store_values);
 
-        const RasterStats<double>& stats(const Feature& feature, const Operation &op) const;
+    const RasterStats<double>& stats(const Feature& feature, const Operation& op) const;
 
-        /**
-         * @brief Determine if a `RasterStats` object exists for a given feature id/operation
-         */
-        bool contains(const Feature& feature, const Operation & op) const;
+    /**
+     * @brief Determine if a `RasterStats` object exists for a given feature id/operation
+     */
+    bool contains(const Feature& feature, const Operation& op) const;
 
-        /**
-         * @brief Remove RasterStats objects associated with a given feature id
-         */
-        void flush_feature(const Feature& feature) {
-            m_feature_stats.erase(&feature);
-        }
+    /**
+     * @brief Remove RasterStats objects associated with a given feature id
+     */
+    void flush_feature(const Feature& feature)
+    {
+        m_feature_stats.erase(&feature);
+    }
 
-        static bool requires_stored_values(const std::string & stat) {
-            return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "median" || stat == "frac" || stat == "weighted_frac";
-        }
+    static bool requires_stored_values(const std::string& stat)
+    {
+        return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "median" || stat == "frac" || stat == "weighted_frac";
+    }
 
-        template<typename T>
-        static bool requires_stored_values(const T& ops) {
-            return std::any_of(ops.begin(),
+    template<typename T>
+    static bool requires_stored_values(const T& ops)
+    {
+        return std::any_of(ops.begin(),
                            ops.end(),
                            [](const auto& op) {
-                                return requires_stored_values(op->stat);
-            });
-        }
+                               return requires_stored_values(op->stat);
+                           });
+    }
 
-    private:
-
-        std::unordered_map<const Feature*,
-        std::unordered_map<std::string, RasterStats <double>>> m_feature_stats{};
-    };
+  private:
+    std::unordered_map<const Feature*,
+                       std::unordered_map<std::string, RasterStats<double>>>
+      m_feature_stats{};
+};
 
 }
 
-#endif //EXACTEXTRACT_STATS_REGISTRY_H
+#endif // EXACTEXTRACT_STATS_REGISTRY_H

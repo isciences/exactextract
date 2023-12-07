@@ -32,7 +32,6 @@ CoverageProcessor::process()
         throw std::runtime_error("Only CoverageOperation can be handled by CoverageProcessor.");
     }
 
-
     CoverageOperation& op = static_cast<CoverageOperation&>(*m_operations.front());
     m_output.add_operation(op);
 
@@ -70,7 +69,7 @@ CoverageProcessor::process()
                 if (m_shp.id_field() != "") {
                     f_out->set(m_shp.id_field(), f_in);
                 }
-                for (const auto& col: m_include_cols) {
+                for (const auto& col : m_include_cols) {
                     f_out->set(col, f_in);
                 }
 
