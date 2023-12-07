@@ -2,11 +2,11 @@
 
 #include "feature_sequential_processor.h"
 #include "feature_source.h"
-#include "raster_sequential_processor.h"
 #include "map_feature.h"
 #include "operation.h"
 #include "output_writer.h"
 #include "raster.h"
+#include "raster_sequential_processor.h"
 #include "raster_source.h"
 
 using namespace exactextract;
@@ -46,7 +46,8 @@ class WKTFeatureSource : public FeatureSource
     {
     }
 
-    void add_feature(MapFeature m) {
+    void add_feature(MapFeature m)
+    {
         m_features.emplace_back(std::move(m));
     }
 
@@ -55,8 +56,9 @@ class WKTFeatureSource : public FeatureSource
         return m_count++ < m_features.size();
     }
 
-    const Feature& feature() const override {
-        return m_features[m_count-1];
+    const Feature& feature() const override
+    {
+        return m_features[m_count - 1];
     }
 
     const std::string& id_field() const override
@@ -73,18 +75,22 @@ class WKTFeatureSource : public FeatureSource
 class TestWriter : public OutputWriter
 {
   public:
-    std::unique_ptr<Feature> create_feature() override {
+    std::unique_ptr<Feature> create_feature() override
+    {
         return std::make_unique<MapFeature>();
     }
 
-    void write(const Feature& f) override {
+    void write(const Feature& f) override
+    {
         m_feature = MapFeature(f);
     }
 
     MapFeature m_feature;
 };
 
-static GEOSContextHandle_t init_geos() {
+static GEOSContextHandle_t
+init_geos()
+{
     static GEOSContextHandle_t context = nullptr;
 
     if (context == nullptr) {
@@ -145,9 +151,9 @@ TEST_CASE("weighted_frac sets appropriate column names", "[operation]")
     Raster<double> value_rast(std::move(values), ex.extent());
     MemoryRasterSource<double> value_src(value_rast);
 
-    Matrix<double> weights{ { { 0, 0, 0},
-                              { 0, 2, 0},
-                              { 0, 0, 1} } };
+    Matrix<double> weights{ { { 0, 0, 0 },
+                              { 0, 2, 0 },
+                              { 0, 0, 1 } } };
     Raster<double> weight_rast(std::move(weights), ex.extent());
     MemoryRasterSource<double> weight_src(weight_rast);
 
@@ -188,7 +194,7 @@ TEST_CASE("error thrown if no weights provided for weighted operation", "[operat
     Raster<double> value_rast(std::move(values), ex.extent());
     MemoryRasterSource<double> value_src(value_rast);
 
-    CHECK_THROWS( Operation("weighted_mean", "test", &value_src, nullptr) );
+    CHECK_THROWS(Operation("weighted_mean", "test", &value_src, nullptr));
 }
 
 TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]", FeatureSequentialProcessor, RasterSequentialProcessor)
@@ -217,6 +223,6 @@ TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]
     processor.process();
 
     const MapFeature& f = writer.m_feature;
-    CHECK( f.get<double>("count") == 0 );
-    CHECK( std::isnan(f.get<double>("median")) );
+    CHECK(f.get<double>("count") == 0);
+    CHECK(std::isnan(f.get<double>("median")));
 }

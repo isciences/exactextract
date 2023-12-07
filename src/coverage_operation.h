@@ -31,10 +31,10 @@ class CoverageOperation : public Operation
     struct Options
     {
         // bool coverage_areas = false;   // whether to output coverage_area instead of converage_fraction
-        bool include_xy = false;          // whether to include columns for cell center coordinates
-        bool include_cell = false;        // whether to include a (0-based) cell index
-        bool include_values = false;      // whether to include values of the value raster
-        bool include_weights = false;     // whether to include values of the weighting raster
+        bool include_xy = false;                   // whether to include columns for cell center coordinates
+        bool include_cell = false;                 // whether to include a (0-based) cell index
+        bool include_values = false;               // whether to include values of the value raster
+        bool include_weights = false;              // whether to include values of the weighting raster
         AreaMethod area_method = AreaMethod::NONE; // optional method by which to calculate a cell area column
     };
 
@@ -71,7 +71,8 @@ class CoverageOperation : public Operation
         }
     }
 
-    std::unique_ptr<Operation> clone() const override {
+    std::unique_ptr<Operation> clone() const override
+    {
         return std::make_unique<CoverageOperation>(*this);
     }
 

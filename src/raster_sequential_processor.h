@@ -16,33 +16,33 @@
 #ifndef EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
 #define EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
 
-
-#include "map_feature.h"
 #include "geos_utils.h"
+#include "map_feature.h"
 #include "processor.h"
 
 namespace exactextract {
 
-    /**
-     * @brief The RasterSequentialProcessor class iterates over chunks of the raster, fetching features that intersect each
-     * chunk and incrementally updating their statistics. It requires that all features and their associated statistics
-     * remain in memory at all times. It may be efficient for rasters that from which random rectangles cannot be
-     * efficiently read.
-     */
-    class RasterSequentialProcessor : public Processor {
-    public:
-        using Processor::Processor;
+/**
+ * @brief The RasterSequentialProcessor class iterates over chunks of the raster, fetching features that intersect each
+ * chunk and incrementally updating their statistics. It requires that all features and their associated statistics
+ * remain in memory at all times. It may be efficient for rasters that from which random rectangles cannot be
+ * efficiently read.
+ */
+class RasterSequentialProcessor : public Processor
+{
+  public:
+    using Processor::Processor;
 
-        void read_features();
-        void populate_index();
+    void read_features();
+    void populate_index();
 
-        void process() override;
+    void process() override;
 
-    private:
-        std::vector<MapFeature> m_features;
-        tree_ptr_r m_feature_tree{geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10))};
-    };
+  private:
+    std::vector<MapFeature> m_features;
+    tree_ptr_r m_feature_tree{ geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10)) };
+};
 
 }
 
-#endif //EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
+#endif // EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H

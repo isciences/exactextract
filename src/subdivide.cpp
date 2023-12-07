@@ -20,18 +20,22 @@
 #include "raster_cell_intersection.h"
 #include "version.h"
 
-void print_message(const char* message, void*) {
+void
+print_message(const char* message, void*)
+{
     std::cerr << message << std::endl;
 }
 
-int main(int argc, char** argv) {
+int
+main(int argc, char** argv)
+{
     std::array<double, 4> te;
     std::array<double, 2> tr;
     std::string src;
     std::string dst;
     std::string output_driver;
 
-    CLI::App app{"Polygon subdivision using exactextract: version " + exactextract::version()};
+    CLI::App app{ "Polygon subdivision using exactextract: version " + exactextract::version() };
 
     app.add_option("--te", te, "grid extent")->required(true)->delimiter(' ');
     app.add_option("--tr", tr, "grid resolution")->required(true)->delimiter(' ');
@@ -68,7 +72,7 @@ int main(int argc, char** argv) {
     OGRFeatureH feature = OGR_L_GetNextFeature(lyr);
 
     std::chrono::milliseconds runtime(0);
-    exactextract::Box box (te[0], te[1], te[2], te[3]);
+    exactextract::Box box(te[0], te[1], te[2], te[3]);
     exactextract::Grid<exactextract::bounded_extent> grid(box, tr[0], tr[1]);
 
     std::size_t features = 0;

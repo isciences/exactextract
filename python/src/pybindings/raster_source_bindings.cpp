@@ -131,7 +131,8 @@ class PyRasterSource : public PyRasterSourceBase
         PYBIND11_OVERRIDE_PURE(py::array, PyRasterSource, read_window, x0, y0, nx, ny);
     }
 
-    py::object nodata_value() const override {
+    py::object nodata_value() const override
+    {
         PYBIND11_OVERRIDE_PURE(py::object, PyRasterSource, nodata_value);
     }
 };

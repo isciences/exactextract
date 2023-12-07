@@ -19,34 +19,44 @@
 
 namespace exactextract {
 
-    struct Coordinate {
-        double x;
-        double y;
+struct Coordinate
+{
+    double x;
+    double y;
 
-        Coordinate() = default;
+    Coordinate() = default;
 
-        Coordinate(double p_x, double p_y) : x{p_x}, y{p_y} {}
+    Coordinate(double p_x, double p_y)
+      : x{ p_x }
+      , y{ p_y }
+    {
+    }
 
-        double distance(const Coordinate &other) const {
-            double dx = other.x - x;
-            double dy = other.y - y;
-            return std::sqrt(dx*dx + dy*dy);
-        }
+    double distance(const Coordinate& other) const
+    {
+        double dx = other.x - x;
+        double dy = other.y - y;
+        return std::sqrt(dx * dx + dy * dy);
+    }
 
-        bool equals(const Coordinate &other, double tol) const {
-            return std::abs(other.x - x) < tol && std::abs(other.y - y) < tol;
-        }
+    bool equals(const Coordinate& other, double tol) const
+    {
+        return std::abs(other.x - x) < tol && std::abs(other.y - y) < tol;
+    }
 
-        bool operator==(const Coordinate &other) const {
-            return x == other.x && y == other.y;
-        }
+    bool operator==(const Coordinate& other) const
+    {
+        return x == other.x && y == other.y;
+    }
 
-        bool operator!=(const Coordinate &other) const {
-            return !(*this == other);
-        }
-    };
+    bool operator!=(const Coordinate& other) const
+    {
+        return !(*this == other);
+    }
+};
 
-    std::ostream &operator<<(std::ostream &os, const Coordinate &c);
+std::ostream&
+operator<<(std::ostream& os, const Coordinate& c);
 
 }
 

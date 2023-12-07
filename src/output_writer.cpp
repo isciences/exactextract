@@ -17,7 +17,8 @@
 namespace exactextract {
 
 std::unique_ptr<Feature>
-OutputWriter::create_feature() {
+OutputWriter::create_feature()
+{
     return std::make_unique<MapFeature>();
 }
 

@@ -15,24 +15,28 @@
 #define EXACTEXTRACT_MEASURES_H
 
 #include <cmath>
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 #include "coordinate.h"
 
 namespace exactextract {
 
-    enum class AreaMethods {
-        NONE,
-        CARTESIAN,
-        SPHERICAL
-    };
+enum class AreaMethods
+{
+    NONE,
+    CARTESIAN,
+    SPHERICAL
+};
 
-    double area_signed(const std::vector<Coordinate> &ring);
+double
+area_signed(const std::vector<Coordinate>& ring);
 
-    double area(const std::vector<Coordinate> &ring);
+double
+area(const std::vector<Coordinate>& ring);
 
-    double length(const std::vector<Coordinate> & coords);
+double
+length(const std::vector<Coordinate>& coords);
 
 }
 

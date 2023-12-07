@@ -23,8 +23,9 @@
 #include "output_writer.h"
 #include "stats_registry.h"
 
-
-static void errorHandler(const char *fmt, ...) {
+static void
+errorHandler(const char* fmt, ...)
+{
 
     char buf[BUFSIZ], *p;
     va_list ap;
@@ -32,90 +33,101 @@ static void errorHandler(const char *fmt, ...) {
     vsprintf(buf, fmt, ap);
     va_end(ap);
     p = buf + strlen(buf) - 1;
-    if(strlen(buf) > 0 && *p == '\n') *p = '\0';
+    if (strlen(buf) > 0 && *p == '\n')
+        *p = '\0';
 
     std::cerr << buf << std::endl;
 }
 
-
 namespace exactextract {
-    /**
-     * @brief The Processor class applies one or more operations to all features in the input dataset,
-     *        writing the results to an OutputWriter. Subclasses define the manner in which this happens
-     *        by overriding the `process` method.
-     */
-    class Processor {
+/**
+ * @brief The Processor class applies one or more operations to all features in the input dataset,
+ *        writing the results to an OutputWriter. Subclasses define the manner in which this happens
+ *        by overriding the `process` method.
+ */
+class Processor
+{
 
-    public:
-        Processor(FeatureSource& ds, OutputWriter & out) :
-                m_reg{},
-                m_geos_context{initGEOS_r(errorHandler, errorHandler)},
-                m_output{out},
-                m_shp{ds}
-        {
+  public:
+    Processor(FeatureSource& ds, OutputWriter& out)
+      : m_reg{}
+      , m_geos_context{ initGEOS_r(errorHandler, errorHandler) }
+      , m_output{ out }
+      , m_shp{ ds }
+    {
+    }
+
+    virtual ~Processor()
+    {
+        finishGEOS_r(m_geos_context);
+    }
+
+    virtual void process() = 0;
+
+    void add_operation(const Operation& op)
+    {
+        m_operations.push_back(op.clone());
+    }
+
+    void include_col(const std::string& col)
+    {
+        m_include_cols.push_back(col);
+    }
+
+    void set_max_cells_in_memory(size_t n)
+    {
+        m_max_cells_in_memory = n;
+    }
+
+    void show_progress(bool val)
+    {
+        m_show_progress = val;
+    }
+
+  protected:
+    template<typename T>
+    void progress(const T& name) const
+    {
+        if (m_show_progress)
+            std::cout << std::endl
+                      << "Processing " << name << std::flush;
+    }
+
+    void progress(const Feature& f, const std::string& field) const
+    {
+        if (m_show_progress) {
+            std::cout << std::endl
+                      << "Processing ";
+            std::visit([](auto&& value) {
+                std::cout << value;
+            },
+                       f.get(field));
+            std::cout << std::flush;
         }
+    }
 
-        virtual ~Processor() {
-            finishGEOS_r(m_geos_context);
-        }
+    void progress() const
+    {
+        if (m_show_progress)
+            std::cout << "." << std::flush;
+    }
 
-        virtual void process()= 0;
+    StatsRegistry m_reg;
 
-        void add_operation(const Operation& op) {
-            m_operations.push_back(op.clone());
-        }
+    GEOSContextHandle_t m_geos_context;
 
-        void include_col(const std::string& col) {
-            m_include_cols.push_back(col);
-        }
+    OutputWriter& m_output;
 
-        void set_max_cells_in_memory(size_t n) {
-            m_max_cells_in_memory = n;
-        }
+    FeatureSource& m_shp;
 
-        void show_progress(bool val) {
-            m_show_progress = val;
-        }
+    bool m_show_progress = false;
 
-    protected:
+    std::vector<std::unique_ptr<Operation>> m_operations;
 
-        template<typename T>
-        void progress(const T & name) const {
-            if (m_show_progress)
-                std::cout << std::endl << "Processing " << name << std::flush;
-        }
+    std::vector<std::string> m_include_cols;
 
-        void progress(const Feature& f, const std::string& field) const {
-            if (m_show_progress) {
-                std::cout << std::endl << "Processing ";
-                std::visit([](auto&& value) {
-                    std::cout << value;
-                }, f.get(field));
-                std::cout << std::flush;
-            }
-        }
-
-        void progress() const {
-            if (m_show_progress)
-                std::cout << "." << std::flush;
-        }
-
-        StatsRegistry m_reg;
-
-        GEOSContextHandle_t m_geos_context;
-
-        OutputWriter& m_output;
-
-        FeatureSource& m_shp;
-
-        bool m_show_progress=false;
-
-        std::vector<std::unique_ptr<Operation>> m_operations;
-
-        std::vector<std::string> m_include_cols;
-
-        size_t m_max_cells_in_memory = 1000000L;
-    };
+    size_t m_max_cells_in_memory = 1000000L;
+};
 }
 
-#endif //EXACTEXTRACT_PROCESSOR_H
+#endif // EXACTEXTRACT_PROCESSOR_H

@@ -22,35 +22,38 @@
 
 namespace exactextract {
 
-    class GDALRasterWrapper : public RasterSource {
+class GDALRasterWrapper : public RasterSource
+{
 
-    public:
-        GDALRasterWrapper(const std::string &filename, int bandnum);
+  public:
+    GDALRasterWrapper(const std::string& filename, int bandnum);
 
-        const Grid<bounded_extent> &grid() const override {
-            return m_grid;
-        }
+    const Grid<bounded_extent>& grid() const override
+    {
+        return m_grid;
+    }
 
-        std::unique_ptr<AbstractRaster<double>> read_box(const Box &box) override;
+    std::unique_ptr<AbstractRaster<double>> read_box(const Box& box) override;
 
-        ~GDALRasterWrapper() override;
+    ~GDALRasterWrapper() override;
 
-        GDALRasterWrapper(const GDALRasterWrapper &) = delete;
-        GDALRasterWrapper(GDALRasterWrapper &&) noexcept;
+    GDALRasterWrapper(const GDALRasterWrapper&) = delete;
+    GDALRasterWrapper(GDALRasterWrapper&&) noexcept;
 
-        bool cartesian() const;
-    private:
-        using GDALDatasetH=void*;
-        using GDALRasterBandH=void*;
+    bool cartesian() const;
 
-        GDALDatasetH m_rast;
-        GDALRasterBandH m_band;
-        double m_nodata_value;
-        bool m_has_nodata;
-        Grid<bounded_extent> m_grid;
+  private:
+    using GDALDatasetH = void*;
+    using GDALRasterBandH = void*;
 
-        void compute_raster_grid();
-    };
+    GDALDatasetH m_rast;
+    GDALRasterBandH m_band;
+    double m_nodata_value;
+    bool m_has_nodata;
+    Grid<bounded_extent> m_grid;
+
+    void compute_raster_grid();
+};
 }
 
-#endif //EXACTEXTRACT_GDAL_RASTER_WRAPPER_H
+#endif // EXACTEXTRACT_GDAL_RASTER_WRAPPER_H

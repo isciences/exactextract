@@ -18,117 +18,122 @@
 
 #include <geos_c.h>
 
-#include "grid.h"
 #include "geos_utils.h"
+#include "grid.h"
 #include "matrix.h"
 
 namespace exactextract {
 
-    template<typename T>
-    struct fill_values {
-        static T EXTERIOR;
-    };
+template<typename T>
+struct fill_values
+{
+    static T EXTERIOR;
+};
 
-    template<>
-    struct fill_values<float> {
-        static constexpr float EXTERIOR{0.0f};  // Cell is known to be entirely outside the polygon
-        static constexpr float INTERIOR{1.0f};  // Cell is known to be entirely within the polygon
-        static constexpr float FILLABLE{-1.0f}; // Cell location relative to polygon unknown, but
-                                                // can be determined by fill.
-        static constexpr float UNKNOWN{-2.0f};  // Cell location relative to polygon unknown
-                                                // and cannot be determined from a flood fill
-                                                // (must be explicitly tested)
+template<>
+struct fill_values<float>
+{
+    static constexpr float EXTERIOR{ 0.0f };  // Cell is known to be entirely outside the polygon
+    static constexpr float INTERIOR{ 1.0f };  // Cell is known to be entirely within the polygon
+    static constexpr float FILLABLE{ -1.0f }; // Cell location relative to polygon unknown, but
+                                              // can be determined by fill.
+    static constexpr float UNKNOWN{ -2.0f };  // Cell location relative to polygon unknown
+                                              // and cannot be determined from a flood fill
+                                              // (must be explicitly tested)
+};
 
-    };
+class FloodFill
+{
 
-    class FloodFill {
-
-    public:
-        FloodFill(GEOSContextHandle_t context, const GEOSGeometry *g, const Grid<bounded_extent> &extent);
-
-        template<typename T>
-        void flood(Matrix<T> &arr) const;
-
-        bool cell_is_inside(size_t i, size_t j) const;
-
-    private:
-        Grid<bounded_extent> m_extent;
-        GEOSContextHandle_t m_geos_context;
-        geom_ptr_r m_g;
-        prep_geom_ptr_r m_pg;
-    };
+  public:
+    FloodFill(GEOSContextHandle_t context, const GEOSGeometry* g, const Grid<bounded_extent>& extent);
 
     template<typename T>
-    void flood_from_pixel(Matrix<T> &arr, size_t i, size_t j, T fill_value) {
-        std::queue<std::pair<size_t, size_t> > locations;
+    void flood(Matrix<T>& arr) const;
 
-        locations.emplace(i, j);
+    bool cell_is_inside(size_t i, size_t j) const;
 
-        while (!locations.empty()) {
-            i = locations.front().first;
-            j = locations.front().second;
-            locations.pop();
+  private:
+    Grid<bounded_extent> m_extent;
+    GEOSContextHandle_t m_geos_context;
+    geom_ptr_r m_g;
+    prep_geom_ptr_r m_pg;
+};
 
-            if (arr(i, j) == fill_value) {
-                continue;
-            }
+template<typename T>
+void
+flood_from_pixel(Matrix<T>& arr, size_t i, size_t j, T fill_value)
+{
+    std::queue<std::pair<size_t, size_t>> locations;
 
-            // Left
-            if (j > 0 && arr(i, j - 1) == fill_values<T>::FILLABLE) {
-                locations.emplace(i, j - 1);
-            }
+    locations.emplace(i, j);
 
-            auto j0 = j;
+    while (!locations.empty()) {
+        i = locations.front().first;
+        j = locations.front().second;
+        locations.pop();
 
-            // Fill along this row until we hit something
-            for (; j < arr.cols() && arr(i, j) == fill_values<T>::FILLABLE; j++) {
-                arr(i, j) = fill_value;
-            }
-
-            auto j1 = j;
-
-            // Initiate scanlines above our current row
-            if (i > 0) {
-                for (j = j0; j < j1; j++) {
-                    // Up
-                    if (arr(i - 1, j) == fill_values<T>::FILLABLE) {
-                        locations.emplace(i - 1, j);
-                    }
-                }
-            }
-
-            // Initiate scanlines below our current row
-            if (i < arr.rows() - 1) {
-                for (j = j0; j < j1; j++) {
-                    // Down
-                    if (arr(i + 1, j) == fill_values<T>::FILLABLE) {
-                        locations.emplace(i + 1, j);
-                    }
-                }
-            }
-
+        if (arr(i, j) == fill_value) {
+            continue;
         }
-    }
 
-    template<typename T>
-    void FloodFill::flood(Matrix<T> &arr) const {
+        // Left
+        if (j > 0 && arr(i, j - 1) == fill_values<T>::FILLABLE) {
+            locations.emplace(i, j - 1);
+        }
 
-        for (size_t i = 0; i < arr.rows(); i++) {
-            for (size_t j = 0; j < arr.cols(); j++) {
-                if (arr(i, j) == fill_values<T>::UNKNOWN) {
-                    throw std::runtime_error("Cell with unknown position encountered.");
-                } else if (arr(i, j) == fill_values<T>::FILLABLE) {
-                    // Cell position relative to polygon is unknown but can
-                    // be determined from adjacent cells.
-                    if (cell_is_inside(i, j)) {
-                        flood_from_pixel(arr, i, j, fill_values<T>::INTERIOR);
-                    } else {
-                        flood_from_pixel(arr, i, j, fill_values<T>::EXTERIOR);
-                    }
+        auto j0 = j;
+
+        // Fill along this row until we hit something
+        for (; j < arr.cols() && arr(i, j) == fill_values<T>::FILLABLE; j++) {
+            arr(i, j) = fill_value;
+        }
+
+        auto j1 = j;
+
+        // Initiate scanlines above our current row
+        if (i > 0) {
+            for (j = j0; j < j1; j++) {
+                // Up
+                if (arr(i - 1, j) == fill_values<T>::FILLABLE) {
+                    locations.emplace(i - 1, j);
+                }
+            }
+        }
+
+        // Initiate scanlines below our current row
+        if (i < arr.rows() - 1) {
+            for (j = j0; j < j1; j++) {
+                // Down
+                if (arr(i + 1, j) == fill_values<T>::FILLABLE) {
+                    locations.emplace(i + 1, j);
                 }
             }
         }
     }
+}
+
+template<typename T>
+void
+FloodFill::flood(Matrix<T>& arr) const
+{
+
+    for (size_t i = 0; i < arr.rows(); i++) {
+        for (size_t j = 0; j < arr.cols(); j++) {
+            if (arr(i, j) == fill_values<T>::UNKNOWN) {
+                throw std::runtime_error("Cell with unknown position encountered.");
+            } else if (arr(i, j) == fill_values<T>::FILLABLE) {
+                // Cell position relative to polygon is unknown but can
+                // be determined from adjacent cells.
+                if (cell_is_inside(i, j)) {
+                    flood_from_pixel(arr, i, j, fill_values<T>::INTERIOR);
+                } else {
+                    flood_from_pixel(arr, i, j, fill_values<T>::EXTERIOR);
+                }
+            }
+        }
+    }
+}
 
 }
 

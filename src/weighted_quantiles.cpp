@@ -17,56 +17,60 @@
 
 namespace exactextract {
 
-    void WeightedQuantiles::prepare() const {
-        std::sort(m_elems.begin(), m_elems.end(), [](const elem_t &a, const elem_t &b) {
-            return a.x < b.x;
-        });
+void
+WeightedQuantiles::prepare() const
+{
+    std::sort(m_elems.begin(), m_elems.end(), [](const elem_t& a, const elem_t& b) {
+        return a.x < b.x;
+    });
 
-        m_sum_w = 0;
-        // relies on map being sorted which it is no
-        for (size_t i = 0; i < m_elems.size(); i++) {
-            m_sum_w += m_elems[i].w;
+    m_sum_w = 0;
+    // relies on map being sorted which it is no
+    for (size_t i = 0; i < m_elems.size(); i++) {
+        m_sum_w += m_elems[i].w;
 
-            if (i == 0) {
-                m_elems[i].s = 0;
-                m_elems[i].cumsum = m_elems[i].w;
-            } else {
-                m_elems[i].cumsum = m_elems[i - 1].cumsum + m_elems[i].w;
-                m_elems[i].s = i * m_elems[i].w + (static_cast<double>(m_elems.size()) - 1) * m_elems[i - 1].cumsum;
-            }
+        if (i == 0) {
+            m_elems[i].s = 0;
+            m_elems[i].cumsum = m_elems[i].w;
+        } else {
+            m_elems[i].cumsum = m_elems[i - 1].cumsum + m_elems[i].w;
+            m_elems[i].s = i * m_elems[i].w + (static_cast<double>(m_elems.size()) - 1) * m_elems[i - 1].cumsum;
         }
-
-        m_ready_to_query = true;
     }
 
-    double WeightedQuantiles::quantile(double q) const {
-        if (!std::isfinite(q) || q < 0 || q > 1) {
-            throw std::runtime_error("Quantile must be between 0 and 1.");
-        }
+    m_ready_to_query = true;
+}
 
-        if (!m_ready_to_query) {
-            prepare();
-        }
-
-        auto sn = m_sum_w * (static_cast<double>(m_elems.size()) - 1);
-
-        elem_t lookup(0, 0); // create a dummy element to use with std::upper_bound
-        lookup.s = q*sn;
-
-        // get first element that is greater than the lookup value (q * sn)
-        auto right = std::upper_bound(m_elems.cbegin(), m_elems.cend(), lookup, [](const elem_t & a, const elem_t & b) {
-            return a.s < b.s;
-        });
-
-        // since the minimum value of "lookup" is zero, and the first value of "s" is zero,
-        // we are guaranteed to have at least one element to the left of "right"
-        auto left = std::prev(right, 1);
-
-        if (right == m_elems.cend()) {
-            return left->x;
-        }
-
-        return left->x + (q*sn - left->s)*(right->x - left->x)/(right->s - left->s);
+double
+WeightedQuantiles::quantile(double q) const
+{
+    if (!std::isfinite(q) || q < 0 || q > 1) {
+        throw std::runtime_error("Quantile must be between 0 and 1.");
     }
+
+    if (!m_ready_to_query) {
+        prepare();
+    }
+
+    auto sn = m_sum_w * (static_cast<double>(m_elems.size()) - 1);
+
+    elem_t lookup(0, 0); // create a dummy element to use with std::upper_bound
+    lookup.s = q * sn;
+
+    // get first element that is greater than the lookup value (q * sn)
+    auto right = std::upper_bound(m_elems.cbegin(), m_elems.cend(), lookup, [](const elem_t& a, const elem_t& b) {
+        return a.s < b.s;
+    });
+
+    // since the minimum value of "lookup" is zero, and the first value of "s" is zero,
+    // we are guaranteed to have at least one element to the left of "right"
+    auto left = std::prev(right, 1);
+
+    if (right == m_elems.cend()) {
+        return left->x;
+    }
+
+    return left->x + (q * sn - left->s) * (right->x - left->x) / (right->s - left->s);
+}
 
 }

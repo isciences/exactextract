@@ -19,25 +19,27 @@
 #include "raster.h"
 
 namespace exactextract {
-    class RasterSource {
-    public:
+class RasterSource
+{
+  public:
+    virtual const Grid<bounded_extent>& grid() const = 0;
+    virtual std::unique_ptr<AbstractRaster<double>> read_box(const Box& box) = 0;
 
-        virtual const Grid<bounded_extent> &grid() const = 0;
-        virtual std::unique_ptr<AbstractRaster<double>> read_box(const Box &box) = 0;
+    virtual ~RasterSource() = default;
 
-        virtual ~RasterSource() = default;
+    void set_name(const std::string& name)
+    {
+        m_name = name;
+    }
 
-        void set_name(const std::string & name) {
-            m_name = name;
-        }
+    std::string name() const
+    {
+        return m_name;
+    }
 
-        std::string name() const {
-            return m_name;
-        }
-
-    private:
-        std::string m_name;
-    };
+  private:
+    std::string m_name;
+};
 }
 
-#endif //EXACTEXTRACT_RASTER_SOURCE_H
+#endif // EXACTEXTRACT_RASTER_SOURCE_H

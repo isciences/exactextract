@@ -28,14 +28,15 @@ class MapFeature : public Feature
 
     virtual ~MapFeature() {}
 
-    explicit MapFeature (const Feature& other) {
+    explicit MapFeature(const Feature& other)
+    {
         other.copy_to(*this);
         if (other.geometry() != nullptr) {
             m_geom = geos_ptr(m_geos_context, GEOSGeom_clone_r(m_geos_context, other.geometry()));
         }
     }
 
-    MapFeature (MapFeature && other) = default;
+    MapFeature(MapFeature&& other) = default;
     MapFeature& operator=(MapFeature&& other) = default;
 
     const std::type_info& field_type(const std::string& name) const override
@@ -60,17 +61,20 @@ class MapFeature : public Feature
         m_map[name] = std::move(value);
     }
 
-    void copy_to(Feature& dst) const override {
+    void copy_to(Feature& dst) const override
+    {
         for (const auto& [k, v] : m_map) {
             dst.set(k, *this);
         }
     }
 
-    void set_geometry(geom_ptr_r geom) {
+    void set_geometry(geom_ptr_r geom)
+    {
         m_geom = std::move(geom);
     }
 
-    const GEOSGeometry* geometry() const override {
+    const GEOSGeometry* geometry() const override
+    {
         return m_geom.get();
     }
 
@@ -80,19 +84,23 @@ class MapFeature : public Feature
     }
 
     template<typename T>
-    T get(const std::string& field) const {
+    T get(const std::string& field) const
+    {
         return std::get<T>(m_map.at(field));
     }
 
-    std::string get_string(const std::string& name) const override {
+    std::string get_string(const std::string& name) const override
+    {
         return get<std::string>(name);
     }
 
-    double get_double(const std::string& name) const override {
+    double get_double(const std::string& name) const override
+    {
         return get<double>(name);
     }
 
-    std::int32_t get_int(const std::string& name) const override {
+    std::int32_t get_int(const std::string& name) const override
+    {
         return get<std::int32_t>(name);
     }
 

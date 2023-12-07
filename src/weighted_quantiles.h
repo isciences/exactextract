@@ -21,44 +21,52 @@
 
 namespace exactextract {
 
-    class WeightedQuantiles {
-        // Compute weighted quantiles based on https://stats.stackexchange.com/a/13223
+class WeightedQuantiles
+{
+    // Compute weighted quantiles based on https://stats.stackexchange.com/a/13223
 
-    public:
-
-        void process(double x, double w) {
-            if (w < 0) {
-                throw std::runtime_error("Weighted quantile calculation does not support negative weights.");
-            }
-
-            if (!std::isfinite(w)) {
-                throw std::runtime_error("Weighted quantile does not support non-finite weights.");
-            }
-
-            m_ready_to_query = false;
-
-            m_elems.emplace_back(x, w);
+  public:
+    void process(double x, double w)
+    {
+        if (w < 0) {
+            throw std::runtime_error("Weighted quantile calculation does not support negative weights.");
         }
 
-        double quantile(double q) const;
+        if (!std::isfinite(w)) {
+            throw std::runtime_error("Weighted quantile does not support non-finite weights.");
+        }
 
-    private:
-        struct elem_t {
-            elem_t(double _x, double _w) : x(_x), w(_w), cumsum(0), s(0) {}
+        m_ready_to_query = false;
 
-            double x;
-            double w;
-            double cumsum;
-            double s;
-        };
+        m_elems.emplace_back(x, w);
+    }
 
-        void prepare() const;
+    double quantile(double q) const;
 
-        mutable std::vector<elem_t> m_elems;
-        mutable double m_sum_w;
-        mutable bool m_ready_to_query;
+  private:
+    struct elem_t
+    {
+        elem_t(double _x, double _w)
+          : x(_x)
+          , w(_w)
+          , cumsum(0)
+          , s(0)
+        {
+        }
+
+        double x;
+        double w;
+        double cumsum;
+        double s;
     };
+
+    void prepare() const;
+
+    mutable std::vector<elem_t> m_elems;
+    mutable double m_sum_w;
+    mutable bool m_ready_to_query;
+};
 
 }
 
-#endif //EXACTEXTRACT_WEIGHTED_QUANTILES_H
+#endif // EXACTEXTRACT_WEIGHTED_QUANTILES_H
