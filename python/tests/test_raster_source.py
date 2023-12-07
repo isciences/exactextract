@@ -25,7 +25,10 @@ def global_half_degree(tmp_path):
 
 @pytest.mark.parametrize("Source", (GDALRasterSource, RasterioRasterSource))
 def test_gdal_raster(global_half_degree, Source):
-    src = Source(global_half_degree, 1)
+    try:
+        src = Source(global_half_degree, 1)
+    except ModuleNotFoundError as e:
+        pytest.skip(str(e))
 
     assert src.res() == (0.50, 0.50)
     assert src.extent() == pytest.approx((-180, -90, 180, 90))
