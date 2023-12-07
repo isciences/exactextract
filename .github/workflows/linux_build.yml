@@ -70,8 +70,8 @@ jobs:
       run: |
         cd build
         valgrind --leak-check=full --error-exitcode=1 ./catch_tests
-        if pytest --version; then pytest ../test; else echo "pytest not available"; fi
-        if [[ "${BUILD_PYTHON}" == "YES" ]] ; then ctest -R pybindings; fi
+        ctest -R cli --output-on-failure
+        ctest -R pybindings --output-on-failure
     - name: generate coverage report
       run: |
         cd build
