@@ -81,9 +81,9 @@ FeatureSequentialProcessor::process()
                     if (op->weighted()) {
                         auto weights = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
 
-                        m_reg.stats(f_in, *op, store_values).process(*coverage, *values, *weights);
+                        m_reg.update_stats(f_in, *op, *coverage, values, weights, store_values);
                     } else {
-                        m_reg.stats(f_in, *op, store_values).process(*coverage, *values);
+                        m_reg.update_stats(f_in, *op, *coverage, values, store_values);
                     }
 
                     progress();

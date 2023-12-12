@@ -18,20 +18,53 @@
 
 namespace exactextract {
 
-RasterStats<double>&
+void
+StatsRegistry::update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, bool store_values)
+{
+    std::visit([&coverage, &values](auto& s) {
+        using value_type = typename std::remove_reference_t<decltype(s)>::ValueType;
+
+        const AbstractRaster<value_type>& v = *std::get<std::unique_ptr<AbstractRaster<value_type>>>(values);
+
+        s.process(coverage, v);
+    },
+               stats(f, op, store_values));
+}
+
+void
+StatsRegistry::update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, const RasterVariant& weights, bool store_values)
+{
+    std::visit([&coverage, &values](auto& s, const auto& w) {
+        using value_type = typename std::remove_reference_t<decltype(s)>::ValueType;
+
+        const AbstractRaster<value_type>& v = *std::get<std::unique_ptr<AbstractRaster<value_type>>>(values);
+
+        s.process(coverage, v, *w);
+    },
+               stats(f, op, store_values),
+               weights);
+}
+
+StatsRegistry::RasterStatsVariant&
 StatsRegistry::stats(const Feature& feature, const Operation& op, bool store_values)
 {
     auto& stats_for_feature = m_feature_stats[&feature];
 
-    // can't use find because this requires RasterStats to be copy-constructible before C++ 17
-    auto exists = stats_for_feature.count(op.key());
-    if (!exists) {
-        // can't use emplace because this requires RasterStats be copy-constructible before C++17
-        RasterStats<double> new_stats(store_values);
-        stats_for_feature[op.key()] = std::move(new_stats);
+    auto it = stats_for_feature.find(op.key());
+    if (it == stats_for_feature.end()) {
+        // FIXME come up with a more direct way to probe the type of the raster
+        auto rast = op.values->read_box(Box::make_empty());
+
+        it = std::visit([&stats_for_feature, &op, store_values](const auto& r) {
+                 using rtype = typename std::remove_reference_t<decltype(*r)>::value_type;
+
+                 return stats_for_feature.emplace(op.key(), RasterStats<rtype>(store_values));
+             },
+                        rast)
+               .first;
     }
 
-    return stats_for_feature[op.key()];
+    return it->second;
 }
 
 bool
@@ -50,7 +83,7 @@ StatsRegistry::contains(const Feature& feature, const Operation& op) const
     return m2.find(op.key()) != m2.end();
 }
 
-const RasterStats<double>&
+const StatsRegistry::RasterStatsVariant&
 StatsRegistry::stats(const Feature& feature, const Operation& op) const
 {
     return m_feature_stats.at(&feature).at(op.key());

@@ -49,7 +49,20 @@ class PyRasterSourceBase : public RasterSource
 {
 
   public:
-    std::unique_ptr<AbstractRaster<double>> read_box(const Box& box) override
+    template<typename T>
+    static std::unique_ptr<NumPyRaster<T>>
+    make_raster(const Grid<bounded_extent>& grid, const py::array& values, const py::object& nodata)
+    {
+        auto rast = std::make_unique<NumPyRaster<T>>(values, grid);
+
+        if (!nodata.is_none()) {
+            rast->set_nodata(nodata.cast<T>());
+        }
+
+        return rast;
+    }
+
+    RasterVariant read_box(const Box& box) override
     {
         auto cropped_grid = grid().crop(box);
 
@@ -62,16 +75,22 @@ class PyRasterSourceBase : public RasterSource
             py::array rast_values = read_window(x0, y0, nx, ny);
             py::object nodata = nodata_value();
 
-            auto rast = std::make_unique<NumPyRaster<double>>(rast_values, cropped_grid);
-
-            if (!nodata.is_none()) {
-                rast->set_nodata(nodata.cast<double>());
+            if (py::isinstance<py::array_t<std::int8_t>>(rast_values)) {
+                return make_raster<std::int8_t>(cropped_grid, rast_values, nodata);
+            } else if (py::isinstance<py::array_t<std::int16_t>>(rast_values)) {
+                return make_raster<std::int16_t>(cropped_grid, rast_values, nodata);
+            } else if (py::isinstance<py::array_t<std::int32_t>>(rast_values)) {
+                return make_raster<std::int32_t>(cropped_grid, rast_values, nodata);
+            } else if (py::isinstance<py::array_t<std::int64_t>>(rast_values)) {
+                return make_raster<std::int64_t>(cropped_grid, rast_values, nodata);
+            } else if (py::isinstance<py::array_t<float>>(rast_values)) {
+                return make_raster<float>(cropped_grid, rast_values, nodata);
+            } else {
+                return make_raster<double>(cropped_grid, rast_values, nodata);
             }
-
-            return rast;
         }
 
-        return nullptr;
+        return std::make_unique<Raster<double>>(Raster<double>::make_empty());
     }
 
     const Grid<bounded_extent>& grid() const override

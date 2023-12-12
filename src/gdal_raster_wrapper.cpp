@@ -55,14 +55,26 @@ GDALRasterWrapper::cartesian() const
     return srs == nullptr || !OSRIsGeographic(srs);
 }
 
-std::unique_ptr<AbstractRaster<double>>
+RasterVariant
 GDALRasterWrapper::read_box(const Box& box)
 {
     auto cropped_grid = m_grid.shrink_to_fit(box);
-    auto vals = std::make_unique<Raster<double>>(cropped_grid);
+    RasterVariant ret;
 
-    if (m_has_nodata) {
-        vals->set_nodata(m_nodata_value);
+    auto band_type = GDALGetRasterDataType(m_band);
+    void* buffer;
+    GDALDataType read_type;
+
+    if (band_type == GDT_Int32) {
+        auto rast = make_raster<std::int32_t>(cropped_grid);
+        buffer = rast->data().data();
+        ret = std::move(rast);
+        read_type = GDT_Int32;
+    } else {
+        auto rast = make_raster<double>(cropped_grid);
+        buffer = rast->data().data();
+        ret = std::move(rast);
+        read_type = GDT_Float64;
     }
 
     auto error = GDALRasterIO(m_band,
@@ -71,10 +83,10 @@ GDALRasterWrapper::read_box(const Box& box)
                               (int)cropped_grid.row_offset(m_grid),
                               (int)cropped_grid.cols(),
                               (int)cropped_grid.rows(),
-                              vals->data().data(),
+                              buffer,
                               (int)cropped_grid.cols(),
                               (int)cropped_grid.rows(),
-                              GDT_Float64,
+                              read_type,
                               0,
                               0);
 
@@ -82,7 +94,7 @@ GDALRasterWrapper::read_box(const Box& box)
         throw std::runtime_error("Error reading from raster.");
     }
 
-    return vals;
+    return ret;
 }
 
 void

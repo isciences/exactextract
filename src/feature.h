@@ -36,6 +36,7 @@ class Feature
     virtual void set(const std::string& name, std::int32_t value) = 0;
 
     virtual void set(const std::string& name, float value);
+    virtual void set(const std::string& name, std::int64_t value);
     virtual void set(const std::string& name, std::size_t value);
     virtual void set(const std::string& name, const Feature& other);
 

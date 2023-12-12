@@ -109,62 +109,70 @@ class Operation
 
     virtual void set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const
     {
-        static const RasterStats<double> empty_stats;
-
-        const RasterStats<double>& stats = reg.contains(f_in, *this) ? reg.stats(f_in, *this) : empty_stats;
+        static const StatsRegistry::RasterStatsVariant empty_stats = RasterStats<double>();
+        const auto& stats = reg.contains(f_in, *this) ? reg.stats(f_in, *this) : empty_stats;
 
         auto missing = std::numeric_limits<double>::quiet_NaN();
 
         if (stat == "mean") {
-            f_out.set(m_field_names[0], stats.mean());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.mean()); }, stats);
         } else if (stat == "sum") {
-            f_out.set(m_field_names[0], stats.sum());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.sum()); }, stats);
         } else if (stat == "count") {
-            f_out.set(m_field_names[0], stats.count());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.count()); }, stats);
         } else if (stat == "weighted_mean") {
-            f_out.set(m_field_names[0], stats.weighted_mean());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_mean()); }, stats);
         } else if (stat == "weighted_sum") {
-            f_out.set(m_field_names[0], stats.weighted_sum());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_sum()); }, stats);
         } else if (stat == "min") {
-            f_out.set(m_field_names[0], stats.min().value_or(missing));
+            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.min().value_or(missing)); }, stats);
         } else if (stat == "max") {
-            f_out.set(m_field_names[0], stats.max().value_or(missing));
+            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.max().value_or(missing)); }, stats);
         } else if (stat == "majority" || stat == "mode") {
-            f_out.set(m_field_names[0], stats.mode().value_or(missing));
+            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.mode().value_or(missing)); }, stats);
         } else if (stat == "minority") {
-            f_out.set(m_field_names[0], stats.minority().value_or(missing));
+            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.minority().value_or(missing)); }, stats);
         } else if (stat == "variety") {
-            f_out.set(m_field_names[0], stats.variety());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.variety()); }, stats);
         } else if (stat == "stdev") {
-            f_out.set(m_field_names[0], stats.stdev());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.stdev()); }, stats);
         } else if (stat == "weighted_stdev") {
-            f_out.set(m_field_names[0], stats.weighted_stdev());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_stdev()); }, stats);
         } else if (stat == "variance") {
-            f_out.set(m_field_names[0], stats.variance());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.variance()); }, stats);
         } else if (stat == "weighted_variance") {
-            f_out.set(m_field_names[0], stats.weighted_variance());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_variance()); }, stats);
         } else if (stat == "coefficient_of_variation") {
-            f_out.set(m_field_names[0], stats.coefficient_of_variation());
+            std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.coefficient_of_variation()); }, stats);
         } else if (stat == "median") {
-            f_out.set(m_field_names[0], stats.quantile(0.5).value_or(std::numeric_limits<double>::quiet_NaN()));
+            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.quantile(0.5).value_or(missing)); }, stats);
         } else if (stat == "quantile") {
-            for (std::size_t i = 0; i < m_quantiles.size(); i++) {
-                f_out.set(m_field_names[i], stats.quantile(m_quantiles[i]).value_or(std::numeric_limits<double>::quiet_NaN()));
-            }
+            std::visit([&f_out, &missing, this](const auto& x) {
+                for (std::size_t i = 0; i < m_quantiles.size(); i++) {
+                    f_out.set(m_field_names[i], x.quantile(m_quantiles[i]).value_or(missing));
+                }
+            },
+                       stats);
         } else if (stat == "frac") {
-            for (const auto& value : stats) {
-                std::stringstream s;
-                s << "frac_" << value;
+            std::visit([&f_out](const auto& x) {
+                for (const auto& value : x) {
+                    std::stringstream s;
+                    s << "frac_" << value;
 
-                f_out.set(s.str(), stats.frac(value).value_or(0));
-            }
+                    f_out.set(s.str(), x.frac(value).value_or(0));
+                }
+            },
+                       stats);
         } else if (stat == "weighted_frac") {
-            for (const auto& value : stats) {
-                std::stringstream s;
-                s << "weighted_frac_" << value;
+            std::visit([&f_out](const auto& x) {
+                for (const auto& value : x) {
+                    std::stringstream s;
+                    s << "weighted_frac_" << value;
 
-                f_out.set(s.str(), stats.weighted_frac(value).value_or(0));
-            }
+                    f_out.set(s.str(), x.weighted_frac(value).value_or(0));
+                }
+            },
+                       stats);
         } else {
             throw std::runtime_error("Unhandled stat: " + stat);
         }

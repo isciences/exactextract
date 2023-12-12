@@ -20,8 +20,12 @@ class MemoryRasterSource : public RasterSource
     {
     }
 
-    std::unique_ptr<AbstractRaster<T>> read_box(const Box& b) override
+    RasterVariant read_box(const Box& b) override
     {
+        if (b.empty()) {
+            return std::make_unique<Raster<T>>(Raster<T>::make_empty());
+        }
+
         if (b != m_rast.grid().extent()) {
             throw std::runtime_error("Unexpected extent.");
         }
@@ -63,7 +67,7 @@ class WKTFeatureSource : public FeatureSource
 
     const std::string& id_field() const override
     {
-        static std::string fid = "fid";
+        static std::string fid = "";
         return fid;
     }
 
@@ -98,6 +102,37 @@ init_geos()
     }
 
     return context;
+}
+
+TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[operation]", double, std::int32_t, std::int64_t)
+{
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
+    Matrix<TestType> values{ { { 1, 1, 1 },
+                               { 2, 2, 2 },
+                               { 2, 2, 2 } } };
+    Raster<TestType> value_rast(std::move(values), ex.extent());
+    MemoryRasterSource<TestType> value_src(value_rast);
+
+    WKTFeatureSource ds;
+    MapFeature mf;
+    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 0.5))")));
+    ds.add_feature(std::move(mf));
+
+    TestWriter writer;
+    FeatureSequentialProcessor fsp(ds, writer);
+    fsp.add_operation(Operation("mode", "mode", &value_src, nullptr));
+    fsp.process();
+
+    const MapFeature& f = writer.m_feature;
+
+    const auto& pix_typ = typeid(TestType);
+    if (pix_typ == typeid(float) || pix_typ == typeid(double)) {
+        CHECK(f.field_type("mode") == typeid(double));
+    } else if (pix_typ == typeid(std::int32_t) || pix_typ == typeid(std::int64_t)) {
+        CHECK(f.field_type("mode") == typeid(std::int32_t));
+    }
 }
 
 TEST_CASE("frac sets appropriate column names", "[operation]")

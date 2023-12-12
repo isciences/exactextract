@@ -434,3 +434,18 @@ def test_error_rotated_inputs(tmp_path, rast_lib):
 
     with pytest.raises(ValueError, match="Rotated raster"):
         exact_extract(rast, square, ["count"])
+
+
+@pytest.mark.parametrize("dtype", (np.float64, np.float32, np.int32, np.int64))
+def test_types_preserved(dtype):
+
+    rast = NumPyRasterSource(np.full((3, 3), 1, dtype))
+
+    square = make_rect(0, 0, 3, 3)
+
+    result = exact_extract(rast, square, "mode")[0]['properties']['mode']
+
+    if np.issubdtype(dtype, np.integer):
+        assert isinstance(result, int)
+    else:
+        assert isinstance(result, float)

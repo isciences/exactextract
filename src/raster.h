@@ -17,6 +17,7 @@
 #include <array>
 #include <cmath>
 #include <limits>
+#include <variant>
 
 #include "grid.h"
 #include "matrix.h"
@@ -236,6 +237,14 @@ class AbstractRaster
     bool m_has_nodata;
 };
 
+using RasterVariant = std::variant<
+  std::unique_ptr<AbstractRaster<float>>,
+  std::unique_ptr<AbstractRaster<double>>,
+  std::unique_ptr<AbstractRaster<std::int8_t>>,
+  std::unique_ptr<AbstractRaster<std::int16_t>>,
+  std::unique_ptr<AbstractRaster<std::int32_t>>,
+  std::unique_ptr<AbstractRaster<std::int64_t>>>;
+
 template<typename T>
 class Raster : public AbstractRaster<T>
 {
@@ -266,6 +275,11 @@ class Raster : public AbstractRaster<T>
       : AbstractRaster<T>(ex)
       , m_values{ ex.rows(), ex.cols() }
     {
+    }
+
+    static Raster make_empty()
+    {
+        return { Box::make_empty(), 0, 0 };
     }
 
     Matrix<T>& data()
