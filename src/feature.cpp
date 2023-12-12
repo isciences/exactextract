@@ -28,7 +28,13 @@ Feature::set(const std::string& name, const Feature& f)
         set(name, f.get_string(name));
     } else if (type == typeid(double)) {
         set(name, f.get_double(name));
+    } else if (type == typeid(std::int8_t)) {
+        set(name, f.get_int(name));
+    } else if (type == typeid(std::int16_t)) {
+        set(name, f.get_int(name));
     } else if (type == typeid(std::int32_t)) {
+        set(name, f.get_int(name));
+    } else if (type == typeid(std::int64_t)) {
         set(name, f.get_int(name));
     } else if (type == typeid(std::size_t)) {
         set(name, f.get_int(name));
@@ -38,12 +44,21 @@ Feature::set(const std::string& name, const Feature& f)
 }
 
 void
-Feature::set(const std::string& name, std::size_t value)
+Feature::set(const std::string& name, std::int64_t value)
 {
-    if (value > std::numeric_limits<std::int32_t>::max()) {
-        throw std::runtime_error("Value is too large to store as 32-bit integer.");
+    if (value > std::numeric_limits<std::int32_t>::max() || value < std::numeric_limits<std::int32_t>::min()) {
+        throw std::runtime_error("Value is too small/large to store as 32-bit integer.");
     }
     set(name, static_cast<std::int32_t>(value));
+}
+
+void
+Feature::set(const std::string& name, std::size_t value)
+{
+    if (value > std::numeric_limits<std::int64_t>::max()) {
+        throw std::runtime_error("Value is too large to store as 64-bit integer.");
+    }
+    set(name, static_cast<std::int64_t>(value));
 }
 
 void

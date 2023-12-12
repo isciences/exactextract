@@ -90,7 +90,7 @@ class RasterCoverageIterator
         }
 
         if (m_weights_view) {
-            if (!m_weights_view->get(m_i, m_j, m_loc.value)) {
+            if (!m_weights_view->get(m_i, m_j, m_loc.weight)) {
                 // TODO handle NODATA
             }
         }
@@ -181,12 +181,12 @@ class RasterCoverageIteration
     void read_raster_data(RasterSource* values_src, RasterSource* weights_src)
     {
         if (values_src) {
-            m_values = values_src->read_box(m_coverage.grid().extent());
+            m_values = std::get<std::unique_ptr<AbstractRaster<ValueType>>>(values_src->read_box(m_coverage.grid().extent()));
             m_values_view = std::make_unique<RasterView<ValueType>>(*m_values, m_coverage.grid());
         }
 
         if (weights_src) {
-            m_weights = weights_src->read_box(m_coverage.grid().extent());
+            m_weights = std::get<std::unique_ptr<AbstractRaster<WeightType>>>(weights_src->read_box(m_coverage.grid().extent()));
             m_weights_view = std::make_unique<RasterView<WeightType>>(*m_weights, m_coverage.grid());
         }
     }

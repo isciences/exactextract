@@ -71,9 +71,9 @@ RasterSequentialProcessor::process()
           },
           &hits);
 
-        std::map<RasterSource*, std::unique_ptr<AbstractRaster<double>>> raster_values;
+        std::map<RasterSource*, std::unique_ptr<RasterVariant>> raster_values;
 
-        for (const auto& f : hits) {
+        for (const Feature* f : hits) {
             std::unique_ptr<Raster<float>> coverage;
             std::set<std::pair<RasterSource*, RasterSource*>> processed;
 
@@ -102,22 +102,22 @@ RasterSequentialProcessor::process()
 
                 // FIXME need to ensure that no values are read from a raster that have already been read.
                 // This may be possible when reading box is expanded slightly from floating-point roundoff problems.
-                auto values = raster_values[op->values].get();
+                RasterVariant* values = raster_values[op->values].get();
                 if (values == nullptr) {
-                    raster_values[op->values] = op->values->read_box(subgrid.extent().intersection(op->values->grid().extent()));
+                    raster_values[op->values] = std::make_unique<RasterVariant>(op->values->read_box(subgrid.extent().intersection(op->values->grid().extent())));
                     values = raster_values[op->values].get();
                 }
 
                 if (op->weighted()) {
-                    auto weights = raster_values[op->weights].get();
+                    RasterVariant* weights = raster_values[op->weights].get();
                     if (weights == nullptr) {
-                        raster_values[op->weights] = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
+                        raster_values[op->weights] = std::make_unique<RasterVariant>(op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent())));
                         weights = raster_values[op->weights].get();
                     }
 
-                    m_reg.stats(*f, *op, store_values).process(*coverage, *values, *weights);
+                    m_reg.update_stats(*f, *op, *coverage, *values, *weights, store_values);
                 } else {
-                    m_reg.stats(*f, *op, store_values).process(*coverage, *values);
+                    m_reg.update_stats(*f, *op, *coverage, *values, store_values);
                 }
 
                 progress();

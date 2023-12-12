@@ -111,6 +111,11 @@ class GDALFeature : public Feature
         OGR_F_SetFieldInteger(m_feature, field_index(name), value);
     }
 
+    void set(const std::string& name, std::int64_t value) override
+    {
+        OGR_F_SetFieldInteger64(m_feature, field_index(name), value);
+    }
+
     void set(const std::string& name, std::size_t value) override
     {
         if (value > std::numeric_limits<std::int64_t>::max()) {

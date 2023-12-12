@@ -17,6 +17,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <variant>
 
 #include "raster_stats.h"
 
@@ -34,12 +35,20 @@ namespace exactextract {
 class StatsRegistry
 {
   public:
+    using RasterStatsVariant = std::variant<
+      RasterStats<float>,
+      RasterStats<double>,
+      RasterStats<std::int8_t>,
+      RasterStats<std::int16_t>,
+      RasterStats<std::int32_t>,
+      RasterStats<std::int64_t>>;
+
     /**
      * @brief Get the RasterStats object for a given feature/operation, creating it if necessary.
      */
-    RasterStats<double>& stats(const Feature& feature, const Operation& op, bool store_values);
+    RasterStatsVariant& stats(const Feature& feature, const Operation& op, bool store_values);
 
-    const RasterStats<double>& stats(const Feature& feature, const Operation& op) const;
+    const RasterStatsVariant& stats(const Feature& feature, const Operation& op) const;
 
     /**
      * @brief Determine if a `RasterStats` object exists for a given feature id/operation
@@ -69,9 +78,12 @@ class StatsRegistry
                            });
     }
 
+    void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, bool store_values);
+    void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, const RasterVariant& weights, bool store_values);
+
   private:
     std::unordered_map<const Feature*,
-                       std::unordered_map<std::string, RasterStats<double>>>
+                       std::unordered_map<std::string, RasterStatsVariant>>
       m_feature_stats{};
 };
 

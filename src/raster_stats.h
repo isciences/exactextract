@@ -31,6 +31,8 @@ class RasterStats
 {
 
   public:
+    using ValueType = T;
+
     /**
      * Compute raster statistics from a Raster representing intersection percentages,
      * a Raster representing data values, and (optionally) a Raster representing weights.
@@ -68,7 +70,8 @@ class RasterStats
         }
     }
 
-    void process(const Raster<float>& intersection_percentages, const AbstractRaster<T>& rast, const AbstractRaster<T>& weights)
+    template<typename WeightType>
+    void process(const Raster<float>& intersection_percentages, const AbstractRaster<ValueType>& rast, const AbstractRaster<WeightType>& weights)
     {
         // Process the entire intersection_percentages grid, even though it may
         // be outside the extent of the weighting raster. Although we've been
@@ -82,25 +85,25 @@ class RasterStats
         // If the value or weights grids do not correspond to the intersection_percentages grid,
         // construct a RasterView to perform the transformation. Even a no-op RasterView can be
         // expensive, so we avoid doing this unless necessary.
-        std::unique_ptr<AbstractRaster<T>> rvp;
-        std::unique_ptr<AbstractRaster<T>> wvp;
+        std::unique_ptr<AbstractRaster<ValueType>> rvp;
+        std::unique_ptr<AbstractRaster<WeightType>> wvp;
 
         if (rast.grid() != common) {
-            rvp = std::make_unique<RasterView<T>>(rast, common);
+            rvp = std::make_unique<RasterView<ValueType>>(rast, common);
         }
 
         if (weights.grid() != common) {
-            wvp = std::make_unique<RasterView<T>>(weights, common);
+            wvp = std::make_unique<RasterView<WeightType>>(weights, common);
         }
 
-        const AbstractRaster<T>& rv = rvp ? *rvp : rast;
-        const AbstractRaster<T>& wv = wvp ? *wvp : weights;
+        const AbstractRaster<ValueType>& rv = rvp ? *rvp : rast;
+        const AbstractRaster<WeightType>& wv = wvp ? *wvp : weights;
 
         for (size_t i = 0; i < rv.rows(); i++) {
             for (size_t j = 0; j < rv.cols(); j++) {
                 float pct_cov = intersection_percentages(i, j);
-                T weight;
-                T val;
+                WeightType weight;
+                ValueType val;
 
                 if (pct_cov > 0 && rv.get(i, j, val)) {
                     if (wv.get(i, j, weight)) {
@@ -117,13 +120,13 @@ class RasterStats
     void process_value(const T& val, float coverage, double weight)
     {
         m_sum_ci += static_cast<double>(coverage);
-        m_sum_xici += val * static_cast<double>(coverage);
+        m_sum_xici += static_cast<double>(val) * static_cast<double>(coverage);
 
         m_variance.process(val, coverage);
 
         double ciwi = static_cast<double>(coverage) * weight;
         m_sum_ciwi += ciwi;
-        m_sum_xiciwi += val * ciwi;
+        m_sum_xiciwi += static_cast<double>(val) * ciwi;
 
         m_weighted_variance.process(val, ciwi);
 

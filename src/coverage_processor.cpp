@@ -38,7 +38,12 @@ CoverageProcessor::process()
     const auto& opts = op.options();
 
     auto grid = common_grid(m_operations.begin(), m_operations.end());
-    StatsRegistry dummy; // TODO remove need for this;
+
+    RasterSource* values = opts.include_values ? op.values : nullptr;
+    RasterSource* weights = opts.include_weights ? op.weights : nullptr;
+
+    RasterVariant vx = values ? values->read_box(Box::make_empty()) : std::make_unique<Raster<double>>(Raster<double>::make_empty());
+    RasterVariant wx = weights ? weights->read_box(Box::make_empty()) : std::make_unique<Raster<double>>(Raster<double>::make_empty());
 
     while (m_shp.next()) {
         const Feature& f_in = m_shp.feature();
@@ -54,9 +59,6 @@ CoverageProcessor::process()
         for (const auto& subgrid : subdivide(cropped_grid, m_max_cells_in_memory)) {
             auto coverage_fractions = raster_cell_intersection(subgrid, m_geos_context, geom);
 
-            RasterSource* values = opts.include_values ? op.values : nullptr;
-            RasterSource* weights = opts.include_weights ? op.weights : nullptr;
-
             std::unique_ptr<AbstractRaster<double>> areas;
             if (opts.area_method == CoverageOperation::AreaMethod::CARTESIAN) {
                 areas = std::make_unique<CartesianAreaRaster<double>>(coverage_fractions.grid());
@@ -64,19 +66,28 @@ CoverageProcessor::process()
                 areas = std::make_unique<SphericalAreaRaster<double>>(coverage_fractions.grid());
             }
 
-            for (const auto& loc : RasterCoverageIteration<double, double>(coverage_fractions, values, weights, grid, areas.get())) {
-                auto f_out = m_output.create_feature();
-                if (m_shp.id_field() != "") {
-                    f_out->set(m_shp.id_field(), f_in);
-                }
-                for (const auto& col : m_include_cols) {
-                    f_out->set(col, f_in);
-                }
+            std::visit([this, &op, &f_in, &coverage_fractions, &values, &weights, &grid, &areas](const auto& _v, const auto& _w) {
+                using ValueType = typename std::remove_reference_t<decltype(*_v)>::value_type;
+                using WeightType = typename std::remove_reference_t<decltype(*_w)>::value_type;
 
-                op.save_coverage(loc);
-                op.set_result(dummy, f_in, *f_out);
-                m_output.write(*f_out);
-            }
+                for (const auto& loc : RasterCoverageIteration<ValueType, WeightType>(coverage_fractions, values, weights, grid, areas.get())) {
+
+                    auto f_out = m_output.create_feature();
+                    if (m_shp.id_field() != "") {
+                        f_out->set(m_shp.id_field(), f_in);
+                    }
+                    for (const auto& col : m_include_cols) {
+                        f_out->set(col, f_in);
+                    }
+
+                    (void)loc;
+
+                    op.set_coverage_result(loc, *f_out);
+                    m_output.write(*f_out);
+                }
+            },
+                       vx,
+                       wx);
 
             progress();
         }

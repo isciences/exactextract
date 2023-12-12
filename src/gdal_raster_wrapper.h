@@ -33,7 +33,7 @@ class GDALRasterWrapper : public RasterSource
         return m_grid;
     }
 
-    std::unique_ptr<AbstractRaster<double>> read_box(const Box& box) override;
+    RasterVariant read_box(const Box& box) override;
 
     ~GDALRasterWrapper() override;
 
@@ -53,6 +53,16 @@ class GDALRasterWrapper : public RasterSource
     Grid<bounded_extent> m_grid;
 
     void compute_raster_grid();
+
+    template<typename T>
+    std::unique_ptr<Raster<T>> make_raster(const Grid<bounded_extent>& grid)
+    {
+        auto ret = std::make_unique<Raster<T>>(grid);
+        if (m_has_nodata) {
+            ret->set_nodata(m_nodata_value);
+        }
+        return ret;
+    }
 };
 }
 

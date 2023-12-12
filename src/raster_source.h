@@ -18,12 +18,14 @@
 #include "grid.h"
 #include "raster.h"
 
+#include <variant>
+
 namespace exactextract {
 class RasterSource
 {
   public:
     virtual const Grid<bounded_extent>& grid() const = 0;
-    virtual std::unique_ptr<AbstractRaster<double>> read_box(const Box& box) = 0;
+    virtual RasterVariant read_box(const Box& box) = 0;
 
     virtual ~RasterSource() = default;
 

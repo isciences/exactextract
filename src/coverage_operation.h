@@ -76,20 +76,9 @@ class CoverageOperation : public Operation
         return std::make_unique<CoverageOperation>(*this);
     }
 
-    /// Method which which a CoverateProcessor can save a value to be applied
-    /// the next time set_result is called. A bit of a kludge.
-    void save_coverage(const CoverageValue<double, double>& last_coverage)
+    template<typename T>
+    void set_coverage_result(const T& loc, Feature& f_out) const
     {
-        m_last_coverage = last_coverage;
-    }
-
-    void set_result(const StatsRegistry& reg, const Feature& fid, Feature& f_out) const override
-    {
-        (void)reg;
-        (void)fid;
-
-        const auto& loc = m_last_coverage;
-
         f_out.set("coverage_fraction", loc.coverage);
 
         if (m_coverage_opts.include_cell) {
@@ -110,7 +99,7 @@ class CoverageOperation : public Operation
         }
 
         if (m_coverage_opts.include_weights && weights != nullptr) {
-            f_out.set(weights->name(), loc.value);
+            f_out.set(weights->name(), loc.weight);
         }
     }
 
@@ -121,7 +110,6 @@ class CoverageOperation : public Operation
 
   private:
     Options m_coverage_opts;
-    CoverageValue<double, double> m_last_coverage;
 };
 
 }
