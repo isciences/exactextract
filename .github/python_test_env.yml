@@ -1,0 +1,11 @@
+name: testenv
+channels:
+  - conda-forge
+dependencies:
+  - gdal
+  - geopandas
+  - geos
+  - numpy
+  - pybind11
+  - pytest
+  - rasterio
