@@ -18,6 +18,7 @@
 #include "operation_bindings.h"
 #include "processor_bindings.h"
 #include "raster_source_bindings.h"
+#include "version.h"
 #include "writer_bindings.h"
 
 namespace py = pybind11;
@@ -25,6 +26,8 @@ namespace py = pybind11;
 namespace exactextract {
 PYBIND11_MODULE(_exactextract, m)
 {
+    m.attr("__version__") = version();
+
     bind_feature(m);
     bind_feature_source(m);
     bind_raster_source(m);

@@ -79,6 +79,15 @@ class CMakeBuild(build_ext):
         self.copy_file(str(source_path), str(dest_path))
 
 
+def find_version():
+    version_script = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), os.pardir, 'cmake', 'VersionSource.cmake'))
+    version = subprocess.run(['cmake', '-P', version_script],
+        capture_output=True,
+        text=True).stderr.split(':')[1].strip()
+    print(f"Version: {version}")
+    return version
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 
@@ -92,8 +101,8 @@ author = config['base']['author']
 url = config['base']['url']
 title = config['base']['title']
 description = config['base']['description']
-version = config['base']['version']
 tag = config['base']['tag']
+version = find_version()
 
 setup(
     name=project,

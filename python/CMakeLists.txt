@@ -22,14 +22,16 @@ src/pybindings/processor_bindings.h
 src/pybindings/raster_source_bindings.cpp
 src/pybindings/raster_source_bindings.h
 src/pybindings/writer_bindings.cpp
-src/pybindings/writer_bindings.h)
+src/pybindings/writer_bindings.h
+)
 
 pybind11_add_module(_exactextract MODULE ${PYBIND_SOURCES})
 target_include_directories(_exactextract PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${SRC_GENERATED}
     ${GEOS_INCLUDE_DIR})
-    set_property(TARGET ${LIB_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(_exactextract PRIVATE ${LIB_NAME} ${GEOS_LIBRARY})
+set_property(TARGET ${LIB_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(_exactextract PRIVATE ${LIB_NAME} ${GEOS_LIBRARY})
 
 add_test(NAME "pybindings" 
          COMMAND ${CMAKE_COMMAND} -E env
