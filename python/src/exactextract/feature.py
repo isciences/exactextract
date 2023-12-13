@@ -23,7 +23,12 @@ class GDALFeature(Feature):
 class JSONFeature(Feature):
     def __init__(self, f=None):
         Feature.__init__(self)
-        self.feature = f or {}
+        if f is None:
+            self.feature = {}
+        elif hasattr(f, '__geo_interface__'):
+            self.feature = f.__geo_interface__
+        else:
+            self.feature = f
 
     def set(self, name, value):
         if name == "id":
