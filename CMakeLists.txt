@@ -17,6 +17,22 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 include(VersionSource)
 find_package(GEOS REQUIRED)
+if (GEOS_VERSION_MAJOR LESS 3 OR GEOS_VERSION_MINOR LESS 5)
+   message(FATAL_ERROR "GEOS version 3.5 or later is required.")
+endif()
+
+message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
+set(SRC_GENERATED ${CMAKE_CURRENT_BINARY_DIR}/generated)
+configure_file(src/version.h.in ${SRC_GENERATED}/version.h)
+
+# Define coverage build type
+set(CMAKE_CXX_FLAGS_COVERAGE "-fprofile-arcs -ftest-coverage")
+
+# Make sure we know our build type
+if(NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified")
+    set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}")
+endif()
 
 #Configure some options the various components this module can build
 option(BUILD_CLI "Build the exactextract cli binary" ON) #requires gdal, cli11
@@ -85,7 +101,7 @@ if(BUILD_CLI)
         subdivide
         PRIVATE
         ${GDAL_INCLUDE_DIR}
-        ${CMAKE_BINARY_DIR}/generated
+        ${SRC_GENERATED}
         )
 
     target_link_libraries(
@@ -98,7 +114,7 @@ if(BUILD_CLI)
     target_include_directories(
             ${BIN_NAME}
             PRIVATE
-            ${CMAKE_BINARY_DIR}/generated
+            ${SRC_GENERATED}
             ${CMAKE_SOURCE_DIR}/src
     )
 
@@ -178,21 +194,6 @@ if(BUILD_TEST)
 
 endif() #BUILD_TEST
 
-message(STATUS "Source version: " ${EXACTEXTRACT_VERSION_SOURCE})
-configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h)
-
-if (GEOS_VERSION_MAJOR LESS 3 OR GEOS_VERSION_MINOR LESS 5)
-   message(FATAL_ERROR "GEOS version 3.5 or later is required.")
-endif()
-
-# Define coverage build type
-set(CMAKE_CXX_FLAGS_COVERAGE "-fprofile-arcs -ftest-coverage")
-
-# Make sure we know our build type
-if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified")
-    set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}")
-endif()
 
 set(PROJECT_SOURCES
         src/measures.cpp
@@ -249,7 +250,7 @@ set(PROJECT_SOURCES
         src/weighted_quantiles.h
         src/weighted_quantiles.cpp
         src/variance.h
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h
+        ${SRC_GENERATED}/version.h
         )
 
 add_library(${LIB_NAME} ${PROJECT_SOURCES})

@@ -33,5 +33,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.git/HEAD)
   endif()
 endif()
 
+message("exactextract version: ${EXACTEXTRACT_VERSION_SOURCE}")
+
 unset(dirty)
 unset(head)
