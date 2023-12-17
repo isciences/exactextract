@@ -110,9 +110,25 @@ class Operation
     virtual void set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const
     {
         static const StatsRegistry::RasterStatsVariant empty_stats = RasterStats<double>();
+
+        constexpr bool write_if_missing = true; // should we set attribute values if the feature did not intersect the raster?
+        if (!write_if_missing && !reg.contains(f_in, *this)) {
+            return;
+        }
+
         const auto& stats = reg.contains(f_in, *this) ? reg.stats(f_in, *this) : empty_stats;
 
-        auto missing = std::numeric_limits<double>::quiet_NaN();
+        // FIXME don't read an empty box every time, maybe cache this in the source?
+        auto empty_rast = values->read_box(Box::make_empty());
+
+        auto missing = std::visit([](const auto& r) {
+            std::variant<std::int32_t, std::int64_t, float, double> ret = std::numeric_limits<double>::quiet_NaN();
+            if (r->has_nodata()) {
+                ret = r->nodata();
+            }
+            return ret;
+        },
+                                  empty_rast);
 
         if (stat == "mean") {
             std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.mean()); }, stats);
@@ -125,13 +141,13 @@ class Operation
         } else if (stat == "weighted_sum") {
             std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_sum()); }, stats);
         } else if (stat == "min") {
-            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.min().value_or(missing)); }, stats);
+            std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.min().value_or(m)); }, stats, missing);
         } else if (stat == "max") {
-            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.max().value_or(missing)); }, stats);
+            std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.max().value_or(m)); }, stats, missing);
         } else if (stat == "majority" || stat == "mode") {
-            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.mode().value_or(missing)); }, stats);
+            std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.mode().value_or(m)); }, stats, missing);
         } else if (stat == "minority") {
-            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.minority().value_or(missing)); }, stats);
+            std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.minority().value_or(m)); }, stats, missing);
         } else if (stat == "variety") {
             std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.variety()); }, stats);
         } else if (stat == "stdev") {
@@ -145,14 +161,15 @@ class Operation
         } else if (stat == "coefficient_of_variation") {
             std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.coefficient_of_variation()); }, stats);
         } else if (stat == "median") {
-            std::visit([&f_out, &missing, this](const auto& x) { f_out.set(m_field_names[0], x.quantile(0.5).value_or(missing)); }, stats);
+            std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.quantile(0.5).value_or(m)); }, stats, missing);
         } else if (stat == "quantile") {
-            std::visit([&f_out, &missing, this](const auto& x) {
+            std::visit([&f_out, this](const auto& x, const auto& m) {
                 for (std::size_t i = 0; i < m_quantiles.size(); i++) {
-                    f_out.set(m_field_names[i], x.quantile(m_quantiles[i]).value_or(missing));
+                    f_out.set(m_field_names[i], x.quantile(m_quantiles[i]).value_or(m));
                 }
             },
-                       stats);
+                       stats,
+                       missing);
         } else if (stat == "frac") {
             std::visit([&f_out](const auto& x) {
                 for (const auto& value : x) {

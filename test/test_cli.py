@@ -29,8 +29,6 @@ def run(tmpdir):
 
         cmd = [str(x) for x in ["./exactextract", "-o", output_fname] + arglist]
 
-        # print(' '.join(cmd))
-
         subprocess.run(cmd, check=True)
 
         with open(output_fname, "r") as f:
@@ -45,7 +43,7 @@ def write_raster(tmp_path):
 
     files = []
 
-    def writer(data):
+    def writer(data, nodata=None):
 
         fname = str(tmp_path / f"raster{len(files)}.tif")
 
@@ -64,6 +62,9 @@ def write_raster(tmp_path):
         ds.SetGeoTransform([0, 1, 0, ny, 0, -1])
 
         ds.GetRasterBand(1).WriteArray(data)
+
+        if nodata:
+            ds.GetRasterBand(1).SetNoDataValue(nodata)
 
         return fname
 
@@ -166,10 +167,38 @@ def test_feature_not_intersecting_raster(strategy, run, write_raster, write_feat
         fid="id",
         raster=f"value:{write_raster(data)}",
         stat=["count(value)", "mean(value)"],
+        strategy=strategy,
     )
 
     assert len(rows) == 1
     assert rows[0] == {"id": "1", "value_count": "0", "value_mean": "nan"}
+
+
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+@pytest.mark.parametrize("dtype,nodata", [(np.float32, None), (np.int32, -999)])
+def test_feature_intersecting_nodata(
+    strategy, run, write_raster, write_features, dtype, nodata
+):
+
+    data = np.full((4, 3), nodata or np.nan, dtype=dtype)
+
+    rows = run(
+        polygons=write_features(
+            {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
+        ),
+        fid="id",
+        raster=f"metric:{write_raster(data, nodata)}",
+        stat=["count(metric)", "mean(metric)", "mode(metric)"],
+        strategy=strategy,
+    )
+
+    assert len(rows) == 1
+    assert rows[0] == {
+        "id": "1",
+        "metric_count": "0",
+        "metric_mean": "nan",
+        "metric_mode": str(nodata) if nodata else "nan",
+    }
 
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))

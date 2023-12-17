@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 ISciences, LLC.
+// Copyright (c) 2018-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -15,7 +15,6 @@
 #define EXACTEXTRACT_RASTER_STATS_H
 
 #include <algorithm>
-#include <iostream>
 #include <limits>
 #include <optional>
 #include <unordered_map>
