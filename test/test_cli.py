@@ -27,8 +27,11 @@ def run(tmpdir):
                 else:
                     arglist += [f"--{k}", f"{x}"]
 
-        subprocess.run(['./exactextract', '-o', output_fname] + arglist,
-                check=True)
+        cmd = [str(x) for x in ['./exactextract', '-o', output_fname] + arglist]
+
+        #print(' '.join(cmd))
+
+        subprocess.run(cmd, check=True)
 
         with open(output_fname, 'r') as f:
             reader = csv.DictReader(f)
@@ -138,6 +141,24 @@ def test_stats_deferred(run, write_raster, write_features):
 
     assert float(rows[1]['frac_2']) == 0.75
     assert float(rows[1]['frac_3']) == 0.25
+
+
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+def test_feature_not_intersecting_raster(strategy, run, write_raster, write_features):
+
+    data = np.array([
+        [1, 2, 3],
+        [1, 2, 2],
+        [3, 3, 3]], np.float32)
+
+    rows = run(
+            polygons=write_features([{"id":1, "geom":"POLYGON ((100 100, 200 100, 200 200, 100 100))"}]),
+            fid="id",
+            raster=f"value:{write_raster(data)}",
+            stat=["count(value)", "mean(value)"])
+
+    assert len(rows) == 1
+    assert rows[0] == {'id' : '1', 'value_count' : '0', 'value_mean' : 'nan'}
 
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))

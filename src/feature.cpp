@@ -13,6 +13,7 @@
 
 #include "feature.h"
 
+#include <cmath>
 #include <limits>
 #include <stdexcept>
 
@@ -48,7 +49,11 @@ Feature::set(const std::string& name, std::size_t value)
 void
 Feature::set(const std::string& name, float value)
 {
-    set(name, static_cast<double>(value));
+    if (std::isnan(value)) {
+        set(name, std::numeric_limits<double>::quiet_NaN());
+    } else {
+        set(name, static_cast<double>(value));
+    }
 }
 
 Feature::FieldValue
