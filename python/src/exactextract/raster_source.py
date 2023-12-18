@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import numpy as np
 import os
 import pathlib
 
@@ -126,3 +127,73 @@ class RasterioRasterSource(RasterSource):
         from rasterio.windows import Window
 
         return self.ds.read(self.band_idx, window=Window(x0, y0, nx, ny))
+
+
+class XArrayRasterSource(RasterSource):
+    def __init__(self, ds, band_idx=1, *, name=None):
+        super().__init__()
+
+        if isinstance(ds, (str, os.PathLike)):
+            import rioxarray
+            import xarray
+
+            ds = xarray.open_dataarray(ds)
+
+        self.ds = ds
+        if self.ds.rio.crs is None:
+            # Set a default CRS to prevent clip_box from
+            # complaining that we don't have one
+            self.ds.rio.set_crs('EPSG:4326', inplace=True)
+        self.band_idx = band_idx
+        self.band_dim = self._band_dim(self.ds)
+        self.bounds = self.ds.rio.bounds()
+        
+        if name:
+            self.set_name(name)
+
+
+    @staticmethod
+    def _band_dim(ds):
+        dims = list(ds.dims)
+        dims.remove(ds.rio.x_dim)
+        dims.remove(ds.rio.y_dim)
+
+        if len(dims) == 0:
+            return None
+        elif len(dims) == 1:
+            return dims[0]
+        else:
+            raise Exception("Cannot handle >1 non-spatial dimension")
+
+
+    def res(self):
+        return tuple(abs(x) for x in self.ds.rio.resolution())
+
+
+    def extent(self):
+        return self.bounds
+
+
+    def nodata_value(self):
+        return self.ds.rio.nodata
+
+
+    def read_window(self, x0, y0, nx, ny):
+        lats = self.ds[self.ds.rio.y_dim]
+        flipped = bool(len(lats) > 1 and lats[1] > lats[0])
+
+        if flipped:
+            y0 = self.ds.rio.height - y0 - ny
+
+        selection = {}
+        if self.band_dim is not None:
+            selection[self.band_dim] = self.ds[self.band_dim][self.band_idx - 1]
+        selection[self.ds.rio.x_dim] = self.ds[self.ds.rio.x_dim][x0 : x0+nx]
+        selection[self.ds.rio.y_dim] = self.ds[self.ds.rio.y_dim][y0 : y0+ny]
+
+        ret = self.ds.sel(**selection).to_numpy()
+
+        if flipped:
+            ret = np.flipud(ret)
+
+        return ret

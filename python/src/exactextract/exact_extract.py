@@ -6,7 +6,7 @@ from .feature_source import (
     JSONFeatureSource,
     GeoPandasFeatureSource,
 )
-from .raster_source import RasterSource, GDALRasterSource, RasterioRasterSource
+from .raster_source import RasterSource, GDALRasterSource, RasterioRasterSource, XArrayRasterSource
 from .operation import Operation
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
 from .writer import JSONWriter
@@ -59,6 +59,24 @@ def prep_raster(rast, band=None, name_root=None, names=None):
                     RasterioRasterSource(rast, i + 1, name=names[i])
                     for i in range(rast.count)
                 ]
+    except ImportError:
+        pass
+
+    try:
+        import rioxarray
+        import xarray
+
+        if isinstance(rast, xarray.core.dataarray.DataArray):
+            if band:
+                return [XArrayRasterSource(rast, band)]
+            else:
+                if not names:
+                    names = [f"{name_root}_{i+1}" for i in range(rast.rio.count)]
+                return [
+                        XArrayRasterSource(rast, i+1, name=names[i])
+                            for i in range(rast.rio.count)
+                            ]
+
     except ImportError:
         pass
 
