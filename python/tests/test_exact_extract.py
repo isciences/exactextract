@@ -320,6 +320,10 @@ def open_with_lib(fname, libname):
     elif libname == "rasterio":
         rasterio = pytest.importorskip("rasterio")
         return rasterio.open(fname)
+    elif libname == "xarray":
+        rioxarray = pytest.importorskip("rioxarray")
+        xarray = pytest.importorskip("xarray")
+        return xarray.open_dataarray(fname)
     elif libname == "ogr":
         ogr = pytest.importorskip("osgeo.ogr")
         return ogr.Open(fname)
@@ -331,7 +335,7 @@ def open_with_lib(fname, libname):
         return gp.read_file(fname)
 
 
-@pytest.mark.parametrize("rast_lib", ("gdal", "rasterio"))
+@pytest.mark.parametrize("rast_lib", ("gdal", "rasterio", "xarray"))
 @pytest.mark.parametrize("vec_lib", ("ogr", "fiona", "geopandas"))
 @pytest.mark.parametrize(
     "arr,expected",

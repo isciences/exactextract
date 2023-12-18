@@ -18,5 +18,6 @@ from .raster_source import (
     GDALRasterSource,
     NumPyRasterSource,
     RasterioRasterSource,
+    XArrayRasterSource,
 )
 from .writer import Writer, JSONWriter, GDALWriter
