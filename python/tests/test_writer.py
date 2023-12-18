@@ -3,7 +3,7 @@
 
 import pytest
 
-from exactextract import JSONFeature, GDALWriter, JSONWriter
+from exactextract import GDALWriter, JSONFeature, JSONWriter
 
 
 @pytest.fixture()

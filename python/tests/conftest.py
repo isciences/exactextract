@@ -1,6 +1,6 @@
 import pytest
 
-from exactextract import NumPyRasterSource, JSONFeature
+from exactextract import NumPyRasterSource
 
 
 @pytest.fixture()

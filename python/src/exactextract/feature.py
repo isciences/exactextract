@@ -25,7 +25,7 @@ class JSONFeature(Feature):
         Feature.__init__(self)
         if f is None:
             self.feature = {}
-        elif hasattr(f, '__geo_interface__'):
+        elif hasattr(f, "__geo_interface__"):
             self.feature = f.__geo_interface__
         else:
             self.feature = f

@@ -3,12 +3,17 @@ import os
 from .feature_source import (
     FeatureSource,
     GDALFeatureSource,
-    JSONFeatureSource,
     GeoPandasFeatureSource,
+    JSONFeatureSource,
 )
-from .raster_source import RasterSource, GDALRasterSource, RasterioRasterSource, XArrayRasterSource
 from .operation import Operation
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
+from .raster_source import (
+    GDALRasterSource,
+    RasterioRasterSource,
+    RasterSource,
+    XArrayRasterSource,
+)
 from .writer import JSONWriter
 
 
@@ -63,7 +68,7 @@ def prep_raster(rast, band=None, name_root=None, names=None):
         pass
 
     try:
-        import rioxarray
+        import rioxarray  # noqa: F401
         import xarray
 
         if isinstance(rast, xarray.core.dataarray.DataArray):
@@ -73,9 +78,9 @@ def prep_raster(rast, band=None, name_root=None, names=None):
                 if not names:
                     names = [f"{name_root}_{i+1}" for i in range(rast.rio.count)]
                 return [
-                        XArrayRasterSource(rast, i+1, name=names[i])
-                            for i in range(rast.rio.count)
-                            ]
+                    XArrayRasterSource(rast, i + 1, name=names[i])
+                    for i in range(rast.rio.count)
+                ]
 
     except ImportError:
         pass

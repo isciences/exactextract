@@ -1,5 +1,3 @@
-import pytest
-
 from exactextract import GDALFeatureSource, JSONFeatureSource
 
 

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import pathlib
-from typing import Union, Dict, List
-
 from _exactextract import Writer
-from .feature import JSONFeature, GDALFeature
+
+from .feature import GDALFeature, JSONFeature
 
 
 class JSONWriter(Writer):

@@ -3,7 +3,12 @@
 
 import pytest
 
-from exactextract import *
+from exactextract import (
+    FeatureSequentialProcessor,
+    JSONFeatureSource,
+    JSONWriter,
+    Operation,
+)
 
 
 @pytest.mark.parametrize("Processor", (FeatureSequentialProcessor,))

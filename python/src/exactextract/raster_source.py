@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import os
-import pathlib
 
+import numpy as np
 from _exactextract import RasterSource
 
 
@@ -134,7 +133,7 @@ class XArrayRasterSource(RasterSource):
         super().__init__()
 
         if isinstance(ds, (str, os.PathLike)):
-            import rioxarray
+            import rioxarray  # noqa: F401
             import xarray
 
             ds = xarray.open_dataarray(ds)
@@ -143,14 +142,13 @@ class XArrayRasterSource(RasterSource):
         if self.ds.rio.crs is None:
             # Set a default CRS to prevent clip_box from
             # complaining that we don't have one
-            self.ds.rio.set_crs('EPSG:4326', inplace=True)
+            self.ds.rio.set_crs("EPSG:4326", inplace=True)
         self.band_idx = band_idx
         self.band_dim = self._band_dim(self.ds)
         self.bounds = self.ds.rio.bounds()
-        
+
         if name:
             self.set_name(name)
-
 
     @staticmethod
     def _band_dim(ds):
@@ -165,18 +163,14 @@ class XArrayRasterSource(RasterSource):
         else:
             raise Exception("Cannot handle >1 non-spatial dimension")
 
-
     def res(self):
         return tuple(abs(x) for x in self.ds.rio.resolution())
-
 
     def extent(self):
         return self.bounds
 
-
     def nodata_value(self):
         return self.ds.rio.nodata
-
 
     def read_window(self, x0, y0, nx, ny):
         lats = self.ds[self.ds.rio.y_dim]
@@ -188,8 +182,8 @@ class XArrayRasterSource(RasterSource):
         selection = {}
         if self.band_dim is not None:
             selection[self.band_dim] = self.ds[self.band_dim][self.band_idx - 1]
-        selection[self.ds.rio.x_dim] = self.ds[self.ds.rio.x_dim][x0 : x0+nx]
-        selection[self.ds.rio.y_dim] = self.ds[self.ds.rio.y_dim][y0 : y0+ny]
+        selection[self.ds.rio.x_dim] = self.ds[self.ds.rio.x_dim][x0 : x0 + nx]
+        selection[self.ds.rio.y_dim] = self.ds[self.ds.rio.y_dim][y0 : y0 + ny]
 
         ret = self.ds.sel(**selection).to_numpy()
 

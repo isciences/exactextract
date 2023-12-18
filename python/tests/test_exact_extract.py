@@ -1,8 +1,9 @@
 import math
-import pytest
-import numpy as np
 
-from exactextract import *
+import numpy as np
+import pytest
+
+from exactextract import JSONFeatureSource, NumPyRasterSource, exact_extract
 
 
 def make_square_raster(n):
@@ -301,8 +302,8 @@ def create_gdal_raster(fname, values, *, gt=None):
 def create_gdal_features(fname, features, name="test"):
     gdal = pytest.importorskip("osgeo.gdal")
 
-    import tempfile
     import json
+    import tempfile
 
     with tempfile.NamedTemporaryFile(suffix=".geojson") as tf:
         tf.write(
@@ -311,6 +312,7 @@ def create_gdal_features(fname, features, name="test"):
         tf.flush()
 
         ds = gdal.VectorTranslate(str(fname), tf.name)
+        ds = None  # noqa: F841
 
 
 def open_with_lib(fname, libname):
@@ -321,7 +323,7 @@ def open_with_lib(fname, libname):
         rasterio = pytest.importorskip("rasterio")
         return rasterio.open(fname)
     elif libname == "xarray":
-        rioxarray = pytest.importorskip("rioxarray")
+        rioxarray = pytest.importorskip("rioxarray")  # noqa: F841
         xarray = pytest.importorskip("xarray")
         return xarray.open_dataarray(fname)
     elif libname == "ogr":

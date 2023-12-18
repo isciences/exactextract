@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from typing import List, Union
+from typing import List
 
-from _exactextract import (
-    FeatureSequentialProcessor as _FeatureSequentialProcessor,
-    RasterSequentialProcessor as _RasterSequentialProcessor,
-)
+from _exactextract import FeatureSequentialProcessor as _FeatureSequentialProcessor
+from _exactextract import RasterSequentialProcessor as _RasterSequentialProcessor
 
 from .feature_source import FeatureSource
 from .operation import Operation

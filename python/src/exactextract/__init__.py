@@ -8,16 +8,16 @@ from .feature import Feature, GDALFeature, JSONFeature
 from .feature_source import (
     FeatureSource,
     GDALFeatureSource,
-    JSONFeatureSource,
     GeoPandasFeatureSource,
+    JSONFeatureSource,
 )
 from .operation import Operation
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
 from .raster_source import (
-    RasterSource,
     GDALRasterSource,
     NumPyRasterSource,
     RasterioRasterSource,
+    RasterSource,
     XArrayRasterSource,
 )
-from .writer import Writer, JSONWriter, GDALWriter
+from .writer import GDALWriter, JSONWriter, Writer

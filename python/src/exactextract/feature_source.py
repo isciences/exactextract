@@ -1,6 +1,6 @@
-from _exactextract import FeatureSource
-
 import os
+
+from _exactextract import FeatureSource
 
 from .feature import GDALFeature, JSONFeature
 
