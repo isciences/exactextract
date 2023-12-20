@@ -34,13 +34,10 @@ class CMakeBuild(build_ext):
             "-DBUILD_DOC=OFF",
         ]
 
-        cfg = "Debug" if self.debug else "Release"
-        build_args = ["--config", cfg]
+        self.config = "Debug" if self.debug else "Release"
+        build_args = ["--config", self.config]
 
-        cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
-
-        # Assuming Makefiles
-        build_args += ["--", "-j2"]
+        cmake_args += ["-DCMAKE_BUILD_TYPE=" + self.config]
 
         self.build_args = build_args
 
@@ -61,11 +58,8 @@ class CMakeBuild(build_ext):
         )
 
         print("-" * 10, "Building extensions", "-" * 40)
-        cmake_cmd = ["cmake", "--build", "."] + self.build_args
+        cmake_cmd = ["cmake", "--build", ".", "-j 2"] + self.build_args
         subprocess.check_call(cmake_cmd, cwd=self.build_temp)
-
-        make_cmd = ["make"]
-        subprocess.check_call(make_cmd, cwd=self.build_temp)
 
         # Move from build temp to final position
         for ext in self.extensions:
@@ -74,6 +68,10 @@ class CMakeBuild(build_ext):
     def move_output(self, ext):
         build_temp = Path(self.build_temp).resolve()
         dest_path = Path(self.get_ext_fullpath(ext.name)).resolve()
+
+        if (build_temp / self.config).exists():
+            build_temp = build_temp / self.config
+
         source_path = build_temp / self.get_ext_filename(ext.name)
         dest_directory = dest_path.parents[0]
         dest_directory.mkdir(parents=True, exist_ok=True)
