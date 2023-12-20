@@ -107,8 +107,10 @@ class AbstractRaster
         if (m_has_nodata && val == m_nodata) {
             return false;
         }
-        if (std::is_floating_point<T>::value && std::isnan(val)) {
-            return false;
+        if constexpr (std::is_floating_point<T>::value) {
+            if (std::isnan(val)) {
+                return false;
+            }
         }
 
         return true;
@@ -148,9 +150,11 @@ class AbstractRaster
         for (size_t i = 0; i < rows(); i++) {
             for (size_t j = 0; j < cols(); j++) {
                 if (operator()(i, j) != other(i, j)) {
-                    // Override default behavior of NAN != NAN
-                    if (!std::isnan(operator()(i, j)) || !std::isnan(other(i, j))) {
-                        return false;
+                    if constexpr (std::is_floating_point<T>::value) {
+                        // Override default behavior of NAN != NAN
+                        if (!std::isnan(operator()(i, j)) || !std::isnan(other(i, j))) {
+                            return false;
+                        }
                     }
                 } else if (nodata_differs && (operator()(i, j) == nodata() || other(i, j) == other.nodata())) {
                     // For data types that do not have NAN, or even for floating point types where the user has
