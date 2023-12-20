@@ -1,4 +1,5 @@
 import math
+import os
 
 import numpy as np
 import pytest
@@ -305,7 +306,8 @@ def create_gdal_features(fname, features, name="test"):
     import json
     import tempfile
 
-    with tempfile.NamedTemporaryFile(suffix=".geojson") as tf:
+    # need to use delete=False so VectorTranslate can access the file on Windows
+    with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as tf:
         tf.write(
             json.dumps({"type": "FeatureCollection", "features": features}).encode()
         )
@@ -313,6 +315,8 @@ def create_gdal_features(fname, features, name="test"):
 
         ds = gdal.VectorTranslate(str(fname), tf.name)
         ds = None  # noqa: F841
+
+    os.remove(tf.name)
 
 
 def open_with_lib(fname, libname):
