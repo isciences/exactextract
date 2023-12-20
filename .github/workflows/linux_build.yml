@@ -35,21 +35,6 @@ jobs:
             build_cli: NO
             build_python: NO
 
-          - name: "GEOS 3.7"
-            tag: geos37
-            build_cli: NO
-            build_python: NO
-
-          - name: "GEOS 3.6"
-            tag: geos36
-            build_cli: NO
-            build_python: NO
-
-          - name: "GEOS 3.5"
-            tag: geos35
-            build_cli: NO
-            build_python: NO
-
     name: ${{ matrix.ci.name }}
     runs-on: ubuntu-latest
 

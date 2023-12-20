@@ -18,16 +18,13 @@ RUN apt-get update && apt-get install -y \
   wget
 
 ARG GEOS_VERSION
-ARG BUILD_TOOL
 
 RUN wget http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 && \
     tar -xjf geos-${GEOS_VERSION}.tar.bz2 && \
     cd geos-${GEOS_VERSION} && \
-    if [ "${BUILD_TOOL}" = "cmake" ] ; then \ 
-      mkdir cmake-build-release && \
-      cd cmake-build-release && \
-      cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=YES -DBUILD_TESTING=NO .. ; \
-    else ./configure ; fi && \
+    mkdir cmake-build-release && \
+    cd cmake-build-release && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=YES -DBUILD_TESTING=NO .. ; \
     make && make install && \
     cd / && \
     rm -rf geos-${GEOS_VERSION} && \
