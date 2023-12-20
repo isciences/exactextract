@@ -16,8 +16,10 @@ include(GNUInstallDirs)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 include(VersionSource)
-find_package(GEOS REQUIRED)
-if (GEOS_VERSION_MAJOR LESS 3 OR GEOS_VERSION_MINOR LESS 5)
+find_package(GEOS "3.5" REQUIRED)
+if (GEOS_FOUND)
+   message(STATUS "GEOS version: " ${GEOS_VERSION})
+else()
    message(FATAL_ERROR "GEOS version 3.5 or later is required.")
 endif()
 
@@ -181,7 +183,6 @@ if(BUILD_TEST)
             catch_tests
             PRIVATE
                 ${CATCH_INCLUDE_DIR}
-                ${GEOS_INCLUDE_DIR}
                 ${CMAKE_SOURCE_DIR}/src
     )
 
@@ -189,7 +190,7 @@ if(BUILD_TEST)
             catch_tests
             PRIVATE
                 ${LIB_NAME}
-                ${GEOS_LIBRARY}
+                GEOS::geos_c
     )
 
 endif() #BUILD_TEST
@@ -260,12 +261,6 @@ add_library(${LIB_NAME} ${PROJECT_SOURCES})
 set_target_properties(${LIB_NAME}
         PROPERTIES COMPILE_DEFINITIONS $<$<CONFIG:Debug>:MATRIX_CHECK_BOUNDS>)
 
-target_include_directories(
-        ${LIB_NAME}
-        PRIVATE
-        ${GEOS_INCLUDE_DIR}
-)
-
 target_compile_definitions(
         ${LIB_NAME}
         PRIVATE
@@ -282,7 +277,7 @@ target_compile_options(
 target_link_libraries(
         ${LIB_NAME}
         PUBLIC
-        ${GEOS_LIBRARY}
+        GEOS::geos_c
 )
 
 set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME ${LIB_NAME})

@@ -28,10 +28,9 @@ src/pybindings/writer_bindings.h
 pybind11_add_module(_exactextract MODULE ${PYBIND_SOURCES})
 target_include_directories(_exactextract PRIVATE
     ${CMAKE_SOURCE_DIR}/src
-    ${SRC_GENERATED}
-    ${GEOS_INCLUDE_DIR})
+    ${SRC_GENERATED})
 set_property(TARGET ${LIB_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(_exactextract PRIVATE ${LIB_NAME} ${GEOS_LIBRARY})
+target_link_libraries(_exactextract PRIVATE ${LIB_NAME} GEOS::geos_c)
 
 add_test(NAME "pybindings" 
          COMMAND ${CMAKE_COMMAND} -E env
