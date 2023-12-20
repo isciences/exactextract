@@ -43,7 +43,7 @@ def write_raster(tmp_path):
 
     files = []
 
-    def writer(data, nodata=None):
+    def writer(data, nodata=None, scale=None, offset=None):
 
         fname = str(tmp_path / f"raster{len(files)}.tif")
 
@@ -65,6 +65,11 @@ def write_raster(tmp_path):
 
         if nodata:
             ds.GetRasterBand(1).SetNoDataValue(nodata)
+
+        if scale:
+            ds.GetRasterBand(1).SetScale(scale)
+        if offset:
+            ds.GetRasterBand(1).SetOffset(offset)
 
         return fname
 
@@ -313,3 +318,23 @@ def test_coverage_fraction_args(run, write_raster, write_features):
 
     areas = [float(row["area"]) for row in rows]
     assert areas == [1.0] * 9
+
+
+def test_scale_offset(run, write_raster, write_features):
+
+    data = np.array([[17650, 18085], [19127, 19428]], dtype=np.int16)
+    scale = 0.001571273180860454
+    offset = 250.47270984680802
+
+    rows = run(
+        polygons=write_features(
+            {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
+        ),
+        fid="id",
+        raster=f"d2m:{write_raster(data, scale=scale, offset=offset)}",
+        stat=["coverage(d2m)"],
+        include_cell=True,
+    )
+
+    assert int(rows[0]["cell"]) == 0
+    assert float(rows[0]["d2m"]) == pytest.approx(278.2057, rel=1e-3)

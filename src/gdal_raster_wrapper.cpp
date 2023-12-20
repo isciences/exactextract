@@ -55,6 +55,16 @@ GDALRasterWrapper::cartesian() const
     return srs == nullptr || !OSRIsGeographic(srs);
 }
 
+static void
+apply_scale_and_offset(double* px, std::size_t size, double scale, double offset)
+{
+    double* end = px + size;
+    while (px < end) {
+        *px = *px * scale + offset;
+        px++;
+    }
+}
+
 RasterVariant
 GDALRasterWrapper::read_box(const Box& box)
 {
@@ -65,16 +75,46 @@ GDALRasterWrapper::read_box(const Box& box)
     void* buffer;
     GDALDataType read_type;
 
-    if (band_type == GDT_Int32) {
-        auto rast = make_raster<std::int32_t>(cropped_grid);
-        buffer = rast->data().data();
-        ret = std::move(rast);
-        read_type = GDT_Int32;
-    } else {
+    int has_scale = 0;
+    double scale = 1;
+    int has_offset = 0;
+    double offset = 0;
+
+    scale = GDALGetRasterScale(m_band, &has_scale);
+    offset = GDALGetRasterOffset(m_band, &has_offset);
+
+    if (has_scale || has_offset) {
         auto rast = make_raster<double>(cropped_grid);
         buffer = rast->data().data();
         ret = std::move(rast);
         read_type = GDT_Float64;
+    } else {
+        if (band_type == GDT_Byte) {
+            auto rast = make_raster<std::int8_t>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_Byte;
+        } else if (band_type == GDT_Int16) {
+            auto rast = make_raster<std::int16_t>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_Int16;
+        } else if (band_type == GDT_Int32) {
+            auto rast = make_raster<std::int32_t>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_Int32;
+        } else if (band_type == GDT_Float32) {
+            auto rast = make_raster<float>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_Float32;
+        } else {
+            auto rast = make_raster<double>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_Float64;
+        }
     }
 
     auto error = GDALRasterIO(m_band,
@@ -92,6 +132,10 @@ GDALRasterWrapper::read_box(const Box& box)
 
     if (error) {
         throw std::runtime_error("Error reading from raster.");
+    }
+
+    if (has_scale || has_offset) {
+        apply_scale_and_offset(static_cast<double*>(buffer), cropped_grid.size(), scale, offset);
     }
 
     return ret;
