@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ISciences, LLC.
+// Copyright (c) 2020-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -27,6 +27,15 @@ class RasterSource
     virtual const Grid<bounded_extent>& grid() const = 0;
     virtual RasterVariant read_box(const Box& box) = 0;
 
+    const RasterVariant& read_empty()
+    {
+        if (!m_empty) {
+            m_empty = std::make_unique<RasterVariant>(read_box(Box::make_empty()));
+        }
+
+        return *m_empty;
+    }
+
     virtual ~RasterSource() = default;
 
     void set_name(const std::string& name)
@@ -34,13 +43,14 @@ class RasterSource
         m_name = name;
     }
 
-    std::string name() const
+    const std::string& name() const
     {
         return m_name;
     }
 
   private:
     std::string m_name;
+    std::unique_ptr<RasterVariant> m_empty;
 };
 }
 

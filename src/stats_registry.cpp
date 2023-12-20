@@ -52,13 +52,13 @@ StatsRegistry::stats(const Feature& feature, const Operation& op, bool store_val
 
     auto it = stats_for_feature.find(op.key());
     if (it == stats_for_feature.end()) {
-        // FIXME come up with a more direct way to probe the type of the raster
-        auto rast = op.values->read_box(Box::make_empty());
+        // Construct a RasterStats with the correct value type for this Operation.
+        const auto& rast = op.values->read_empty();
 
         it = std::visit([&stats_for_feature, &op, store_values](const auto& r) {
-                 using rtype = typename std::remove_reference_t<decltype(*r)>::value_type;
+                 using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
 
-                 return stats_for_feature.emplace(op.key(), RasterStats<rtype>(store_values));
+                 return stats_for_feature.emplace(op.key(), RasterStats<value_type>(store_values));
              },
                         rast)
                .first;
