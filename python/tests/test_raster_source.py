@@ -31,6 +31,33 @@ def global_half_degree(tmp_path):
     return fname
 
 
+@pytest.fixture()
+def scaled_temperature(tmp_path):
+    from osgeo import gdal
+
+    fname = str(tmp_path / "d2m.nc")
+
+    nx = 2
+    ny = 2
+
+    drv = gdal.GetDriverByName("NetCDF")
+    ds = drv.Create(fname, nx, ny, eType=gdal.GDT_Int16)
+    gt = (1, 1, 0, 2, 0, -1)
+    ds.SetGeoTransform(gt)
+
+    band = ds.GetRasterBand(1)
+
+    data = np.array([[17650, 18085], [19127, 19428]], dtype=np.int16)
+    band.SetScale(0.001571273180860454)
+    band.SetOffset(250.47270984680802)
+
+    band.WriteArray(data)
+
+    ds = None
+
+    return fname
+
+
 @pytest.mark.parametrize(
     "Source", (GDALRasterSource, RasterioRasterSource, XArrayRasterSource)
 )
@@ -54,3 +81,17 @@ def test_gdal_raster(global_half_degree, Source):
     if Source != XArrayRasterSource:
         assert src.nodata_value() == 6
         assert window.dtype == np.int32
+
+
+@pytest.mark.parametrize(
+    "Source", (GDALRasterSource, RasterioRasterSource, XArrayRasterSource)
+)
+def test_scaled_raster(scaled_temperature, Source):
+    try:
+        src = Source(scaled_temperature, 1)
+    except ModuleNotFoundError as e:
+        pytest.skip(str(e))
+
+    window = src.read_window(0, 0, 2, 2)
+
+    assert window[0, 0] == pytest.approx(278.2057, rel=1e-3)

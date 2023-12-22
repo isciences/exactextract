@@ -50,7 +50,19 @@ class GDALRasterSource(RasterSource):
         return self.band.GetNoDataValue()
 
     def read_window(self, x0, y0, nx, ny):
-        return self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
+        arr = self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
+
+        if self.band.GetScale() is not None:
+            if issubclass(arr.dtype.type, np.integer):
+                arr = arr.astype(np.float64)
+            arr *= self.band.GetScale()
+
+        if self.band.GetOffset() is not None:
+            if issubclass(arr.dtype.type, np.integer):
+                arr = arr.astype(np.float64)
+            arr += self.band.GetOffset()
+
+        return arr
 
 
 class NumPyRasterSource(RasterSource):
@@ -125,7 +137,20 @@ class RasterioRasterSource(RasterSource):
     def read_window(self, x0, y0, nx, ny):
         from rasterio.windows import Window
 
-        return self.ds.read(self.band_idx, window=Window(x0, y0, nx, ny))
+        arr = self.ds.read(self.band_idx, window=Window(x0, y0, nx, ny))
+
+        scale = self.ds.scales[self.band_idx - 1]
+        offset = self.ds.offsets[self.band_idx - 1]
+
+        scaled = scale != 1.0 or offset != 0.0
+
+        if scaled:
+            if issubclass(arr.dtype.type, np.integer):
+                arr = arr.astype(np.float64)
+
+            arr = arr * scale + offset
+
+        return arr
 
 
 class XArrayRasterSource(RasterSource):
