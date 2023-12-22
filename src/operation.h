@@ -45,6 +45,7 @@ class Operation
       , name{ std::move(p_name) }
       , values{ p_values }
       , weights{ p_weights }
+      , m_missing{ get_missing_value() }
     {
         if (stat == "quantile") {
             setQuantileFieldNames();
@@ -120,6 +121,12 @@ class Operation
     void setQuantileFieldNames();
 
     std::vector<double> m_quantiles;
+
+    using missing_value_t = std::variant<double, std::int8_t, std::int16_t, std::int32_t, std::int64_t>;
+
+    missing_value_t m_missing;
+
+    missing_value_t get_missing_value();
 
   protected:
     std::vector<std::string> m_field_names;

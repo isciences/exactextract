@@ -4,6 +4,21 @@
 
 namespace exactextract {
 
+Operation::missing_value_t
+Operation::get_missing_value()
+{
+
+    const auto& empty_rast = values->read_empty();
+
+    return std::visit([](const auto& r) -> missing_value_t {
+        if (r->has_nodata()) {
+            return r->nodata();
+        }
+        return std::numeric_limits<double>::quiet_NaN();
+    },
+                      empty_rast);
+}
+
 void
 Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const
 {
@@ -16,18 +31,6 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
 
     const auto& stats = reg.contains(f_in, *this) ? reg.stats(f_in, *this) : empty_stats;
 
-    // Construct
-    const auto& empty_rast = values->read_empty();
-
-    using missing_value_t = std::variant<double, std::int64_t>;
-    auto missing = std::visit([](const auto& r) -> missing_value_t {
-        if (r->has_nodata()) {
-            return r->nodata();
-        }
-        return std::numeric_limits<double>::quiet_NaN();
-    },
-                              empty_rast);
-
     if (stat == "mean") {
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.mean()); }, stats);
     } else if (stat == "sum") {
@@ -39,13 +42,13 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
     } else if (stat == "weighted_sum") {
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_sum()); }, stats);
     } else if (stat == "min") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.min().value_or(m)); }, stats, missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.min().value_or(m)); }, stats, m_missing);
     } else if (stat == "max") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.max().value_or(m)); }, stats, missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.max().value_or(m)); }, stats, m_missing);
     } else if (stat == "majority" || stat == "mode") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.mode().value_or(m)); }, stats, missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.mode().value_or(m)); }, stats, m_missing);
     } else if (stat == "minority") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.minority().value_or(m)); }, stats, missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.minority().value_or(m)); }, stats, m_missing);
     } else if (stat == "variety") {
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.variety()); }, stats);
     } else if (stat == "stdev") {
@@ -59,7 +62,7 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
     } else if (stat == "coefficient_of_variation") {
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.coefficient_of_variation()); }, stats);
     } else if (stat == "median") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.quantile(0.5).value_or(m)); }, stats, missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.quantile(0.5).value_or(m)); }, stats, m_missing);
     } else if (stat == "quantile") {
         std::visit([&f_out, this](const auto& x, const auto& m) {
             for (std::size_t i = 0; i < m_quantiles.size(); i++) {
@@ -67,7 +70,7 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
             }
         },
                    stats,
-                   missing);
+                   m_missing);
     } else if (stat == "frac") {
         std::visit([&f_out](const auto& x) {
             for (const auto& value : x) {
