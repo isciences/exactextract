@@ -81,7 +81,7 @@ class GDALFeature : public Feature
         OGRFieldDefnH defn = OGR_F_GetFieldDefnRef(m_feature, pos);
         auto type = OGR_Fld_GetType(defn);
 
-        if (type == OFTString) {
+        if (type == OFTString || type == OFTInteger64) {
             return typeid(std::string);
         } else if (type == OFTReal) {
             return typeid(double);
