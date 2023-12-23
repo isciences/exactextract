@@ -3,6 +3,7 @@
 #include "feature_sequential_processor.h"
 #include "feature_source.h"
 #include "map_feature.h"
+#include "memory_raster_source.h"
 #include "operation.h"
 #include "output_writer.h"
 #include "raster.h"
@@ -10,37 +11,6 @@
 #include "raster_source.h"
 
 using namespace exactextract;
-
-template<typename T>
-class MemoryRasterSource : public RasterSource
-{
-  public:
-    MemoryRasterSource(const AbstractRaster<T>& rast)
-      : m_rast(rast)
-    {
-    }
-
-    RasterVariant read_box(const Box& b) override
-    {
-        if (b.empty()) {
-            return std::make_unique<Raster<T>>(Raster<T>::make_empty());
-        }
-
-        if (b != m_rast.grid().extent()) {
-            throw std::runtime_error("Unexpected extent.");
-        }
-
-        return std::make_unique<RasterView<T>>(m_rast, m_rast.grid());
-    }
-
-    const Grid<bounded_extent>& grid() const override
-    {
-        return m_rast.grid();
-    }
-
-  private:
-    const AbstractRaster<T>& m_rast;
-};
 
 class WKTFeatureSource : public FeatureSource
 {
@@ -112,8 +82,8 @@ TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[op
     Matrix<TestType> values{ { { 1, 1, 1 },
                                { 2, 2, 2 },
                                { 2, 2, 2 } } };
-    Raster<TestType> value_rast(std::move(values), ex.extent());
-    MemoryRasterSource<TestType> value_src(value_rast);
+    auto value_rast = std::make_unique<Raster<TestType>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
 
     WKTFeatureSource ds;
     MapFeature mf;
@@ -144,8 +114,8 @@ TEST_CASE("frac sets appropriate column names", "[operation]")
                              { 2, 2, 2 },
                              { 3, 3, 3 } } };
 
-    Raster<double> value_rast(std::move(values), ex.extent());
-    MemoryRasterSource<double> value_src(value_rast);
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
 
     WKTFeatureSource ds;
     MapFeature mf;
@@ -183,14 +153,14 @@ TEST_CASE("weighted_frac sets appropriate column names", "[operation]")
                              { 2, 2, 2 },
                              { 3, 3, 3 } } };
 
-    Raster<double> value_rast(std::move(values), ex.extent());
-    MemoryRasterSource<double> value_src(value_rast);
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
 
     Matrix<double> weights{ { { 0, 0, 0 },
                               { 0, 2, 0 },
                               { 0, 0, 1 } } };
-    Raster<double> weight_rast(std::move(weights), ex.extent());
-    MemoryRasterSource<double> weight_src(weight_rast);
+    auto weight_rast = std::make_unique<Raster<double>>(std::move(weights), ex.extent());
+    MemoryRasterSource weight_src(std::move(weight_rast));
 
     WKTFeatureSource ds;
     MapFeature mf;
@@ -226,8 +196,8 @@ TEST_CASE("error thrown if no weights provided for weighted operation", "[operat
                              { 2, 2, 2 },
                              { 3, 3, 3 } } };
 
-    Raster<double> value_rast(std::move(values), ex.extent());
-    MemoryRasterSource<double> value_src(value_rast);
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
 
     CHECK_THROWS(Operation("weighted_mean", "test", &value_src, nullptr));
 }
@@ -241,8 +211,8 @@ TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]
                              { 2, 2, 2 },
                              { 3, 3, 3 } } };
 
-    Raster<double> value_rast(std::move(values), ex.extent());
-    MemoryRasterSource<double> value_src(value_rast);
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
 
     WKTFeatureSource ds;
     MapFeature mf;
@@ -260,4 +230,33 @@ TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]
     const MapFeature& f = writer.m_feature;
     CHECK(f.get<double>("count") == 0);
     CHECK(std::isnan(f.get<double>("median")));
+}
+
+TEMPLATE_TEST_CASE("correct result for feature partially intersecting raster", "[processor]", FeatureSequentialProcessor, RasterSequentialProcessor)
+{
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
+    Matrix<double> values{ { { 1, 2, 3 },
+                             { 4, 5, 6 },
+                             { 7, 8, 9 } } };
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
+
+    WKTFeatureSource ds;
+    MapFeature mf;
+    mf.set("fid", "15");
+    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((2 2, 100 2, 100 100, 2 100, 2 2))")));
+    ds.add_feature(std::move(mf));
+
+    TestWriter writer;
+
+    TestType processor(ds, writer);
+    processor.add_operation(Operation("count", "count", &value_src, nullptr));
+    processor.add_operation(Operation("median", "median", &value_src, nullptr));
+    processor.process();
+
+    const MapFeature& f = writer.m_feature;
+    CHECK(f.get<double>("count") == 1);
+    CHECK(f.get<double>("median") == 3);
 }

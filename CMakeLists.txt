@@ -222,6 +222,7 @@ set(PROJECT_SOURCES
         src/grid.cpp
         src/matrix.h
         src/map_feature.h
+        src/memory_raster_source.h
         src/perimeter_distance.cpp
         src/perimeter_distance.h
         src/processor.h

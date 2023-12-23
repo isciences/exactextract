@@ -14,6 +14,7 @@
 #include "coverage_processor.h"
 #include "coverage_operation.h"
 #include "raster_area.h"
+#include "raster_coverage_iterator.h"
 
 namespace exactextract {
 
