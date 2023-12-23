@@ -14,13 +14,10 @@
 #ifndef EXACTEXTRACT_OPERATION_H
 #define EXACTEXTRACT_OPERATION_H
 
-#include <functional>
-#include <sstream>
 #include <string>
 
 #include "feature.h"
 #include "grid.h"
-#include "raster_coverage_iterator.h"
 #include "raster_source.h"
 #include "raster_stats.h"
 #include "stats_registry.h"
@@ -73,6 +70,20 @@ class Operation
     virtual const std::vector<std::string>& field_names() const
     {
         return m_field_names;
+    }
+
+    /// Returns `true` if the rasters associated with this Operation intersect the box
+    bool intersects(const Box& box) const
+    {
+        if (!values->grid().extent().intersects(box)) {
+            return false;
+        }
+
+        if (weighted() && !weights->grid().extent().intersects(box)) {
+            return false;
+        }
+
+        return true;
     }
 
     /// Returns `true` if the operation uses values from a weighting raster

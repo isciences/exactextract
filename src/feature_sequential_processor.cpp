@@ -62,11 +62,7 @@ FeatureSequentialProcessor::process()
                         processed.insert(key);
                     }
 
-                    if (!op->values->grid().extent().contains(subgrid.extent())) {
-                        continue;
-                    }
-
-                    if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
+                    if (!op->intersects(subgrid.extent())) {
                         continue;
                     }
 
