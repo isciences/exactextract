@@ -36,7 +36,7 @@ FeatureSequentialProcessor::process()
 
         auto geom = f_in.geometry();
 
-        progress(f_in, m_shp.id_field());
+        progress(f_in, m_include_cols.empty() ? "." : m_include_cols.front());
 
         Box feature_bbox = exactextract::geos_get_box(m_geos_context, geom);
 
@@ -88,9 +88,6 @@ FeatureSequentialProcessor::process()
         }
 
         auto f_out = m_output.create_feature();
-        if (m_shp.id_field() != "") {
-            f_out->set(m_shp.id_field(), f_in);
-        }
         for (const auto& col : m_include_cols) {
             f_out->set(col, f_in);
         }

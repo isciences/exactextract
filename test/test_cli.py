@@ -11,7 +11,7 @@ gdal.UseExceptions()
 
 @pytest.fixture()
 def run(tmpdir):
-    def runner(*args, **kwargs):
+    def runner(*args, return_fname=False, **kwargs):
         output_fname = tmpdir / "out.csv"
 
         arglist = list(args)
@@ -29,7 +29,12 @@ def run(tmpdir):
 
         cmd = [str(x) for x in ["./exactextract", "-o", output_fname] + arglist]
 
+        # cmd_str = " ".join([x if x.startswith("-") else f'"{x}"' for x in cmd])
+
         subprocess.run(cmd, check=True)
+
+        if return_fname:
+            return output_fname
 
         with open(output_fname, "r") as f:
             reader = csv.DictReader(f)
@@ -338,3 +343,62 @@ def test_scale_offset(run, write_raster, write_features):
 
     assert int(rows[0]["cell"]) == 0
     assert float(rows[0]["d2m"]) == pytest.approx(278.2057, rel=1e-3)
+
+
+def test_id_rename(run, write_raster, write_features):
+
+    data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
+
+    out = run(
+        polygons=write_features(
+            {
+                "id": "3.14",
+                "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))",
+            }
+        ),
+        fid="id",
+        id_name="orig_id",
+        id_type="float",
+        raster=f"metric:{write_raster(data)}",
+        stat=["mean(metric)"],
+        return_fname=True,
+    )
+
+    lines = [line.strip() for line in open(out).readlines()]
+
+    cols = lines[0].split(",")
+
+    assert cols[0] == "orig_id"  # column was renamed
+
+    values = lines[1].split(",")
+
+    assert values[0] == "3.14"  # value is unquoted
+
+
+def test_id_change_type(run, write_raster, write_features):
+
+    data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
+
+    out = run(
+        polygons=write_features(
+            {
+                "id": "3.14",
+                "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))",
+            }
+        ),
+        id_name="id",
+        id_type="float",
+        raster=f"metric:{write_raster(data)}",
+        stat=["mean(metric)"],
+        return_fname=True,
+    )
+
+    lines = [line.strip() for line in open(out).readlines()]
+
+    cols = lines[0].split(",")
+
+    assert cols[0] == "id"  # column was renamed
+
+    values = lines[1].split(",")
+
+    assert values[0] == "3.14"  # value is unquoted

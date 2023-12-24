@@ -83,6 +83,8 @@ class GDALFeature : public Feature
 
         if (type == OFTString || type == OFTInteger64) {
             return typeid(std::string);
+        } else if (type == OFTInteger) {
+            return typeid(std::int32_t);
         } else if (type == OFTReal) {
             return typeid(double);
         } else {

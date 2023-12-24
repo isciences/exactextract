@@ -35,12 +35,6 @@ class WKTFeatureSource : public FeatureSource
         return m_features[m_count - 1];
     }
 
-    const std::string& id_field() const override
-    {
-        static std::string fid = "";
-        return fid;
-    }
-
   private:
     std::size_t m_count;
     std::vector<MapFeature> m_features;

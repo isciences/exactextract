@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ISciences, LLC.
+// Copyright (c) 2018-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,14 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_GDAL_DATASET_WRAPPER_H
-#define EXACTEXTRACT_GDAL_DATASET_WRAPPER_H
+#pragma once
 
 #include "feature_source.h"
 #include "gdal_feature.h"
 
 #include <gdal.h>
-#include <geos_c.h>
 #include <string>
 
 namespace exactextract {
@@ -28,25 +26,27 @@ class Feature;
 class GDALDatasetWrapper : public FeatureSource
 {
   public:
-    GDALDatasetWrapper(const std::string& filename, const std::string& layer, std::string id_field);
+    GDALDatasetWrapper(const std::string& filename, const std::string& layer);
+
+    GDALDatasetWrapper(GDALDatasetWrapper&&) noexcept;
+
+    GDALDatasetWrapper& operator=(GDALDatasetWrapper&&) noexcept;
 
     const Feature& feature() const override;
 
     bool next() override;
 
-    const std::string& id_field() const override { return m_id_field; }
-
     void copy_field(const std::string& field_name, OGRLayerH to) const;
+
+    void set_select(const std::vector<std::string>& cols);
 
     ~GDALDatasetWrapper() override;
 
   private:
     GDALDatasetH m_dataset;
     OGRLayerH m_layer;
-    std::string m_id_field;
     GDALFeature m_feature;
+    bool m_layer_is_sql;
 };
 
 }
-
-#endif // EXACTEXTRACT_GDAL_DATASET_WRAPPER_H

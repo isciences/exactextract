@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2023 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -36,11 +36,7 @@ class GDALWriter : public OutputWriter
 
     void write(const Feature& f) override;
 
-    void add_id_field(const std::string& field_name, const std::string& field_type);
-
     void copy_field(const GDALDatasetWrapper& w, const std::string& field_name);
-
-    void copy_id_field(const GDALDatasetWrapper& w);
 
   protected:
     using GDALDatasetH = void*;
@@ -48,7 +44,6 @@ class GDALWriter : public OutputWriter
 
     GDALDatasetH m_dataset;
     OGRLayerH m_layer;
-    bool id_field_defined = false;
 };
 
 }

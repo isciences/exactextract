@@ -27,8 +27,6 @@ class FeatureSource
     virtual const Feature& feature() const = 0;
 
     virtual bool next() = 0;
-
-    virtual const std::string& id_field() const = 0;
 };
 
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 ISciences, LLC.
+// Copyright (c) 2018-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -16,19 +16,20 @@
 
 #include <algorithm>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 
-namespace exactextract {
+#include "utils.h"
 
+namespace exactextract {
 const Feature&
 GDALDatasetWrapper::feature() const
 {
     return m_feature;
 }
 
-GDALDatasetWrapper::GDALDatasetWrapper(const std::string& filename, const std::string& layer, std::string id_field)
-  : m_id_field{ std::move(id_field) }
-  , m_feature(nullptr)
+GDALDatasetWrapper::GDALDatasetWrapper(const std::string& filename, const std::string& layer)
+  : m_feature(nullptr)
 {
     m_dataset = GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
     if (m_dataset == nullptr) {
@@ -48,13 +49,53 @@ GDALDatasetWrapper::GDALDatasetWrapper(const std::string& filename, const std::s
     }
 
     OGR_L_ResetReading(m_layer);
+}
 
-    auto defn = OGR_L_GetLayerDefn(m_layer);
-    auto index = OGR_FD_GetFieldIndex(defn, m_id_field.c_str());
+GDALDatasetWrapper::GDALDatasetWrapper(GDALDatasetWrapper&& other) noexcept
+  : m_dataset(other.m_dataset)
+  , m_layer(other.m_layer)
+  , m_feature(std::move(other.m_feature))
+  , m_layer_is_sql(other.m_layer_is_sql)
+{
+    other.m_dataset = nullptr;
+    other.m_layer = nullptr;
+    other.m_layer_is_sql = false;
+}
 
-    if (index == -1) {
-        throw std::runtime_error("ID field '" + m_id_field + "' not found in " + filename + ".");
+GDALDatasetWrapper&
+GDALDatasetWrapper::operator=(GDALDatasetWrapper&& other) noexcept
+{
+    m_dataset = other.m_dataset;
+    m_layer = other.m_layer;
+    m_feature = std::move(other.m_feature);
+    m_layer_is_sql = other.m_layer_is_sql;
+
+    other.m_dataset = nullptr;
+    other.m_layer = nullptr;
+    other.m_layer_is_sql = false;
+
+    return *this;
+}
+
+void
+GDALDatasetWrapper::set_select(const std::vector<std::string>& cols)
+{
+    const char* layer_name = OGR_L_GetName(m_layer);
+    std::stringstream sql;
+
+    sql << "SELECT ";
+    for (std::size_t i = 0; i < cols.size(); i++) {
+        if (i > 0) {
+            sql << ", ";
+        }
+        sql << cols[i];
     }
+    sql << " FROM " << layer_name;
+
+    std::string sql_str = sql.str();
+
+    m_layer = GDALDatasetExecuteSQL(m_dataset, sql.str().c_str(), nullptr, nullptr);
+    m_layer_is_sql = true;
 }
 
 bool
@@ -82,6 +123,9 @@ GDALDatasetWrapper::copy_field(const std::string& name, OGRLayerH copy_to) const
 
 GDALDatasetWrapper::~GDALDatasetWrapper()
 {
+    if (m_layer_is_sql) {
+        GDALDatasetReleaseResultSet(m_dataset, m_layer);
+    }
     GDALClose(m_dataset);
 }
 }
