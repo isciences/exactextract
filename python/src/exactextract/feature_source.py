@@ -7,7 +7,7 @@ from .feature import GDALFeature, JSONFeature
 
 class GDALFeatureSource(FeatureSource):
     def __init__(self, src):
-        super().__init__("")
+        super().__init__()
 
         if isinstance(src, (str, os.PathLike)):
             from osgeo import ogr
@@ -34,7 +34,7 @@ class GDALFeatureSource(FeatureSource):
 
 class JSONFeatureSource(FeatureSource):
     def __init__(self, src):
-        super().__init__("")
+        super().__init__()
         if type(src) is dict:
             self.src = [src]
         else:
@@ -47,7 +47,7 @@ class JSONFeatureSource(FeatureSource):
 
 class GeoPandasFeatureSource(FeatureSource):
     def __init__(self, src):
-        super().__init__("")
+        super().__init__()
         self.src = src
 
     def __iter__(self):

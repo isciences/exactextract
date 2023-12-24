@@ -24,9 +24,8 @@ namespace exactextract {
 class PyFeatureSourceBase : public FeatureSource
 {
   public:
-    PyFeatureSourceBase(const std::string& id_field)
-      : m_id_field(id_field)
-      , m_initialized(false)
+    PyFeatureSourceBase()
+      : m_initialized(false)
     {
     }
 
@@ -50,11 +49,6 @@ class PyFeatureSourceBase : public FeatureSource
         return m_feature.cast<const Feature&>();
     }
 
-    const std::string& id_field() const override
-    {
-        return m_id_field;
-    }
-
     virtual py::object py_iter() = 0;
 
     // debug
@@ -68,7 +62,6 @@ class PyFeatureSourceBase : public FeatureSource
     }
 
   private:
-    std::string m_id_field;
     py::object m_src;
     py::object m_feature;
     py::iterator m_it;
@@ -95,7 +88,7 @@ bind_feature_source(py::module& m)
     py::class_<PyFeatureSourceBase>(m, "PyFeatureSourceBase");
 
     py::class_<PyFeatureSource, PyFeatureSourceBase, FeatureSource>(m, "FeatureSource")
-      .def(py::init<const std::string&>())
+      .def(py::init<>())
       .def("__iter__", &PyFeatureSourceBase::py_iter)
       // debug
       .def("feature", &PyFeatureSourceBase::feature)

@@ -39,9 +39,15 @@ using exactextract::GDALRasterWrapper;
 using exactextract::Operation;
 
 static GDALDatasetWrapper
-load_dataset(const std::string& descriptor, const std::string& field_name);
+load_dataset(const std::string& descriptor,
+             const std::vector<std::string>& include_cols,
+             const std::string& src_id_name,
+             const std::string& dst_id_name,
+             const std::string& dst_id_type);
+
 static std::unordered_map<std::string, GDALRasterWrapper>
 load_rasters(const std::vector<std::string>& descriptors);
+
 static std::vector<std::unique_ptr<Operation>>
 prepare_operations(const std::vector<std::string>& descriptors,
                    std::unordered_map<std::string, GDALRasterWrapper>& rasters,
@@ -52,7 +58,7 @@ main(int argc, char** argv)
 {
     CLI::App app{ "Zonal statistics using exactextract: version " + exactextract::version() };
 
-    std::string poly_descriptor, field_name, output_filename, strategy, id_type, id_name;
+    std::string poly_descriptor, src_id_name, output_filename, strategy, dst_id_type, dst_id_name;
     std::vector<std::string> stats;
     std::vector<std::string> raster_descriptors;
     std::vector<std::string> include_cols;
@@ -69,13 +75,13 @@ main(int argc, char** argv)
 
     app.add_option("-p,--polygons", poly_descriptor, "polygon dataset")->required(true);
     app.add_option("-r,--raster", raster_descriptors, "raster dataset")->required(true);
-    app.add_option("-f,--fid", field_name, "id from polygon dataset to retain in output")->required(true);
+    app.add_option("-f,--fid", src_id_name, "id from polygon dataset to retain in output")->required(false);
     app.add_option("-o,--output", output_filename, "output filename")->required(true);
     app.add_option("-s,--stat", stats, "statistics")->required(false)->expected(-1);
     app.add_option("--max-cells", max_cells_in_memory, "maximum number of raster cells to read in memory at once, in millions")->required(false)->default_val("30");
     app.add_option("--strategy", strategy, "processing strategy")->required(false)->default_val("feature-sequential");
-    app.add_option("--id-type", id_type, "override type of id field in output")->required(false);
-    app.add_option("--id-name", id_name, "override name of id field in output")->required(false);
+    app.add_option("--id-type", dst_id_type, "override type of id field in output")->required(false);
+    app.add_option("--id-name", dst_id_name, "override name of id field in output")->required(false);
     app.add_flag("--include-xy", coverage_opts.include_xy, "include cell center coordinates with coverage fractions");
     app.add_flag("--include-cell", coverage_opts.include_cell, "include cell identifier with coverage fractions");
     app.add_flag("--include-area", include_area, "include cell area with coverage fractions");
@@ -90,9 +96,12 @@ main(int argc, char** argv)
     }
     CLI11_PARSE(app, argc, argv)
 
-    if (id_name.empty() != id_type.empty()) {
+    if (dst_id_name.empty() != dst_id_type.empty()) {
         std::cerr << "Must specify both --id_type and --id_name" << std::endl;
         return 1;
+    }
+    if (src_id_name.empty() && !dst_id_name.empty()) {
+        src_id_name = dst_id_name;
     }
 
     max_cells_in_memory *= 1000000;
@@ -105,11 +114,11 @@ main(int argc, char** argv)
         OGRRegisterAll();
         auto rasters = load_rasters(raster_descriptors);
 
-        GDALDatasetWrapper shp = load_dataset(poly_descriptor, field_name);
-
         if (include_area) {
             const GDALRasterWrapper& rast = rasters.begin()->second;
-            coverage_opts.area_method = rast.cartesian() ? exactextract::CoverageOperation::AreaMethod::CARTESIAN : exactextract::CoverageOperation::AreaMethod::SPHERICAL;
+            coverage_opts.area_method = rast.cartesian()
+                                          ? exactextract::CoverageOperation::AreaMethod::CARTESIAN
+                                          : exactextract::CoverageOperation::AreaMethod::SPHERICAL;
         }
 
         auto operations = prepare_operations(stats, rasters, coverage_opts);
@@ -120,12 +129,21 @@ main(int argc, char** argv)
             }
         }
 
-        std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing ? std::make_unique<exactextract::DeferredGDALWriter>(output_filename) : std::make_unique<exactextract::GDALWriter>(output_filename);
-        if (!id_name.empty() && !id_type.empty()) {
-            gdal_writer->add_id_field(id_name, id_type);
-        } else {
-            gdal_writer->copy_id_field(shp);
+        std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing
+                                                                  ? std::make_unique<
+                                                                      exactextract::DeferredGDALWriter>(
+                                                                      output_filename)
+                                                                  : std::make_unique<exactextract::GDALWriter>(
+                                                                      output_filename);
+
+        GDALDatasetWrapper shp = load_dataset(poly_descriptor, include_cols, src_id_name, dst_id_name, dst_id_type);
+
+        if (!dst_id_name.empty()) {
+            include_cols.insert(include_cols.begin(), dst_id_name);
+        } else if (!src_id_name.empty()) {
+            include_cols.insert(include_cols.begin(), src_id_name);
         }
+
         for (const auto& field : include_cols) {
             gdal_writer->copy_field(shp, field);
         }
@@ -169,11 +187,46 @@ main(int argc, char** argv)
 }
 
 static GDALDatasetWrapper
-load_dataset(const std::string& descriptor, const std::string& field_name)
+load_dataset(const std::string& descriptor,
+             const std::vector<std::string>& include_cols,
+             const std::string& src_id_name,
+             const std::string& dst_id_name,
+             const std::string& dst_id_type)
 {
-    auto parsed = exactextract::parse_dataset_descriptor(descriptor);
+    const auto parsed = exactextract::parse_dataset_descriptor(descriptor);
 
-    return GDALDatasetWrapper{ parsed.first, parsed.second, field_name };
+    std::vector<std::string> select;
+
+    if (!src_id_name.empty()) {
+        std::string id_select;
+
+        if (!dst_id_type.empty()) {
+            id_select += "CAST(";
+        }
+        id_select += src_id_name;
+
+        if (!dst_id_type.empty()) {
+            id_select += " AS " + dst_id_type + ")";
+        }
+
+        if (!dst_id_name.empty()) {
+            id_select += " AS " + dst_id_name + "";
+        }
+
+        select.push_back(id_select);
+    }
+
+    for (const auto& col : include_cols) {
+        select.push_back(col);
+    }
+
+    auto ds = GDALDatasetWrapper{ parsed.first, parsed.second };
+
+    if (!select.empty()) {
+        ds.set_select(select);
+    }
+
+    return ds;
 }
 
 static std::unordered_map<std::string, GDALRasterWrapper>
@@ -205,7 +258,7 @@ prepare_operations(
     bool found_stat = false;
 
     for (const auto& descriptor : descriptors) {
-        auto stat = exactextract::parse_stat_descriptor(descriptor);
+        const auto stat = exactextract::parse_stat_descriptor(descriptor);
 
         auto values_it = rasters.find(stat.values);
         if (values_it == rasters.end()) {
@@ -228,7 +281,8 @@ prepare_operations(
 
         if (stat.stat == "coverage") {
             found_coverage = true;
-            ops.emplace_back(std::make_unique<exactextract::CoverageOperation>(stat.name, values, weights, coverage_opts));
+            ops.emplace_back(
+              std::make_unique<exactextract::CoverageOperation>(stat.name, values, weights, coverage_opts));
         } else {
             found_stat = true;
             ops.emplace_back(std::make_unique<Operation>(stat.stat, stat.name, values, weights));
