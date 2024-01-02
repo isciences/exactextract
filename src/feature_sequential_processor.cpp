@@ -29,8 +29,6 @@ FeatureSequentialProcessor::process()
         m_output.add_operation(*op);
     }
 
-    bool store_values = StatsRegistry::requires_stored_values(m_operations);
-
     while (m_shp.next()) {
         const Feature& f_in = m_shp.feature();
 
@@ -77,9 +75,9 @@ FeatureSequentialProcessor::process()
                     if (op->weighted()) {
                         auto weights = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
 
-                        m_reg.update_stats(f_in, *op, *coverage, values, weights, store_values);
+                        m_reg.update_stats(f_in, *op, *coverage, values, weights);
                     } else {
-                        m_reg.update_stats(f_in, *op, *coverage, values, store_values);
+                        m_reg.update_stats(f_in, *op, *coverage, values);
                     }
 
                     progress();

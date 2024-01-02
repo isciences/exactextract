@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2023 ISciences, LLC.
+// Copyright (c) 2019-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -19,34 +19,47 @@
 namespace exactextract {
 
 void
-StatsRegistry::update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, bool store_values)
+StatsRegistry::prepare(const std::string& stat)
+{
+    m_stats_options.store_histogram |= requires_stored_values(stat);
+    m_stats_options.store_values |= (stat == "values");
+    m_stats_options.store_weights |= (stat == "weights");
+    m_stats_options.store_coverage_fraction |= (stat == "coverage");
+    m_stats_options.store_x |= (stat == "center_x");
+    m_stats_options.store_y |= (stat == "center_y");
+}
+
+void
+StatsRegistry::update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values)
 {
     std::visit([&coverage, &values](auto& s) {
         using value_type = typename std::remove_reference_t<decltype(s)>::ValueType;
 
-        const AbstractRaster<value_type>& v = *std::get<std::unique_ptr<AbstractRaster<value_type>>>(values);
+        const AbstractRaster<value_type>& v = *std::get<std::unique_ptr<AbstractRaster<value_type>>>(
+          values);
 
         s.process(coverage, v);
     },
-               stats(f, op, store_values));
+               stats(f, op));
 }
 
 void
-StatsRegistry::update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, const RasterVariant& weights, bool store_values)
+StatsRegistry::update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, const RasterVariant& weights)
 {
     std::visit([&coverage, &values](auto& s, const auto& w) {
         using value_type = typename std::remove_reference_t<decltype(s)>::ValueType;
 
-        const AbstractRaster<value_type>& v = *std::get<std::unique_ptr<AbstractRaster<value_type>>>(values);
+        const AbstractRaster<value_type>& v = *std::get<std::unique_ptr<AbstractRaster<value_type>>>(
+          values);
 
         s.process(coverage, v, *w);
     },
-               stats(f, op, store_values),
+               stats(f, op),
                weights);
 }
 
 StatsRegistry::RasterStatsVariant&
-StatsRegistry::stats(const Feature& feature, const Operation& op, bool store_values)
+StatsRegistry::stats(const Feature& feature, const Operation& op)
 {
     auto& stats_for_feature = m_feature_stats[&feature];
 
@@ -55,10 +68,10 @@ StatsRegistry::stats(const Feature& feature, const Operation& op, bool store_val
         // Construct a RasterStats with the correct value type for this Operation.
         const auto& rast = op.values->read_empty();
 
-        it = std::visit([&stats_for_feature, &op, store_values](const auto& r) {
+        it = std::visit([&stats_for_feature, &op, this](const auto& r) {
                  using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
 
-                 return stats_for_feature.emplace(op.key(), RasterStats<value_type>(store_values));
+                 return stats_for_feature.emplace(op.key(), RasterStats<value_type>(m_stats_options));
              },
                         rast)
                .first;
@@ -88,5 +101,4 @@ StatsRegistry::stats(const Feature& feature, const Operation& op) const
 {
     return m_feature_stats.at(&feature).at(op.key());
 }
-
 }

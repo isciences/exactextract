@@ -19,14 +19,16 @@
 #include <unordered_map>
 
 namespace exactextract {
-
 class MapFeature : public Feature
 {
-
   public:
-    MapFeature() {}
+    MapFeature()
+    {
+    }
 
-    virtual ~MapFeature() {}
+    virtual ~MapFeature()
+    {
+    }
 
     explicit MapFeature(const Feature& other)
     {
@@ -37,11 +39,12 @@ class MapFeature : public Feature
     }
 
     MapFeature(MapFeature&& other) = default;
+
     MapFeature& operator=(MapFeature&& other) = default;
 
     const std::type_info& field_type(const std::string& name) const override
     {
-        const Feature::FieldValue& val = m_map.at(name);
+        const FieldValue& val = m_map.at(name);
         // https://stackoverflow.com/a/53697591/2171894
         return std::visit([](auto&& x) -> decltype(auto) { return typeid(x); }, val);
     }
@@ -51,9 +54,39 @@ class MapFeature : public Feature
         m_map[name] = value;
     }
 
+    void set(const std::string& name, const DoubleArray& value) override
+    {
+        m_map[name] = value;
+    }
+
+    DoubleArray get_double_array(const std::string& name) const override
+    {
+        return get<DoubleArray>(name);
+    }
+
     void set(const std::string& name, std::int32_t value) override
     {
         m_map[name] = value;
+    }
+
+    void set(const std::string& name, const IntegerArray& value) override
+    {
+        m_map[name] = value;
+    }
+
+    IntegerArray get_integer_array(const std::string& name) const override
+    {
+        return get<IntegerArray>(name);
+    }
+
+    void set(const std::string& name, const Integer64Array& value) override
+    {
+        m_map[name] = value;
+    }
+
+    Integer64Array get_integer64_array(const std::string& name) const override
+    {
+        return get<Integer64Array>(name);
     }
 
     void set(const std::string& name, std::string value) override
@@ -78,7 +111,7 @@ class MapFeature : public Feature
         return m_geom.get();
     }
 
-    const std::unordered_map<std::string, Feature::FieldValue>& map() const
+    const std::unordered_map<std::string, FieldValue>& map() const
     {
         return m_map;
     }
@@ -107,8 +140,7 @@ class MapFeature : public Feature
   private:
     inline static GEOSContextHandle_t m_geos_context = initGEOS_r(nullptr, nullptr);
 
-    std::unordered_map<std::string, Feature::FieldValue> m_map;
+    std::unordered_map<std::string, FieldValue> m_map;
     geom_ptr_r m_geom;
 };
-
 }

@@ -53,8 +53,6 @@ RasterSequentialProcessor::process()
         m_output.add_operation(*op);
     }
 
-    bool store_values = StatsRegistry::requires_stored_values(m_operations);
-
     auto grid = common_grid(m_operations.begin(), m_operations.end());
 
     for (const auto& subgrid : subdivide(grid, m_max_cells_in_memory)) {
@@ -115,9 +113,9 @@ RasterSequentialProcessor::process()
                         weights = raster_values[op->weights].get();
                     }
 
-                    m_reg.update_stats(*f, *op, *coverage, *values, *weights, store_values);
+                    m_reg.update_stats(*f, *op, *coverage, *values, *weights);
                 } else {
-                    m_reg.update_stats(*f, *op, *coverage, *values, store_values);
+                    m_reg.update_stats(*f, *op, *coverage, *values);
                 }
 
                 progress();

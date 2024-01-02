@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ISciences, LLC.
+// Copyright (c) 2023-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -17,6 +17,8 @@
 #include "feature.h"
 #include "feature_bindings.h"
 
+#include <pybind11/numpy.h>
+
 namespace py = pybind11;
 
 namespace exactextract {
@@ -34,6 +36,7 @@ class PyFeatureBase : public Feature
         if (m_geom != nullptr) {
             GEOSGeom_destroy_r(m_context, m_geom);
         }
+        finishGEOS_r(m_context);
     }
 
     // plumbing to connect python-specifc abstract methods
@@ -44,9 +47,27 @@ class PyFeatureBase : public Feature
         return get_py(name).cast<double>();
     }
 
+    DoubleArray get_double_array(const std::string& name) const override
+    {
+        py::array_t<double> arr = get_py(name);
+        return { arr.data(), static_cast<std::size_t>(arr.size()) };
+    }
+
     std::int32_t get_int(const std::string& name) const override
     {
         return get_py(name).cast<int32_t>();
+    }
+
+    IntegerArray get_integer_array(const std::string& name) const override
+    {
+        py::array_t<std::int32_t> arr = get_py(name);
+        return { arr.data(), static_cast<std::size_t>(arr.size()) };
+    }
+
+    Integer64Array get_integer64_array(const std::string& name) const override
+    {
+        py::array_t<std::int64_t> arr = get_py(name);
+        return { arr.data(), static_cast<std::size_t>(arr.size()) };
     }
 
     std::string get_string(const std::string& name) const override
@@ -62,6 +83,32 @@ class PyFeatureBase : public Feature
     void set(const std::string& name, double value) override
     {
         set_py(name, py::float_(value));
+    }
+
+    void set(const std::string& name, const DoubleArray& value) override
+    {
+        set_array(name, value);
+    }
+
+    void set(const std::string& name, const IntegerArray& value) override
+    {
+        set_array(name, value);
+    }
+
+    void set(const std::string& name, const Integer64Array& value) override
+    {
+        set_array(name, value);
+    }
+
+    template<typename T>
+    void set_array(const std::string& name, const T& value)
+    {
+        py::array_t<typename T::value_type> values(value.size);
+        auto x = values.template mutable_unchecked<1>();
+        for (std::size_t i = 0; i < value.size; i++) {
+            x[i] = value.data[i];
+        }
+        set_py(name, values);
     }
 
     void set(const std::string& name, std::int32_t value) override
@@ -83,6 +130,18 @@ class PyFeatureBase : public Feature
 
         if (py::isinstance<py::str>(value)) {
             return typeid(std::string);
+        }
+
+        if (py::isinstance<py::array_t<double>>(value)) {
+            return typeid(DoubleArray);
+        }
+
+        if (py::isinstance<py::array_t<std::int32_t>>(value)) {
+            return typeid(IntegerArray);
+        }
+
+        if (py::isinstance<py::array_t<std::int64_t>>(value)) {
+            return typeid(Integer64Array);
         }
 
         throw std::runtime_error("Unhandled type for field " + name + " in PyFeatureBase::field_type");

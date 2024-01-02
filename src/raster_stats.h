@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 ISciences, LLC.
+// Copyright (c) 2018-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -25,10 +25,19 @@
 
 namespace exactextract {
 
+struct RasterStatsOptions
+{
+    bool store_histogram = false;
+    bool store_values = false;
+    bool store_weights = false;
+    bool store_coverage_fraction = false;
+    bool store_x = false;
+    bool store_y = false;
+};
+
 template<typename T>
 class RasterStats
 {
-
   public:
     using ValueType = T;
 
@@ -37,14 +46,14 @@ class RasterStats
      * a Raster representing data values, and (optionally) a Raster representing weights.
      * and a set of raster values.
      */
-    explicit RasterStats(bool store_values = false)
+    explicit RasterStats(RasterStatsOptions options = RasterStatsOptions{})
       : m_min{ std::numeric_limits<T>::max() }
       , m_max{ std::numeric_limits<T>::lowest() }
       , m_sum_ciwi{ 0 }
       , m_sum_ci{ 0 }
       , m_sum_xici{ 0 }
       , m_sum_xiciwi{ 0 }
-      , m_store_values{ store_values }
+      , m_options{ options }
     {
     }
 
@@ -64,6 +73,7 @@ class RasterStats
                 T val;
                 if (pct_cov > 0 && rv.get(i, j, val)) {
                     process_value(val, pct_cov, 1.0);
+                    process_location(intersection_percentages.grid(), i, j);
                 }
             }
         }
@@ -111,8 +121,21 @@ class RasterStats
                         // Weight is NODATA, convert to NAN
                         process_value(val, pct_cov, std::numeric_limits<double>::quiet_NaN());
                     }
+
+                    process_location(common, i, j);
                 }
             }
+        }
+    }
+
+    void process_location(const Grid<bounded_extent>& grid, std::size_t row, std::size_t col)
+    {
+        if (m_options.store_x) {
+            m_cell_x.push_back(grid.x_for_col(col));
+        }
+
+        if (m_options.store_y) {
+            m_cell_y.push_back(grid.y_for_row(row));
         }
     }
 
@@ -137,11 +160,23 @@ class RasterStats
             m_max = val;
         }
 
-        if (m_store_values) {
+        if (m_options.store_histogram) {
             auto& entry = m_freq[val];
             entry.m_sum_ci += static_cast<double>(coverage);
             entry.m_sum_ciwi += ciwi;
             m_quantiles.reset();
+        }
+
+        if (m_options.store_coverage_fraction) {
+            m_cell_cov.push_back(coverage);
+        }
+
+        if (m_options.store_values) {
+            m_cell_values.push_back(val);
+        }
+
+        if (m_options.store_weights) {
+            m_cell_weights.push_back(weight);
         }
     }
 
@@ -441,9 +476,29 @@ class RasterStats
         return m_freq.size();
     }
 
-    bool stores_values() const
+    const std::vector<ValueType>& values() const
     {
-        return m_store_values;
+        return m_cell_values;
+    }
+
+    const std::vector<float>& coverage_fractions() const
+    {
+        return m_cell_cov;
+    }
+
+    const std::vector<double>& weights() const
+    {
+        return m_cell_weights;
+    }
+
+    const std::vector<double>& center_x() const
+    {
+        return m_cell_x;
+    }
+
+    const std::vector<double>& center_y() const
+    {
+        return m_cell_y;
     }
 
   private:
@@ -469,7 +524,13 @@ class RasterStats
     };
     std::unordered_map<T, ValueFreqEntry> m_freq;
 
-    bool m_store_values;
+    std::vector<float> m_cell_cov;
+    std::vector<T> m_cell_values;
+    std::vector<double> m_cell_weights;
+    std::vector<double> m_cell_x;
+    std::vector<double> m_cell_y;
+
+    RasterStatsOptions m_options;
 
     struct Iterator
     {
