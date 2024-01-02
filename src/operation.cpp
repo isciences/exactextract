@@ -76,6 +76,16 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.coefficient_of_variation()); }, stats);
     } else if (stat == "median") {
         std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.quantile(0.5).value_or(m)); }, stats, m_missing);
+    } else if (stat == "coverage") {
+        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.coverage_fractions()); }, stats);
+    } else if (stat == "values") {
+        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.values()); }, stats);
+    } else if (stat == "weights") {
+        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.weights()); }, stats);
+    } else if (stat == "center_x") {
+        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.center_x()); }, stats);
+    } else if (stat == "center_y") {
+        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.center_y()); }, stats);
     } else if (stat == "quantile") {
         std::visit([&f_out, this](const auto& x, const auto& m) {
             for (std::size_t i = 0; i < m_quantiles.size(); i++) {

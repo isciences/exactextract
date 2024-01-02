@@ -87,6 +87,12 @@ class GDALFeature : public Feature
             return typeid(std::int32_t);
         } else if (type == OFTReal) {
             return typeid(double);
+        } else if (type == OFTRealList) {
+            return typeid(DoubleArray);
+        } else if (type == OFTIntegerList) {
+            return typeid(IntegerArray);
+        } else if (type == OFTInteger64List) {
+            return typeid(Integer64Array);
         } else {
             throw std::runtime_error("Unhandled type.");
         }
@@ -103,9 +109,19 @@ class GDALFeature : public Feature
         }
     }
 
+    void set(const std::string& name, const DoubleArray& value) override
+    {
+        OGR_F_SetFieldDoubleList(m_feature, field_index(name), static_cast<int>(value.size), value.data);
+    }
+
     void set(const std::string& name, double value) override
     {
         OGR_F_SetFieldDouble(m_feature, field_index(name), value);
+    }
+
+    void set(const std::string& name, const IntegerArray& value) override
+    {
+        OGR_F_SetFieldIntegerList(m_feature, field_index(name), static_cast<int>(value.size), value.data);
     }
 
     void set(const std::string& name, std::int32_t value) override
@@ -116,6 +132,11 @@ class GDALFeature : public Feature
     void set(const std::string& name, std::int64_t value) override
     {
         OGR_F_SetFieldInteger64(m_feature, field_index(name), value);
+    }
+
+    void set(const std::string& name, const Integer64Array& value) override
+    {
+        OGR_F_SetFieldInteger64List(m_feature, field_index(name), static_cast<int>(value.size), reinterpret_cast<const GIntBig*>(value.data));
     }
 
     void set(const std::string& name, std::size_t value) override
@@ -141,9 +162,30 @@ class GDALFeature : public Feature
         return OGR_F_GetFieldAsDouble(m_feature, field_index(name));
     }
 
+    DoubleArray get_double_array(const std::string& name) const override
+    {
+        int size;
+        const double* arr = OGR_F_GetFieldAsDoubleList(m_feature, field_index(name), &size);
+        return { arr, static_cast<std::size_t>(size) };
+    }
+
     std::int32_t get_int(const std::string& name) const override
     {
         return OGR_F_GetFieldAsInteger(m_feature, field_index(name));
+    }
+
+    IntegerArray get_integer_array(const std::string& name) const override
+    {
+        int size;
+        const std::int32_t* arr = OGR_F_GetFieldAsIntegerList(m_feature, field_index(name), &size);
+        return { arr, static_cast<std::size_t>(size) };
+    }
+
+    Integer64Array get_integer64_array(const std::string& name) const override
+    {
+        int size;
+        const std::int64_t* arr = reinterpret_cast<const std::int64_t*>(OGR_F_GetFieldAsInteger64List(m_feature, field_index(name), &size));
+        return { arr, static_cast<std::size_t>(size) };
     }
 
     const GEOSGeometry* geometry() const override

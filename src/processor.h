@@ -67,6 +67,7 @@ class Processor
     void add_operation(const Operation& op)
     {
         m_operations.push_back(op.clone());
+        m_reg.prepare(op.stat);
     }
 
     void include_col(const std::string& col)
@@ -98,10 +99,17 @@ class Processor
         if (m_show_progress) {
             std::cout << std::endl
                       << "Processing ";
-            std::visit([](auto&& value) {
-                std::cout << value;
-            },
-                       f.get(field));
+            const auto& value = f.get(field);
+            if (const std::string* sval = std::get_if<std::string>(&value)) {
+                std::cout << *sval;
+            } else if (const std::int32_t* ival = std::get_if<std::int32_t>(&value)) {
+                std::cout << *ival;
+            } else if (const double* dval = std::get_if<double>(&value)) {
+                std::cout << *dval;
+            } else {
+                std::cout << ".";
+            }
+
             std::cout << std::flush;
         }
     }

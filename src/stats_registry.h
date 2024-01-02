@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2023 ISciences, LLC.
+// Copyright (c) 2019-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,10 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_STATS_REGISTRY_H
-#define EXACTEXTRACT_STATS_REGISTRY_H
+#pragma once
 
-#include <set>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -27,7 +25,6 @@ class Operation;
 }
 
 namespace exactextract {
-
 /**
  * @brief The StatsRegistry class stores an instance of a `RasterStats` object that can be associated
  * with a feature and one or more Operations sharing a the same key.
@@ -46,7 +43,7 @@ class StatsRegistry
     /**
      * @brief Get the RasterStats object for a given feature/operation, creating it if necessary.
      */
-    RasterStatsVariant& stats(const Feature& feature, const Operation& op, bool store_values);
+    RasterStatsVariant& stats(const Feature& feature, const Operation& op);
 
     const RasterStatsVariant& stats(const Feature& feature, const Operation& op) const;
 
@@ -63,6 +60,13 @@ class StatsRegistry
         m_feature_stats.erase(&feature);
     }
 
+    void prepare(const std::string& stat);
+
+    void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values);
+
+    void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, const RasterVariant& weights);
+
+  private:
     static bool requires_stored_values(const std::string& stat)
     {
         return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "median" || stat == "frac" || stat == "weighted_frac";
@@ -78,15 +82,10 @@ class StatsRegistry
                            });
     }
 
-    void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, bool store_values);
-    void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, const RasterVariant& weights, bool store_values);
-
-  private:
     std::unordered_map<const Feature*,
                        std::unordered_map<std::string, RasterStatsVariant>>
       m_feature_stats{};
+
+    RasterStatsOptions m_stats_options;
 };
-
 }
-
-#endif // EXACTEXTRACT_STATS_REGISTRY_H

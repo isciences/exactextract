@@ -83,7 +83,9 @@ TEMPLATE_TEST_CASE("Unweighted stats", "[stats]", float, double, int)
                              extent };
     values.set_nodata(NA);
 
-    RasterStats<TestType> stats{ true };
+    RasterStatsOptions opts;
+    opts.store_histogram = true;
+    RasterStats<TestType> stats{ opts };
     stats.process(areas, values);
 
     CHECK(stats.count() ==
@@ -125,7 +127,7 @@ TEMPLATE_TEST_CASE("Weighted multiresolution stats", "[stats]", float, double, i
     fill_by_row<TestType>(values, 1, 1);
     fill_by_row<TestType>(weights, 5, 5);
 
-    RasterStats<TestType> stats(false);
+    RasterStats<TestType> stats;
     stats.process(areas, values, weights);
 
     std::valarray<double> cov_values = { 28, 29, 30, 31, 36, 37, 38, 39 };
@@ -178,7 +180,7 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
     SECTION("All values missing, no weights provided")
     {
         // Example application: land cover on an island not covered by dataset
-        RasterStats<TestType> stats(false);
+        RasterStats<TestType> stats;
         stats.process(areas, all_values_missing);
 
         CHECK(stats.count() == 0);
@@ -202,7 +204,9 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
     SECTION("All values defined, no weights provided")
     {
         // Example application: precipitation over polygon in the middle of continent
-        RasterStats<TestType> stats{ true };
+        RasterStatsOptions opts;
+        opts.store_histogram = true;
+        RasterStats<TestType> stats{ opts };
         stats.process(areas, all_values_defined);
 
         CHECK(stats.count() == 1.0f);
@@ -225,7 +229,9 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
     SECTION("Some values defined, no weights provided")
     {
         // Example application: precipitation at edge of continent
-        RasterStats<TestType> stats{ true };
+        RasterStatsOptions opts;
+        opts.store_histogram = true;
+        RasterStats<TestType> stats{ opts };
         stats.process(areas, some_values_defined);
 
         CHECK(stats.count() == 0.5f);
@@ -248,7 +254,9 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
     SECTION("No values defined, all weights defined")
     {
         // Example: population-weighted temperature in dataset covered by pop but without temperature data
-        RasterStats<TestType> stats{ true };
+        RasterStatsOptions opts;
+        opts.store_histogram = true;
+        RasterStats<TestType> stats{ opts };
         stats.process(areas, all_values_missing, all_values_defined);
 
         CHECK(stats.count() == 0);
@@ -268,7 +276,9 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
 
     SECTION("No values defined, no weights defined")
     {
-        RasterStats<TestType> stats{ true };
+        RasterStatsOptions opts;
+        opts.store_histogram = true;
+        RasterStats<TestType> stats{ opts };
         stats.process(areas, all_values_missing, all_values_missing);
 
         CHECK(stats.count() == 0);
@@ -289,7 +299,9 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
     SECTION("All values defined, no weights defined")
     {
         // Example: population-weighted temperature in polygon covered by temperature but without pop data
-        RasterStats<TestType> stats{ true };
+        RasterStatsOptions opts;
+        opts.store_histogram = true;
+        RasterStats<TestType> stats{ opts };
         stats.process(areas, all_values_defined, all_values_missing);
 
         CHECK(stats.count() == 1.0f);
@@ -309,7 +321,9 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
 
     SECTION("All values defined, some weights defined")
     {
-        RasterStats<TestType> stats{ true };
+        RasterStatsOptions opts;
+        opts.store_histogram = true;
+        RasterStats<TestType> stats{ opts };
         stats.process(areas, all_values_defined, some_values_defined);
 
         CHECK(stats.count() == 1.0f);
@@ -334,7 +348,9 @@ TEST_CASE("Stat subsets calculated for a specific category")
     std::vector<float> coverage = { 0.5, 0.4, 0, 0.3, 0.3, 0.2 };
     std::vector<double> weight = { 0.3, 0.4, 1, 4.0, 3.0, 0 };
 
-    RasterStats<decltype(landcov)::value_type> stats{ true };
+    RasterStatsOptions opts;
+    opts.store_histogram = true;
+    RasterStats<decltype(landcov)::value_type> stats{ opts };
 
     for (std::size_t i = 0; i < landcov.size(); i++) {
         stats.process_value(landcov[i], coverage[i], weight[i]);
@@ -362,7 +378,9 @@ TEST_CASE("Iterator provides access to seen values")
     std::vector<int> values = { 1, 3, 2 };
     std::vector<float> cov = { 1.0, 2.0, 0.0 };
 
-    RasterStats<decltype(values)::value_type> stats{ true };
+    RasterStatsOptions opts;
+    opts.store_histogram = true;
+    RasterStats<decltype(values)::value_type> stats{ opts };
 
     for (std::size_t i = 0; i < values.size(); i++) {
         stats.process_value(values[i], cov[i], 1.0);
@@ -381,8 +399,10 @@ TEST_CASE("Unweighted stats consider all values when part of polygon is inside v
 {
     GEOSContextHandle_t context = init_geos();
 
-    RasterStats<double> weighted_stats{ true };
-    RasterStats<double> unweighted_stats{ true };
+    RasterStatsOptions opts;
+    opts.store_histogram = true;
+    RasterStats<double> weighted_stats{ opts };
+    RasterStats<double> unweighted_stats{ opts };
 
     Grid<bounded_extent> values_grid{ { 0, 0, 5, 5 }, 1, 1 };  // 5x5 grid
     Grid<bounded_extent> weights_grid{ { 0, 2, 5, 5 }, 1, 1 }; // 3x3 grid

@@ -47,15 +47,33 @@ def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
         ("variance", 5),
         ("stdev", math.sqrt(5)),
         ("coefficient_of_variation", math.sqrt(5) / 5),
+        ("values", np.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=np.int32)),
+        (
+            "coverage",
+            np.array(
+                [0.25, 0.5, 0.25, 0.5, 1.0, 0.5, 0.25, 0.5, 0.25], dtype=np.float64
+            ),
+        ),
+        (
+            "center_x",
+            np.array([0.5, 1.5, 2.5, 0.5, 1.5, 2.5, 0.5, 1.5, 2.5], dtype=np.float64),
+        ),
+        (
+            "center_y",
+            np.array([2.5, 2.5, 2.5, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5], dtype=np.float64),
+        ),
     ],
 )
 def test_basic_stats(stat, expected):
-    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
     square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
 
-    assert exact_extract(rast, square, stat)[0]["properties"][stat] == pytest.approx(
-        expected
-    )
+    result = exact_extract(rast, square, stat)[0]["properties"][stat]
+
+    assert result == pytest.approx(expected)
+
+    if isinstance(expected, np.ndarray):
+        assert expected.dtype == result.dtype
 
 
 def test_multiple_stats():
@@ -91,6 +109,7 @@ def test_weighted_stats_equal_weights(stat):
         ("weighted_sum", (0.25 * 7 + 0.5 * 8 + 0.25 * 9)),
         ("weighted_stdev", 0.7071068),
         ("weighted_variance", 0.5),
+        ("weights", np.array([0, 0, 0, 0, 0, 0, 1, 1, 1])),
     ],
 )
 def test_weighted_stats_unequal_weights(stat, expected):
