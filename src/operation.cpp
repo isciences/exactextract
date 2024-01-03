@@ -20,7 +20,6 @@ make_field_name(const std::string& prefix, const T& value)
 Operation::missing_value_t
 Operation::get_missing_value()
 {
-
     const auto& empty_rast = values->read_empty();
 
     return std::visit([](const auto& r) -> missing_value_t {
@@ -32,18 +31,44 @@ Operation::get_missing_value()
                       empty_rast);
 }
 
+const StatsRegistry::RasterStatsVariant&
+Operation::empty_stats() const
+{
+    static const StatsRegistry::RasterStatsVariant ret = std::visit([this](const auto& r) {
+        using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
+
+        return StatsRegistry::RasterStatsVariant{
+            RasterStats<value_type>()
+        };
+    },
+                                                                    values->read_empty());
+
+    return ret;
+}
+
 void
 Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const
 {
-    static const StatsRegistry::RasterStatsVariant empty_stats = RasterStats<double>();
-
-    constexpr bool write_if_missing = true; // should we set attribute values if the feature did not intersect the raster?
+    constexpr bool write_if_missing = true;
+    // should we set attribute values if the feature did not intersect the raster?
     if (!write_if_missing && !reg.contains(f_in, *this)) {
         return;
     }
 
-    const auto& stats = reg.contains(f_in, *this) ? reg.stats(f_in, *this) : empty_stats;
+    const auto& stats = reg.contains(f_in, *this) ? reg.stats(f_in, *this) : empty_stats();
 
+    set_result(stats, f_out);
+}
+
+void
+Operation::set_empty_result(Feature& f_out) const
+{
+    set_result(empty_stats(), f_out);
+}
+
+void
+Operation::set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f_out) const
+{
     if (stat == "mean") {
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.mean()); }, stats);
     } else if (stat == "sum") {
@@ -55,13 +80,24 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
     } else if (stat == "weighted_sum") {
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_sum()); }, stats);
     } else if (stat == "min") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.min().value_or(m)); }, stats, m_missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.min().value_or(m)); },
+                   stats,
+                   m_missing);
     } else if (stat == "max") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.max().value_or(m)); }, stats, m_missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.max().value_or(m)); },
+                   stats,
+                   m_missing);
     } else if (stat == "majority" || stat == "mode") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.mode().value_or(m)); }, stats, m_missing);
+        std::visit(
+          [&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.mode().value_or(m)); },
+          stats,
+          m_missing);
     } else if (stat == "minority") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.minority().value_or(m)); }, stats, m_missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) {
+            f_out.set(m_field_names[0], x.minority().value_or(m));
+        },
+                   stats,
+                   m_missing);
     } else if (stat == "variety") {
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.variety()); }, stats);
     } else if (stat == "stdev") {
@@ -73,9 +109,14 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
     } else if (stat == "weighted_variance") {
         std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_variance()); }, stats);
     } else if (stat == "coefficient_of_variation") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.coefficient_of_variation()); }, stats);
+        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.coefficient_of_variation()); },
+                   stats);
     } else if (stat == "median") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.quantile(0.5).value_or(m)); }, stats, m_missing);
+        std::visit([&f_out, this](const auto& x, const auto& m) {
+            f_out.set(m_field_names[0], x.quantile(0.5).value_or(m));
+        },
+                   stats,
+                   m_missing);
     } else if (stat == "coverage") {
         std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.coverage_fractions()); }, stats);
     } else if (stat == "values") {
@@ -116,7 +157,6 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
 void
 Operation::setQuantileFieldNames()
 {
-
     for (double q : m_quantiles) {
         std::stringstream ss;
         int qint = static_cast<int>(100 * q);
@@ -124,5 +164,4 @@ Operation::setQuantileFieldNames()
         m_field_names.push_back(ss.str());
     }
 }
-
 }

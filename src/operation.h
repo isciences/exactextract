@@ -24,7 +24,6 @@
 #include "utils.h"
 
 namespace exactextract {
-
 /**
  * @brief The Operation class defines a single operation (e.g, "mean", "sum", "coverage")
  *        and the raster(s) to which it is to be applied. When provided with a `StatsRegistry`,
@@ -119,7 +118,11 @@ class Operation
         setQuantileFieldNames();
     }
 
-    virtual void set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const;
+    void set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const;
+
+    void set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f_out) const;
+
+    void set_empty_result(Feature& f_out) const;
 
     std::string stat;
     std::string name;
@@ -139,10 +142,11 @@ class Operation
 
     missing_value_t get_missing_value();
 
+    const StatsRegistry::RasterStatsVariant& empty_stats() const;
+
   protected:
     std::vector<std::string> m_field_names;
 };
-
 }
 
 #endif // EXACTEXTRACT_OPERATION_H
