@@ -25,8 +25,11 @@
 
 #include <stdexcept>
 
+#include "map_feature.h"
+
 namespace exactextract {
-GDALWriter::GDALWriter(const std::string& filename)
+GDALWriter::
+  GDALWriter(const std::string& filename)
 {
     auto driver_name = get_driver_name(filename);
     auto driver = OGRGetDriverByName(driver_name.c_str());
@@ -70,9 +73,39 @@ GDALWriter::copy_field(const GDALDatasetWrapper& w, const std::string& name)
 void
 GDALWriter::add_operation(const Operation& op)
 {
+    bool probe_types = true;
+
+    if (dynamic_cast<const CoverageOperation*>(&op) != nullptr) {
+        probe_types = false;
+    }
+
+    MapFeature mf;
+    op.set_empty_result(mf);
+
     for (const auto& field_name : op.field_names()) {
-        // TODO set type here
-        auto def = OGR_Fld_Create(field_name.c_str(), OFTReal);
+        OGRFieldType ogr_typ = OFTReal;
+
+        if (probe_types) {
+            const auto& typ = mf.field_type(field_name);
+
+            if (typ == typeid(std::int32_t)) {
+                ogr_typ = OFTInteger;
+            } else if (typ == typeid(double)) {
+                ogr_typ = OFTReal;
+            } else if (typ == typeid(std::string)) {
+                ogr_typ = OFTString;
+            } else if (typ == typeid(Feature::DoubleArray)) {
+                ogr_typ = OFTRealList;
+            } else if (typ == typeid(Feature::IntegerArray)) {
+                ogr_typ = OFTIntegerList;
+            } else if (typ == typeid(Feature::Integer64Array)) {
+                ogr_typ = OFTInteger64List;
+            } else {
+                throw std::runtime_error("Unhandled type in GDALWriter::add_operation");
+            }
+        }
+
+        auto def = OGR_Fld_Create(field_name.c_str(), ogr_typ);
         OGR_L_CreateField(m_layer, def, true);
         OGR_Fld_Destroy(def);
     }
@@ -101,6 +134,8 @@ GDALWriter::get_driver_name(const std::string& filename)
         return "CSV";
     } else if (ends_with(filename, ".dbf")) {
         return "ESRI Shapefile";
+    } else if (ends_with(filename, "json")) {
+        return "GeoJSON";
     } else if (ends_with(filename, ".nc")) {
         return "NetCDF";
     } else if (starts_with(filename, "PG:")) {
@@ -111,5 +146,4 @@ GDALWriter::get_driver_name(const std::string& filename)
         throw std::runtime_error("Unknown output format: " + filename);
     }
 }
-
 }
