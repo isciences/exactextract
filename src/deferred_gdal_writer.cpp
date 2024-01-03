@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ISciences, LLC.
+// Copyright (c) 2023-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -13,6 +13,7 @@
 
 #include "deferred_gdal_writer.h"
 #include "gdal_feature.h"
+#include "gdal_feature_unnester.h"
 #include "operation.h"
 
 namespace exactextract {
@@ -34,19 +35,9 @@ DeferredGDALWriter::finish()
     std::map<std::string, OGRFieldDefnH> ogr_fields;
 
     for (const auto& feature : m_features) {
-        for (const auto& [field_name, value] : feature.map()) {
-
+        for (const auto& [field_name, _] : feature.map()) {
             if (ogr_fields.find(field_name) == ogr_fields.end()) {
-                OGRFieldType field_type;
-
-                if (std::holds_alternative<std::string>(value)) {
-                    field_type = OFTString;
-                } else if (std::holds_alternative<double>(value)) {
-                    field_type = OFTReal;
-                } else if (std::holds_alternative<std::int32_t>(value)) {
-                    field_type = OFTInteger;
-                }
-
+                OGRFieldType field_type = ogr_type(feature.field_type(field_name), m_unnest);
                 ogr_fields[field_name] = OGR_Fld_Create(field_name.c_str(), field_type);
             }
         }
@@ -68,11 +59,26 @@ DeferredGDALWriter::finish()
 
     OGRFeatureDefnH defn = OGR_L_GetLayerDefn(m_layer);
     for (const auto& feature : m_features) {
-        GDALFeature f(OGR_F_Create(defn));
-        feature.copy_to(f);
+        if (m_unnest) {
+            GDALFeatureUnnester unnester(feature, defn);
+            unnester.unnest();
 
-        if (OGR_L_CreateFeature(m_layer, f.raw()) != OGRERR_NONE) {
-            throw std::runtime_error("Error writing feature.");
+            for (const auto& uf : unnester.features()) {
+                GDALFeature f(OGR_F_Create(defn));
+                uf->copy_to(f);
+
+                if (OGR_L_CreateFeature(m_layer, uf->raw()) != OGRERR_NONE) {
+                    throw std::runtime_error("Error writing feature.");
+                }
+            }
+
+        } else {
+            GDALFeature f(OGR_F_Create(defn));
+            feature.copy_to(f);
+
+            if (OGR_L_CreateFeature(m_layer, f.raw()) != OGRERR_NONE) {
+                throw std::runtime_error("Error writing feature.");
+            }
         }
     }
 }

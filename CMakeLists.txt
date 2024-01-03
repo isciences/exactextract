@@ -79,6 +79,7 @@ if(BUILD_CLI)
         src/gdal_dataset_wrapper.h
         src/gdal_dataset_wrapper.cpp
         src/gdal_feature.h
+        src/gdal_feature_unnester.h
         src/gdal_writer.h
         src/gdal_writer.cpp
     )
