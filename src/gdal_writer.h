@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2023 ISciences, LLC.
+// Copyright (c) 2019-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,10 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_GDAL_WRITER_H
-#define EXACTEXTRACT_GDAL_WRITER_H
+#pragma once
 
 #include "output_writer.h"
+#include <gdal.h>
 
 namespace exactextract {
 
@@ -24,7 +24,7 @@ class GDALWriter : public OutputWriter
 {
 
   public:
-    explicit GDALWriter(const std::string& filename);
+    explicit GDALWriter(const std::string& filename, bool unnest);
 
     ~GDALWriter() override;
 
@@ -38,14 +38,13 @@ class GDALWriter : public OutputWriter
 
     void copy_field(const GDALDatasetWrapper& w, const std::string& field_name);
 
-  protected:
-    using GDALDatasetH = void*;
-    using OGRLayerH = void*;
+    static OGRFieldType ogr_type(const std::type_info&, bool unnest);
 
+  protected:
     GDALDatasetH m_dataset;
     OGRLayerH m_layer;
+
+    bool m_unnest = true;
 };
 
 }
-
-#endif // EXACTEXTRACT_GDAL_WRITER_H

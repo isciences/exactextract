@@ -32,7 +32,7 @@ class GDALFeature : public Feature
     {
     }
 
-    GDALFeature(GDALFeature&& other)
+    GDALFeature(GDALFeature&& other) noexcept
       : m_feature(other.m_feature)
       , m_geom(std::move(other.m_geom))
       , m_context(other.m_context)
@@ -41,7 +41,7 @@ class GDALFeature : public Feature
         other.m_feature = nullptr;
     }
 
-    GDALFeature& operator=(GDALFeature&& other)
+    GDALFeature& operator=(GDALFeature&& other) noexcept
     {
         if (m_feature != nullptr) {
             OGR_F_Destroy(m_feature);

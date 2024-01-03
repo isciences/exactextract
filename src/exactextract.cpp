@@ -72,6 +72,7 @@ main(int argc, char** argv)
     coverage_opts.include_weights = false;
     coverage_opts.area_method = exactextract::CoverageOperation::AreaMethod::NONE;
     bool include_area = false;
+    bool nested_output = false;
 
     app.add_option("-p,--polygons", poly_descriptor, "polygon dataset")->required(true);
     app.add_option("-r,--raster", raster_descriptors, "raster dataset")->required(true);
@@ -85,6 +86,7 @@ main(int argc, char** argv)
     app.add_flag("--include-xy", coverage_opts.include_xy, "include cell center coordinates with coverage fractions");
     app.add_flag("--include-cell", coverage_opts.include_cell, "include cell identifier with coverage fractions");
     app.add_flag("--include-area", include_area, "include cell area with coverage fractions");
+    app.add_flag("--nested-output", nested_output, "nested output");
     app.add_option("--include-col", include_cols, "columns from input to include in output");
 
     app.add_flag("--progress", progress);
@@ -132,9 +134,9 @@ main(int argc, char** argv)
         std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing
                                                                   ? std::make_unique<
                                                                       exactextract::DeferredGDALWriter>(
-                                                                      output_filename)
+                                                                      output_filename, !nested_output)
                                                                   : std::make_unique<exactextract::GDALWriter>(
-                                                                      output_filename);
+                                                                      output_filename, !nested_output);
 
         GDALDatasetWrapper shp = load_dataset(poly_descriptor, include_cols, src_id_name, dst_id_name, dst_id_type);
 

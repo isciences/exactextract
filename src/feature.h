@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma once
+
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -19,8 +21,6 @@
 #include <vector>
 
 #include <geos_c.h>
-
-#pragma once
 
 namespace exactextract {
 class Feature
