@@ -94,7 +94,7 @@ GDALDatasetWrapper::set_select(const std::vector<std::string>& cols)
 
     std::string sql_str = sql.str();
 
-    m_layer = GDALDatasetExecuteSQL(m_dataset, sql.str().c_str(), nullptr, nullptr);
+    m_layer = GDALDatasetExecuteSQL(m_dataset, sql.str().c_str(), nullptr, "OGRSQL");
     m_layer_is_sql = true;
 }
 
