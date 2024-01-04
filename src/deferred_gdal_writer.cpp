@@ -62,6 +62,10 @@ DeferredGDALWriter::finish()
         }
     }
 
+    for (auto& [_, field] : ogr_fields) {
+        OGR_Fld_Destroy(field);
+    }
+
     OGRFeatureDefnH defn = OGR_L_GetLayerDefn(m_layer);
     for (const auto& feature : m_features) {
         GDALFeature f(OGR_F_Create(defn));
