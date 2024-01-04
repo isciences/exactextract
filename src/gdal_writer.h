@@ -44,7 +44,8 @@ class GDALWriter : public OutputWriter
     GDALDatasetH m_dataset;
     OGRLayerH m_layer;
 
-    bool m_unnest = true;
+    bool m_unnest_if_needed = true;
+    bool m_contains_nested_fields = false;
 };
 
 }

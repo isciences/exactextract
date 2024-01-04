@@ -37,7 +37,13 @@ DeferredGDALWriter::finish()
     for (const auto& feature : m_features) {
         for (const auto& [field_name, _] : feature.map()) {
             if (ogr_fields.find(field_name) == ogr_fields.end()) {
-                OGRFieldType field_type = ogr_type(feature.field_type(field_name), m_unnest);
+                const auto& typ = feature.field_type(field_name);
+
+                if (typ == typeid(Feature::DoubleArray) || typ == typeid(Feature::IntegerArray) || typ == typeid(Feature::Integer64Array)) {
+                    m_contains_nested_fields = true;
+                }
+
+                OGRFieldType field_type = ogr_type(typ, m_unnest_if_needed);
                 ogr_fields[field_name] = OGR_Fld_Create(field_name.c_str(), field_type);
             }
         }
@@ -59,7 +65,7 @@ DeferredGDALWriter::finish()
 
     OGRFeatureDefnH defn = OGR_L_GetLayerDefn(m_layer);
     for (const auto& feature : m_features) {
-        if (m_unnest) {
+        if (m_unnest_if_needed && m_contains_nested_fields) {
             GDALFeatureUnnester unnester(feature, defn);
             unnester.unnest();
 

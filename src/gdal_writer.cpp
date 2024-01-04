@@ -30,7 +30,7 @@
 namespace exactextract {
 GDALWriter::
   GDALWriter(const std::string& filename, bool unnest)
-  : m_unnest(unnest)
+  : m_unnest_if_needed(unnest)
 {
     auto driver_name = get_driver_name(filename);
     auto driver = OGRGetDriverByName(driver_name.c_str());
@@ -62,7 +62,7 @@ std::unique_ptr<Feature>
 GDALWriter::create_feature()
 {
     auto defn = OGR_L_GetLayerDefn(m_layer);
-    if (m_unnest) {
+    if (m_unnest_if_needed && m_contains_nested_fields) {
         return std::make_unique<MapFeature>();
     }
     return std::make_unique<GDALFeature>(OGR_F_Create(defn));
@@ -101,7 +101,13 @@ GDALWriter::add_operation(const Operation& op)
     op.set_empty_result(mf);
 
     for (const auto& field_name : op.field_names()) {
-        OGRFieldType ogr_typ = ogr_type(mf.field_type(field_name), m_unnest);
+        const auto& typ = mf.field_type(field_name);
+
+        if (typ == typeid(Feature::DoubleArray) || typ == typeid(Feature::IntegerArray) || typ == typeid(Feature::Integer64Array)) {
+            m_contains_nested_fields = true;
+        }
+
+        OGRFieldType ogr_typ = ogr_type(typ, m_unnest_if_needed);
 
         auto def = OGR_Fld_Create(field_name.c_str(), ogr_typ);
         OGR_L_CreateField(m_layer, def, true);
@@ -112,7 +118,7 @@ GDALWriter::add_operation(const Operation& op)
 void
 GDALWriter::write(const Feature& f)
 {
-    if (m_unnest) {
+    if (m_unnest_if_needed && m_contains_nested_fields) {
         auto defn = OGR_L_GetLayerDefn(m_layer);
 
         GDALFeatureUnnester unnester(f, defn);
