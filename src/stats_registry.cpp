@@ -25,8 +25,8 @@ StatsRegistry::prepare(const std::string& stat)
     m_stats_options.store_values |= (stat == "values");
     m_stats_options.store_weights |= (stat == "weights");
     m_stats_options.store_coverage_fraction |= (stat == "coverage");
-    m_stats_options.store_x |= (stat == "center_x");
-    m_stats_options.store_y |= (stat == "center_y");
+    m_stats_options.store_x |= (stat == "center_x" || stat == "cell_id");
+    m_stats_options.store_y |= (stat == "center_y" || stat == "cell_id");
 }
 
 void
