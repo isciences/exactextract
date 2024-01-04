@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ISciences, LLC.
+// Copyright (c) 2023-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -81,10 +81,12 @@ class GDALFeature : public Feature
         OGRFieldDefnH defn = OGR_F_GetFieldDefnRef(m_feature, pos);
         auto type = OGR_Fld_GetType(defn);
 
-        if (type == OFTString || type == OFTInteger64) {
+        if (type == OFTString) {
             return typeid(std::string);
         } else if (type == OFTInteger) {
             return typeid(std::int32_t);
+        } else if (type == OFTInteger64) {
+            return typeid(std::int64_t);
         } else if (type == OFTReal) {
             return typeid(double);
         } else if (type == OFTRealList) {
@@ -108,6 +110,8 @@ class GDALFeature : public Feature
             dst.set(name, *this);
         }
     }
+
+    using Feature::set;
 
     void set(const std::string& name, const DoubleArray& value) override
     {
@@ -179,6 +183,11 @@ class GDALFeature : public Feature
         int size;
         const std::int32_t* arr = OGR_F_GetFieldAsIntegerList(m_feature, field_index(name), &size);
         return { arr, static_cast<std::size_t>(size) };
+    }
+
+    std::int64_t get_int64(const std::string& name) const
+    {
+        return OGR_F_GetFieldAsInteger64(m_feature, field_index(name));
     }
 
     Integer64Array get_integer64_array(const std::string& name) const override

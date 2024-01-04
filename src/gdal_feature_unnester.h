@@ -14,6 +14,7 @@
 #pragma once
 
 #include "feature.h"
+#include "gdal_feature.h"
 #include <gdal.h>
 #include <stdexcept>
 #include <vector>
@@ -25,6 +26,7 @@ class GDALFeatureUnnester
     GDALFeatureUnnester(const Feature& f, OGRFeatureDefnH defn)
       : m_feature(f)
       , m_defn(defn)
+      , m_found_zero_length_array(false)
     {
     }
 
@@ -56,6 +58,10 @@ class GDALFeatureUnnester
     void unnest()
     {
         for (int i = 0; i < OGR_FD_GetFieldCount(m_defn); i++) {
+            if (m_found_zero_length_array) {
+                return;
+            }
+
             OGRFieldDefnH field = OGR_FD_GetFieldDefn(m_defn, i);
             const char* field_name = OGR_Fld_GetNameRef(field);
 
@@ -71,6 +77,7 @@ class GDALFeatureUnnester
                         if (arg.size == 0) {
                             // No features emitted when we have an empty array
                             m_features.clear();
+                            m_found_zero_length_array = true;
                             return;
                         }
 
@@ -102,6 +109,7 @@ class GDALFeatureUnnester
     const Feature& m_feature;
     OGRFeatureDefnH m_defn;
     std::vector<std::unique_ptr<GDALFeature>> m_features;
+    bool m_found_zero_length_array;
 };
 
 }
