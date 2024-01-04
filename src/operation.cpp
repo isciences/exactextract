@@ -4,6 +4,19 @@
 
 namespace exactextract {
 
+template<typename T>
+std::string
+make_field_name(const std::string& prefix, const T& value)
+{
+    if constexpr (std::is_floating_point_v<T>) {
+        std::stringstream ss;
+        ss << prefix << value;
+        return ss.str();
+    } else {
+        return prefix + std::to_string(value);
+    }
+}
+
 Operation::missing_value_t
 Operation::get_missing_value()
 {
@@ -72,22 +85,16 @@ Operation::set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_
                    stats,
                    m_missing);
     } else if (stat == "frac") {
-        std::visit([&f_out](const auto& x) {
-            for (const auto& value : x) {
-                std::stringstream s;
-                s << "frac_" << value;
-
-                f_out.set(s.str(), x.frac(value).value_or(0));
+        std::visit([&f_out](const auto& s) {
+            for (const auto& value : s) {
+                f_out.set(make_field_name("frac_", value), s.frac(value).value_or(0));
             }
         },
                    stats);
     } else if (stat == "weighted_frac") {
-        std::visit([&f_out](const auto& x) {
-            for (const auto& value : x) {
-                std::stringstream s;
-                s << "weighted_frac_" << value;
-
-                f_out.set(s.str(), x.weighted_frac(value).value_or(0));
+        std::visit([&f_out](const auto& s) {
+            for (const auto& value : s) {
+                f_out.set(make_field_name("weighted_frac_", value), s.weighted_frac(value).value_or(0));
             }
         },
                    stats);
