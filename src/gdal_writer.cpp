@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include "gdal_writer.h"
-#include "coverage_operation.h"
 #include "gdal_dataset_wrapper.h"
 #include "gdal_feature.h"
 #include "gdal_feature_unnester.h"
@@ -98,17 +97,11 @@ GDALWriter::ogr_type(const std::type_info& typ, bool unnest)
 void
 GDALWriter::add_operation(const Operation& op)
 {
-    bool probe_types = true;
-
-    if (dynamic_cast<const CoverageOperation*>(&op) != nullptr) {
-        probe_types = false;
-    }
-
     MapFeature mf;
     op.set_empty_result(mf);
 
     for (const auto& field_name : op.field_names()) {
-        OGRFieldType ogr_typ = probe_types ? ogr_type(mf.field_type(field_name), m_unnest) : OFTReal;
+        OGRFieldType ogr_typ = ogr_type(mf.field_type(field_name), m_unnest);
 
         auto def = OGR_Fld_Create(field_name.c_str(), ogr_typ);
         OGR_L_CreateField(m_layer, def, true);

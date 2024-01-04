@@ -256,20 +256,20 @@ def test_coverage_fractions(run, write_raster, write_features):
             {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))"}
         ),
         fid="id",
-        raster=f"values:{write_raster(data)}",
-        stat=["coverage(values)"],
+        raster=f"rast:{write_raster(data)}",
+        stat=["coverage(rast)", "values(rast)"],
     )
 
     assert len(rows) == 9
-    assert list(rows[0].keys()) == ["id", "coverage_fraction", "values"]
+    assert list(rows[0].keys()) == ["id", "rast_coverage", "rast_values"]
 
     assert rows[0]["id"] == "1"
-    assert rows[0]["coverage_fraction"] == "0.25"
+    assert rows[0]["rast_coverage"] == "0.25"
 
     ids = [row["id"] for row in rows]
     assert ids == ["1"] * 9
 
-    fracs = [float(row["coverage_fraction"]) for row in rows]
+    fracs = [float(row["rast_coverage"]) for row in rows]
     assert fracs == [0.25, 0.5, 0.25, 0.5, 1, 0.5, 0.25, 0.5, 0.25]
 
 
@@ -287,11 +287,14 @@ def test_coverage_fraction_args(run, write_raster, write_features):
             }
         ),
         fid="id",
-        raster=f"values:{write_raster(data)}",
-        stat=["coverage(values)"],
-        include_cell=True,
-        include_xy=True,
-        include_area=True,
+        raster=f"rast:{write_raster(data)}",
+        stat=[
+            "coverage(rast)",
+            "cell_id(rast)",
+            "center_x(rast)",
+            "center_y(rast)",
+            "values(rast)",
+        ],
         include_col=["class", "type"],
     )
 
@@ -300,29 +303,25 @@ def test_coverage_fraction_args(run, write_raster, write_features):
         "id",
         "class",
         "type",
-        "cell",
-        "x",
-        "y",
-        "area",
-        "coverage_fraction",
-        "values",
+        "rast_coverage",
+        "rast_cell_id",
+        "rast_center_x",
+        "rast_center_y",
+        "rast_values",
     ]
 
     assert [row["class"] for row in rows] == ["3"] * len(rows)
 
     assert [row["type"] for row in rows] == ["B"] * len(rows)
 
-    cells = [row["cell"] for row in rows]
+    cells = [row["rast_cell_id"] for row in rows]
     assert cells == ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
 
-    x = [float(row["x"]) for row in rows]
+    x = [float(row["rast_center_x"]) for row in rows]
     assert x == [0.5, 1.5, 2.5] * 3
 
-    y = [float(row["y"]) for row in rows]
+    y = [float(row["rast_center_y"]) for row in rows]
     assert y == [2.5] * 3 + [1.5] * 3 + [0.5] * 3
-
-    areas = [float(row["area"]) for row in rows]
-    assert areas == [1.0] * 9
 
 
 def test_scale_offset(run, write_raster, write_features):
@@ -337,12 +336,11 @@ def test_scale_offset(run, write_raster, write_features):
         ),
         fid="id",
         raster=f"d2m:{write_raster(data, scale=scale, offset=offset)}",
-        stat=["coverage(d2m)"],
-        include_cell=True,
+        stat=["cell_id(d2m)", "values(d2m)"],
     )
 
-    assert int(rows[0]["cell"]) == 0
-    assert float(rows[0]["d2m"]) == pytest.approx(278.2057, rel=1e-3)
+    assert int(rows[0]["d2m_cell_id"]) == 0
+    assert float(rows[0]["d2m_values"]) == pytest.approx(278.2057, rel=1e-3)
 
 
 def test_id_rename(run, write_raster, write_features):

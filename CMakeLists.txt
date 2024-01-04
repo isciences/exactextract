@@ -206,9 +206,6 @@ set(PROJECT_SOURCES
         src/cell.h
         src/coordinate.cpp
         src/coordinate.h
-        src/coverage_operation.h
-        src/coverage_processor.h
-        src/coverage_processor.cpp
         src/crossing.h
         src/feature.h
         src/feature.cpp
