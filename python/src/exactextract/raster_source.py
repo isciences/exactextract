@@ -198,6 +198,9 @@ class XArrayRasterSource(RasterSource):
         return self.ds.rio.nodata
 
     def read_window(self, x0, y0, nx, ny):
+        if nx == 0 or ny == 0:
+            return np.array([[]], dtype=self.ds.dtype)
+
         lats = self.ds[self.ds.rio.y_dim]
         flipped = bool(len(lats) > 1 and lats[1] > lats[0])
 

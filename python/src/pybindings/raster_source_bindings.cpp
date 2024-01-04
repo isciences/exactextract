@@ -66,31 +66,27 @@ class PyRasterSourceBase : public RasterSource
     {
         auto cropped_grid = grid().crop(box);
 
-        if (!cropped_grid.empty()) {
-            auto x0 = cropped_grid.col_offset(grid());
-            auto y0 = cropped_grid.row_offset(grid());
-            auto nx = cropped_grid.cols();
-            auto ny = cropped_grid.rows();
+        auto x0 = cropped_grid.col_offset(grid());
+        auto y0 = cropped_grid.row_offset(grid());
+        auto nx = cropped_grid.cols();
+        auto ny = cropped_grid.rows();
 
-            py::array rast_values = read_window(x0, y0, nx, ny);
-            py::object nodata = nodata_value();
+        py::array rast_values = read_window(x0, y0, nx, ny);
+        py::object nodata = nodata_value();
 
-            if (py::isinstance<py::array_t<std::int8_t>>(rast_values)) {
-                return make_raster<std::int8_t>(cropped_grid, rast_values, nodata);
-            } else if (py::isinstance<py::array_t<std::int16_t>>(rast_values)) {
-                return make_raster<std::int16_t>(cropped_grid, rast_values, nodata);
-            } else if (py::isinstance<py::array_t<std::int32_t>>(rast_values)) {
-                return make_raster<std::int32_t>(cropped_grid, rast_values, nodata);
-            } else if (py::isinstance<py::array_t<std::int64_t>>(rast_values)) {
-                return make_raster<std::int64_t>(cropped_grid, rast_values, nodata);
-            } else if (py::isinstance<py::array_t<float>>(rast_values)) {
-                return make_raster<float>(cropped_grid, rast_values, nodata);
-            } else {
-                return make_raster<double>(cropped_grid, rast_values, nodata);
-            }
+        if (py::isinstance<py::array_t<std::int8_t>>(rast_values)) {
+            return make_raster<std::int8_t>(cropped_grid, rast_values, nodata);
+        } else if (py::isinstance<py::array_t<std::int16_t>>(rast_values)) {
+            return make_raster<std::int16_t>(cropped_grid, rast_values, nodata);
+        } else if (py::isinstance<py::array_t<std::int32_t>>(rast_values)) {
+            return make_raster<std::int32_t>(cropped_grid, rast_values, nodata);
+        } else if (py::isinstance<py::array_t<std::int64_t>>(rast_values)) {
+            return make_raster<std::int64_t>(cropped_grid, rast_values, nodata);
+        } else if (py::isinstance<py::array_t<float>>(rast_values)) {
+            return make_raster<float>(cropped_grid, rast_values, nodata);
+        } else {
+            return make_raster<double>(cropped_grid, rast_values, nodata);
         }
-
-        return std::make_unique<Raster<double>>(Raster<double>::make_empty());
     }
 
     const Grid<bounded_extent>& grid() const override
