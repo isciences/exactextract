@@ -127,6 +127,17 @@ Operation::set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f
         std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.center_x()); }, stats);
     } else if (stat == "center_y") {
         std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.center_y()); }, stats);
+    } else if (stat == "cell_id") {
+        std::visit([&f_out, this](const auto& s) {
+            const auto& x = s.center_x();
+            const auto& y = s.center_y();
+            std::vector<std::int64_t> cells(x.size());
+            for (std::size_t i = 0; i < x.size(); i++) {
+                cells[i] = static_cast<std::int64_t>(values->grid().get_cell(x[i], y[i]));
+            }
+            f_out.set(m_field_names[0], cells);
+        },
+                   stats);
     } else if (stat == "quantile") {
         std::visit([&f_out, this](const auto& x, const auto& m) {
             for (std::size_t i = 0; i < m_quantiles.size(); i++) {

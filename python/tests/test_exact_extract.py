@@ -62,6 +62,7 @@ def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
             "center_y",
             np.array([2.5, 2.5, 2.5, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5], dtype=np.float64),
         ),
+        ("cell_id", np.array([0, 1, 2, 3, 4, 5, 6, 7, 8], dtype=np.int64)),
     ],
 )
 def test_basic_stats(stat, expected):
