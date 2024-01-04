@@ -99,16 +99,16 @@ TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[op
     }
 }
 
-TEST_CASE("frac sets appropriate column names", "[operation]")
+TEMPLATE_TEST_CASE("frac sets appropriate column names", "[operation]", std::int8_t, double)
 {
     GEOSContextHandle_t context = init_geos();
 
     Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
-    Matrix<double> values{ { { 9, 1, 1 },
-                             { 2, 2, 2 },
-                             { 3, 3, 3 } } };
+    Matrix<TestType> values{ { { 9, 1, 1 },
+                               { 2, 2, 2 },
+                               { 3, 3, 3 } } };
 
-    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    auto value_rast = std::make_unique<Raster<TestType>>(std::move(values), ex.extent());
     MemoryRasterSource value_src(std::move(value_rast));
 
     WKTFeatureSource ds;
@@ -138,16 +138,16 @@ TEST_CASE("frac sets appropriate column names", "[operation]")
     CHECK_THROWS(f.get<double>("frac_9"));
 }
 
-TEST_CASE("weighted_frac sets appropriate column names", "[operation]")
+TEMPLATE_TEST_CASE("weighted_frac sets appropriate column names", "[operation]", std::int8_t, double)
 {
     GEOSContextHandle_t context = init_geos();
 
     Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
-    Matrix<double> values{ { { 9, 1, 1 },
-                             { 2, 2, 2 },
-                             { 3, 3, 3 } } };
+    Matrix<TestType> values{ { { 9, 1, 1 },
+                               { 2, 2, 2 },
+                               { 3, 3, 3 } } };
 
-    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    auto value_rast = std::make_unique<Raster<TestType>>(std::move(values), ex.extent());
     MemoryRasterSource value_src(std::move(value_rast));
 
     Matrix<double> weights{ { { 0, 0, 0 },
