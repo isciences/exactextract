@@ -152,6 +152,10 @@ class Grid
 
     Grid<extent_tag> shrink_to_fit(const Box& b) const
     {
+        if (b.empty()) {
+            return make_empty();
+        }
+
         if (b.xmin < m_extent.xmin || b.ymin < m_extent.ymin || b.xmax > m_extent.xmax || b.ymax > m_extent.ymax) {
             throw std::range_error("Cannot shrink extent to bounds larger than original.");
         }

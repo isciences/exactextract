@@ -152,6 +152,17 @@ TEST_CASE("Shrink robustness (2)", "[grid]")
     CHECK(reduced.ymax <= grid2.ymax());
 }
 
+TEST_CASE("Shrink to empty box", "[grid]")
+{
+    Grid<bounded_extent> grid{ { 10, 10, 20, 20 }, 1, 1 };
+
+    Box empty = Box::make_empty();
+
+    auto reduced = grid.shrink_to_fit(empty);
+
+    CHECK(reduced.empty());
+}
+
 TEST_CASE("Cropping", "[grid]")
 {
     Grid<bounded_extent> grid{ { 0, 0, 10, 10 }, 0.5, 0.5 };
