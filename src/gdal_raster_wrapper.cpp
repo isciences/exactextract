@@ -20,7 +20,8 @@
 
 namespace exactextract {
 
-GDALRasterWrapper::GDALRasterWrapper(const std::string& filename, int bandnum)
+GDALRasterWrapper::
+  GDALRasterWrapper(const std::string& filename, int bandnum)
   : m_grid{ Grid<bounded_extent>::make_empty() }
 {
     auto rast = GDALOpen(filename.c_str(), GA_ReadOnly);
@@ -117,21 +118,23 @@ GDALRasterWrapper::read_box(const Box& box)
         }
     }
 
-    auto error = GDALRasterIO(m_band,
-                              GF_Read,
-                              (int)cropped_grid.col_offset(m_grid),
-                              (int)cropped_grid.row_offset(m_grid),
-                              (int)cropped_grid.cols(),
-                              (int)cropped_grid.rows(),
-                              buffer,
-                              (int)cropped_grid.cols(),
-                              (int)cropped_grid.rows(),
-                              read_type,
-                              0,
-                              0);
+    if (!cropped_grid.empty()) {
+        auto error = GDALRasterIO(m_band,
+                                  GF_Read,
+                                  (int)cropped_grid.col_offset(m_grid),
+                                  (int)cropped_grid.row_offset(m_grid),
+                                  (int)cropped_grid.cols(),
+                                  (int)cropped_grid.rows(),
+                                  buffer,
+                                  (int)cropped_grid.cols(),
+                                  (int)cropped_grid.rows(),
+                                  read_type,
+                                  0,
+                                  0);
 
-    if (error) {
-        throw std::runtime_error("Error reading from raster.");
+        if (error) {
+            throw std::runtime_error("Error reading from raster.");
+        }
     }
 
     if (has_scale || has_offset) {
@@ -165,7 +168,8 @@ GDALRasterWrapper::compute_raster_grid()
     m_grid = { box, dx, dy };
 }
 
-GDALRasterWrapper::GDALRasterWrapper(exactextract::GDALRasterWrapper&& src) noexcept
+GDALRasterWrapper::
+  GDALRasterWrapper(exactextract::GDALRasterWrapper&& src) noexcept
   : m_rast{ src.m_rast }
   , m_band{ src.m_band }
   , m_nodata_value{ src.m_nodata_value }
