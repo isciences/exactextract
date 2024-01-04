@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 ISciences, LLC.
+// Copyright (c) 2018-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -20,8 +20,6 @@
 
 #include "CLI11.hpp"
 
-#include "coverage_operation.h"
-#include "coverage_processor.h"
 #include "deferred_gdal_writer.h"
 #include "feature_sequential_processor.h"
 #include "gdal_dataset_wrapper.h"
@@ -33,7 +31,6 @@
 #include "utils.h"
 #include "version.h"
 
-using exactextract::CoverageOperation;
 using exactextract::GDALDatasetWrapper;
 using exactextract::GDALRasterWrapper;
 using exactextract::Operation;
@@ -50,8 +47,7 @@ load_rasters(const std::vector<std::string>& descriptors);
 
 static std::vector<std::unique_ptr<Operation>>
 prepare_operations(const std::vector<std::string>& descriptors,
-                   std::unordered_map<std::string, GDALRasterWrapper>& rasters,
-                   const CoverageOperation::Options coverage_opts);
+                   std::unordered_map<std::string, GDALRasterWrapper>& rasters);
 
 int
 main(int argc, char** argv)
@@ -63,15 +59,8 @@ main(int argc, char** argv)
     std::vector<std::string> raster_descriptors;
     std::vector<std::string> include_cols;
     size_t max_cells_in_memory = 30;
-    bool progress = false;
 
-    CoverageOperation::Options coverage_opts;
-    coverage_opts.include_xy = false;
-    coverage_opts.include_cell = false;
-    coverage_opts.include_values = true;
-    coverage_opts.include_weights = false;
-    coverage_opts.area_method = exactextract::CoverageOperation::AreaMethod::NONE;
-    bool include_area = false;
+    bool progress = false;
     bool nested_output = false;
 
     app.add_option("-p,--polygons", poly_descriptor, "polygon dataset")->required(true);
@@ -83,9 +72,6 @@ main(int argc, char** argv)
     app.add_option("--strategy", strategy, "processing strategy")->required(false)->default_val("feature-sequential");
     app.add_option("--id-type", dst_id_type, "override type of id field in output")->required(false);
     app.add_option("--id-name", dst_id_name, "override name of id field in output")->required(false);
-    app.add_flag("--include-xy", coverage_opts.include_xy, "include cell center coordinates with coverage fractions");
-    app.add_flag("--include-cell", coverage_opts.include_cell, "include cell identifier with coverage fractions");
-    app.add_flag("--include-area", include_area, "include cell area with coverage fractions");
     app.add_flag("--nested-output", nested_output, "nested output");
     app.add_option("--include-col", include_cols, "columns from input to include in output");
 
@@ -116,14 +102,7 @@ main(int argc, char** argv)
         OGRRegisterAll();
         auto rasters = load_rasters(raster_descriptors);
 
-        if (include_area) {
-            const GDALRasterWrapper& rast = rasters.begin()->second;
-            coverage_opts.area_method = rast.cartesian()
-                                          ? exactextract::CoverageOperation::AreaMethod::CARTESIAN
-                                          : exactextract::CoverageOperation::AreaMethod::SPHERICAL;
-        }
-
-        auto operations = prepare_operations(stats, rasters, coverage_opts);
+        auto operations = prepare_operations(stats, rasters);
         bool defer_writing = false;
         for (const auto& op : operations) {
             if (op->stat == "frac" || op->stat == "weighted_frac") {
@@ -152,9 +131,7 @@ main(int argc, char** argv)
 
         writer = std::move(gdal_writer);
 
-        if (operations.size() == 1 && operations.front()->stat == "coverage") {
-            proc = std::make_unique<exactextract::CoverageProcessor>(shp, *writer);
-        } else if (strategy == "feature-sequential") {
+        if (strategy == "feature-sequential") {
             proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer);
         } else if (strategy == "raster-sequential") {
             proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer);
@@ -251,13 +228,9 @@ load_rasters(const std::vector<std::string>& descriptors)
 static std::vector<std::unique_ptr<Operation>>
 prepare_operations(
   const std::vector<std::string>& descriptors,
-  std::unordered_map<std::string, GDALRasterWrapper>& rasters,
-  const CoverageOperation::Options coverage_opts)
+  std::unordered_map<std::string, GDALRasterWrapper>& rasters)
 {
     std::vector<std::unique_ptr<Operation>> ops;
-
-    bool found_coverage = false;
-    bool found_stat = false;
 
     for (const auto& descriptor : descriptors) {
         const auto stat = exactextract::parse_stat_descriptor(descriptor);
@@ -281,18 +254,7 @@ prepare_operations(
             weights = &(weights_it->second);
         }
 
-        if (stat.stat == "coverage") {
-            found_coverage = true;
-            ops.emplace_back(
-              std::make_unique<exactextract::CoverageOperation>(stat.name, values, weights, coverage_opts));
-        } else {
-            found_stat = true;
-            ops.emplace_back(std::make_unique<Operation>(stat.stat, stat.name, values, weights));
-        }
-
-        if (found_coverage && found_stat) {
-            throw std::runtime_error("Cannot output coverage and stats in a single program execution.");
-        }
+        ops.emplace_back(std::make_unique<Operation>(stat.stat, stat.name, values, weights));
     }
 
     return ops;
