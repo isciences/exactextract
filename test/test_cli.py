@@ -247,7 +247,8 @@ def test_include_cols(strategy, run, write_raster, write_features):
     assert [row["class"] for row in rows] == ["1", "2"]
 
 
-def test_coverage_fractions(run, write_raster, write_features):
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+def test_coverage_fractions(run, write_raster, write_features, strategy):
 
     data = np.arange(9, dtype=np.int32).reshape(3, 3)
 
@@ -258,6 +259,7 @@ def test_coverage_fractions(run, write_raster, write_features):
         fid="id",
         raster=f"rast:{write_raster(data)}",
         stat=["coverage(rast)", "values(rast)"],
+        strategy=strategy,
     )
 
     assert len(rows) == 9

@@ -194,6 +194,12 @@ if(BUILD_TEST)
                 GEOS::geos_c
     )
 
+    if (GDAL_FOUND)
+        target_sources(catch_tests PRIVATE test/test_gdal.cpp)
+        target_link_libraries(catch_tests PRIVATE exactextract_gdal ${GDAL_LIBRARY})
+        target_include_directories(exactextract_gdal PRIVATE ${GDAL_INCLUDE_DIR})
+    endif()
+
 endif() #BUILD_TEST
 
 
