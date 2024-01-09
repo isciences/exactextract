@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2023 ISciences, LLC.
+// Copyright (c) 2019-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_OPERATION_H
-#define EXACTEXTRACT_OPERATION_H
+#pragma once
 
 #include <string>
 
@@ -66,7 +65,7 @@ class Operation
     }
 
     /// Returns the list of field names that are assigned by this `Operation`
-    virtual const std::vector<std::string>& field_names() const
+    const std::vector<std::string>& field_names() const
     {
         return m_field_names;
     }
@@ -89,6 +88,36 @@ class Operation
     bool weighted() const
     {
         return weights != nullptr;
+    }
+
+    bool column_names_known() const
+    {
+        return !(stat == "frac" || stat == "weighted_frac");
+    }
+
+    bool requires_histogram() const
+    {
+        return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "median" || stat == "frac" || stat == "weighted_frac";
+    }
+
+    bool requires_stored_values() const
+    {
+        return stat == "values";
+    }
+
+    bool requires_stored_weights() const
+    {
+        return stat == "weights";
+    }
+
+    bool requires_stored_coverage_fractions() const
+    {
+        return stat == "coverage";
+    }
+
+    bool requries_stored_locations() const
+    {
+        return stat == "center_x" || stat == "center_y" || stat == "cell_id";
     }
 
     /// Returns a newly constructed `Grid` representing the common grid between
@@ -148,5 +177,3 @@ class Operation
     std::vector<std::string> m_field_names;
 };
 }
-
-#endif // EXACTEXTRACT_OPERATION_H

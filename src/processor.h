@@ -67,7 +67,7 @@ class Processor
     void add_operation(const Operation& op)
     {
         m_operations.push_back(op.clone());
-        m_reg.prepare(op.stat);
+        m_reg.prepare(op);
     }
 
     void include_col(const std::string& col)
