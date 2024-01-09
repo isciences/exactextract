@@ -49,10 +49,6 @@ RasterSequentialProcessor::process()
     read_features();
     populate_index();
 
-    for (const auto& op : m_operations) {
-        m_output.add_operation(*op);
-    }
-
     auto grid = common_grid(m_operations.begin(), m_operations.end());
 
     for (const auto& subgrid : subdivide(grid, m_max_cells_in_memory)) {

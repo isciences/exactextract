@@ -68,11 +68,14 @@ class Processor
     {
         m_operations.push_back(op.clone());
         m_reg.prepare(op);
+        m_output.add_operation(op);
     }
 
     void include_col(const std::string& col)
     {
         m_include_cols.push_back(col);
+
+        m_output.add_column(col);
     }
 
     void set_max_cells_in_memory(size_t n)

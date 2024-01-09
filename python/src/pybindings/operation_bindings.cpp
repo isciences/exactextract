@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ISciences, LLC.
+// Copyright (c) 2023-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h> // needed to bind Operation::field_names
 
 #include "operation.h"
 #include "operation_bindings.h"
@@ -27,6 +28,7 @@ bind_operation(py::module& m)
       .def(py::init<std::string, std::string, RasterSource*, RasterSource*>())
       .def("weighted", &Operation::weighted)
       .def("grid", &Operation::grid)
+      .def("field_names", &Operation::field_names)
       .def_readonly("stat", &Operation::stat)
       .def_readonly("name", &Operation::name)
       .def_readonly("values", &Operation::values)

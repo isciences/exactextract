@@ -103,12 +103,7 @@ main(int argc, char** argv)
         auto rasters = load_rasters(raster_descriptors);
 
         auto operations = prepare_operations(stats, rasters);
-        bool defer_writing = false;
-        for (const auto& op : operations) {
-            if (op->stat == "frac" || op->stat == "weighted_frac") {
-                defer_writing = true;
-            }
-        }
+        const bool defer_writing = std::any_of(operations.begin(), operations.end(), [](const auto& op) { return !op->column_names_known(); });
 
         std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing
                                                                   ? std::make_unique<
