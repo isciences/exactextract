@@ -19,14 +19,14 @@
 namespace exactextract {
 
 void
-StatsRegistry::prepare(const std::string& stat)
+StatsRegistry::prepare(const Operation& op)
 {
-    m_stats_options.store_histogram |= requires_stored_values(stat);
-    m_stats_options.store_values |= (stat == "values");
-    m_stats_options.store_weights |= (stat == "weights");
-    m_stats_options.store_coverage_fraction |= (stat == "coverage");
-    m_stats_options.store_x |= (stat == "center_x" || stat == "cell_id");
-    m_stats_options.store_y |= (stat == "center_y" || stat == "cell_id");
+    m_stats_options.store_histogram |= op.requires_histogram();
+    m_stats_options.store_values |= op.requires_stored_values();
+    m_stats_options.store_weights |= op.requires_stored_weights();
+    m_stats_options.store_coverage_fraction |= op.requires_stored_coverage_fractions();
+    m_stats_options.store_x |= op.requries_stored_locations();
+    m_stats_options.store_y |= op.requries_stored_locations();
 }
 
 void

@@ -60,25 +60,20 @@ class StatsRegistry
         m_feature_stats.erase(&feature);
     }
 
-    void prepare(const std::string& stat);
+    void prepare(const Operation& op);
 
     void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values);
 
     void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, const RasterVariant& weights);
 
   private:
-    static bool requires_stored_values(const std::string& stat)
-    {
-        return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "median" || stat == "frac" || stat == "weighted_frac";
-    }
-
     template<typename T>
     static bool requires_stored_values(const T& ops)
     {
         return std::any_of(ops.begin(),
                            ops.end(),
                            [](const auto& op) {
-                               return requires_stored_values(op->stat);
+                               return op.requires_stored_values();
                            });
     }
 
