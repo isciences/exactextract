@@ -7,6 +7,14 @@ import pytest
 from exactextract import JSONFeatureSource, NumPyRasterSource, exact_extract
 
 
+@pytest.fixture()
+def output_format(request):
+    if request.param == "pandas":
+        pytest.importorskip("pandas")
+
+    return request.param
+
+
 def make_square_raster(n):
     values = np.arange(1, n * n + 1).reshape(n, n)
     return NumPyRasterSource(values, 0, 0, n, n)
@@ -31,6 +39,7 @@ def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
     return f
 
 
+@pytest.mark.parametrize("output_format", ("geojson", "pandas"), indirect=True)
 @pytest.mark.parametrize(
     "stat,expected",
     [
@@ -65,23 +74,36 @@ def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
         ("cell_id", np.array([0, 1, 2, 3, 4, 5, 6, 7, 8], dtype=np.int64)),
     ],
 )
-def test_basic_stats(stat, expected):
+def test_basic_stats(stat, expected, output_format):
     rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
     square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
 
-    result = exact_extract(rast, square, stat)[0]["properties"][stat]
+    result = exact_extract(rast, square, stat, output=output_format)
 
-    assert result == pytest.approx(expected)
+    if output_format == "geojson":
+        value = result[0]["properties"][stat]
+    else:
+        value = result[stat][0]
+
+    assert value == pytest.approx(expected)
 
     if isinstance(expected, np.ndarray):
-        assert expected.dtype == result.dtype
+        assert expected.dtype == value.dtype
 
 
-def test_multiple_stats():
+@pytest.mark.parametrize("output_format", ("geojson", "pandas"), indirect=True)
+def test_multiple_stats(output_format):
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
     square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
 
-    assert exact_extract(rast, square, ("min", "max", "mean"))[0]["properties"] == {
+    result = exact_extract(rast, square, ("min", "max", "mean"), output=output_format)
+
+    if output_format == "geojson":
+        fields = result[0]["properties"]
+    else:
+        fields = result.to_dict(orient="records")[0]
+
+    assert fields == {
         "min": 1,
         "max": 9,
         "mean": 5,
