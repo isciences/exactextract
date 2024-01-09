@@ -19,6 +19,67 @@ class JSONWriter(Writer):
         return self.feature_list
 
 
+class PandasWriter(Writer):
+    def __init__(self):
+        super().__init__()
+
+        self.fields = {}
+        self.ids = []
+        self.feature_count = 0
+        self.columns_known = None
+
+    def add_operation(self, op):
+        if self.columns_known is None:
+            self.columns_known = True
+
+        if op.column_names_known:
+            for field_name in op.field_names():
+                self.fields[field_name] = []
+        else:
+            self.columns_known = False
+
+    def add_column(self, col_name):
+        if self.columns_known is None:
+            self.columns_known = True
+        self.fields[col_name] = []
+
+    def _add_missing_columns(self, f):
+        if self.columns_known:
+            return
+        if "id" in f and "id" not in self.fields:
+            self.fields["id"] = [None] * self.feature_count
+        for field_name in f["properties"]:
+            if field_name not in self.fields:
+                self.fields[field_name] = [None] * self.feature_count
+
+    def _pad_missing_values(self):
+        if self.columns_known:
+            return
+        for field in self.fields.values():
+            if len(field) < self.feature_count:
+                field.append(None)
+
+    def write(self, feature):
+        f = JSONFeature()
+        feature.copy_to(f)
+
+        self._add_missing_columns(f.feature)
+
+        for field_name, value in f.feature["properties"].items():
+            self.fields[field_name].append(value)
+        if "id" in f.feature:
+            self.fields["id"].append(f.feature["id"])
+
+        self.feature_count += 1
+
+        self._pad_missing_values()
+
+    def features(self):
+        import pandas as pd
+
+        return pd.DataFrame(self.fields, copy=False)
+
+
 class GDALWriter(Writer):
     def __init__(self, ds, name=""):
         super().__init__()

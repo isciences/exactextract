@@ -20,4 +20,4 @@ from .raster_source import (
     RasterSource,
     XArrayRasterSource,
 )
-from .writer import GDALWriter, JSONWriter, Writer
+from .writer import GDALWriter, JSONWriter, PandasWriter, Writer
