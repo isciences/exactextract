@@ -14,7 +14,7 @@ from .raster_source import (
     RasterSource,
     XArrayRasterSource,
 )
-from .writer import GDALWriter, JSONWriter, Writer
+from .writer import GDALWriter, JSONWriter, PandasWriter, Writer
 
 
 def prep_raster(rast, band=None, name_root=None, names=None):
@@ -187,10 +187,12 @@ def prep_processor(strategy):
 
 
 def prep_writer(output):
-    if output is None:
-        return JSONWriter()
     if isinstance(output, Writer):
         return output
+    elif output == "geojson":
+        return JSONWriter()
+    elif output == "pandas":
+        return PandasWriter()
 
     try:
         from osgeo import gdal, ogr
@@ -220,7 +222,7 @@ def exact_extract(
     include_cols=None,
     strategy="feature-sequential",
     max_cells_in_memory=30000000,
-    output=None,
+    output="geojson",
 ):
     rast = prep_raster(rast, name_root="band")
     weights = prep_raster(weights, name_root="weight")
@@ -239,5 +241,4 @@ def exact_extract(
 
     writer.finish()
 
-    if output is None:
-        return writer.features()
+    return writer.features()

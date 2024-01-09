@@ -103,6 +103,9 @@ class GDALWriter(Writer):
         feature.copy_to(f)
         self.feature_list.append(f)
 
+    def features(self):
+        return None
+
     def finish(self):
         from osgeo import ogr
 
