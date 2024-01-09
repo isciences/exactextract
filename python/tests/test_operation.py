@@ -35,9 +35,10 @@ def test_valid_raster(np_raster_source):
     assert op.values == np_raster_source
 
 
-def test_invalid_raster():
+@pytest.mark.parametrize("raster", ("invalid", None))
+def test_invalid_raster(raster):
     with pytest.raises(TypeError):
-        Operation("count", "test", "invalid")  # type: ignore
+        Operation("count", "test", raster)  # type: ignore
 
 
 def test_valid_weights(np_raster_source):
