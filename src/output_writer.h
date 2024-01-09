@@ -18,7 +18,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace exactextract {
 
@@ -39,6 +38,8 @@ class OutputWriter
     /// Method to be called for each `Operation` whose results will
     /// be written. May be used to create necessary fields, etc.
     virtual void add_operation(const Operation&) {}
+
+    virtual void add_column(const std::string&) {}
 
     /// Method to be called after all `write` has been called
     /// for the last time.

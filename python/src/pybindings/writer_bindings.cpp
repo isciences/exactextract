@@ -13,6 +13,7 @@
 
 #include <pybind11/pybind11.h>
 
+#include "operation.h"
 #include "output_writer.h"
 #include "writer_bindings.h"
 
@@ -21,8 +22,22 @@ namespace py = pybind11;
 namespace exactextract {
 class PyWriter : public OutputWriter
 {
-
   public:
+    void add_operation(const Operation& op) override
+    {
+        PYBIND11_OVERRIDE(void, OutputWriter, add_operation, op);
+    }
+
+    void add_column(const std::string& name) override
+    {
+        PYBIND11_OVERRIDE(void, OutputWriter, add_column, name);
+    }
+
+    void finish() override
+    {
+        PYBIND11_OVERRIDE(void, OutputWriter, finish);
+    }
+
     void write(const Feature& f) override
     {
         // https://github.com/pybind/pybind11/issues/2033#issuecomment-703177186
@@ -36,6 +51,9 @@ bind_writer(py::module& m)
 {
     py::class_<OutputWriter, PyWriter>(m, "Writer")
       .def(py::init<>())
+      .def("add_operation", &OutputWriter::add_operation)
+      .def("add_column", &OutputWriter::add_column)
+      .def("finish", &OutputWriter::finish)
       .def("write", &OutputWriter::write);
 }
 }

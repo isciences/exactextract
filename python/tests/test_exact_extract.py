@@ -473,3 +473,56 @@ def test_types_preserved(dtype):
         assert isinstance(result, int)
     else:
         assert isinstance(result, float)
+
+
+@pytest.mark.parametrize("output_type", ("filename", "DataSource"))
+def test_gdal_output(tmp_path, output_type):
+    ogr = pytest.importorskip("osgeo.ogr")
+
+    rast = NumPyRasterSource(np.full((3, 3), 1))
+
+    square = make_rect(0, 0, 3, 3, properties={"name": "test"})
+
+    fname = tmp_path / "stats.dbf"
+
+    if output_type == "filename":
+        output = fname
+    elif output_type == "DataSource":
+        drv = ogr.GetDriverByName("ESRI Shapefile")
+        output = drv.CreateDataSource(str(fname))
+
+    result = exact_extract(
+        rast, square, ["mean", "count", "variety"], include_cols=["name"], output=output
+    )
+
+    assert result is None
+
+    output = None  # flush DataSource
+    ds = ogr.Open(str(fname))
+
+    lyr = ds.GetLayer(0)
+
+    assert lyr.GetFeatureCount() == 1
+
+    defn = lyr.GetLayerDefn()
+
+    assert defn.GetFieldCount() == 4
+
+    assert defn.GetFieldDefn(0).GetName() == "name"
+    assert defn.GetFieldDefn(0).GetTypeName() == "String"
+
+    assert defn.GetFieldDefn(1).GetName() == "mean"
+    assert defn.GetFieldDefn(1).GetTypeName() == "Real"
+
+    assert defn.GetFieldDefn(2).GetName() == "count"
+    assert defn.GetFieldDefn(2).GetTypeName() == "Real"
+
+    assert defn.GetFieldDefn(3).GetName() == "variety"
+    assert defn.GetFieldDefn(3).GetTypeName() == "Integer"
+
+    f = lyr.GetNextFeature()
+
+    assert f["name"] == "test"
+    assert f["mean"] == 1.0
+    assert f["count"] == 9.0
+    assert f["variety"] == 1

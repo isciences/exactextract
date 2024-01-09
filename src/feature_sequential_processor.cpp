@@ -25,10 +25,6 @@ namespace exactextract {
 void
 FeatureSequentialProcessor::process()
 {
-    for (const auto& op : m_operations) {
-        m_output.add_operation(*op);
-    }
-
     while (m_shp.next()) {
         const Feature& f_in = m_shp.feature();
 

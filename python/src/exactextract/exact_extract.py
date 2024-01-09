@@ -14,7 +14,7 @@ from .raster_source import (
     RasterSource,
     XArrayRasterSource,
 )
-from .writer import JSONWriter
+from .writer import GDALWriter, JSONWriter, Writer
 
 
 def prep_raster(rast, band=None, name_root=None, names=None):
@@ -186,6 +186,31 @@ def prep_processor(strategy):
     return processors[strategy]
 
 
+def prep_writer(output):
+    if output is None:
+        return JSONWriter()
+    if isinstance(output, Writer):
+        return output
+
+    try:
+        from osgeo import gdal, ogr
+        from osgeo_utils.auxiliary.util import GetOutputDriverFor
+
+        if isinstance(output, (str, os.PathLike)):
+            drv_name = GetOutputDriverFor(output, is_raster=False)
+            drv = ogr.GetDriverByName(drv_name)
+            ds = drv.CreateDataSource(str(output))
+            return GDALWriter(ds)
+
+        if isinstance(output, gdal.Dataset) or isinstance(output, ogr.DataSource):
+            return GDALWriter(output)
+
+    except ImportError:
+        pass
+
+    raise Exception("Unsupported value of output")
+
+
 def exact_extract(
     rast,
     vec,
@@ -195,6 +220,7 @@ def exact_extract(
     include_cols=None,
     strategy="feature-sequential",
     max_cells_in_memory=30000000,
+    output=None,
 ):
     rast = prep_raster(rast, name_root="band")
     weights = prep_raster(weights, name_root="weight")
@@ -205,13 +231,13 @@ def exact_extract(
 
     Processor = prep_processor(strategy)
 
-    writer = JSONWriter()
+    writer = prep_writer(output)
 
-    processor = Processor(vec, writer, ops)
+    processor = Processor(vec, writer, ops, include_cols)
     processor.set_max_cells_in_memory(max_cells_in_memory)
-    if include_cols:
-        for col in include_cols:
-            processor.add_col(col)
     processor.process()
 
-    return writer.features()
+    writer.finish()
+
+    if output is None:
+        return writer.features()

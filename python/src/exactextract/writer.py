@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+import copy
 
 from _exactextract import Writer
 
@@ -26,9 +25,20 @@ class GDALWriter(Writer):
         self.feature_list = []
         self.ds = ds
         self.layer_name = name
+        self.prototype = {"type": "Feature", "properties": {}}
+
+    def add_operation(self, op):
+        # Create a prototype feature so that field names
+        # match the order they are specified in input
+        # operations.
+        for field_name in op.field_names():
+            self.prototype["properties"][field_name] = None
+
+    def add_column(self, col_name):
+        self.prototype["properties"][col_name] = None
 
     def write(self, feature):
-        f = JSONFeature()
+        f = JSONFeature(copy.deepcopy(self.prototype))
         feature.copy_to(f)
         self.feature_list.append(f)
 
@@ -62,7 +72,7 @@ class GDALWriter(Writer):
                         field_type = ogr.OFTString
                     elif type(value) is float:
                         field_type = ogr.OFTReal
-                    elif type(value) is type(value) is int:
+                    elif type(value) is int:
                         field_type = ogr.OFTInteger
 
                     ogr_fields[field_name] = ogr.FieldDefn(field_name, field_type)
