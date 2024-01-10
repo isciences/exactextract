@@ -1,11 +1,10 @@
 import csv
-import json
 import os
 import subprocess
 
 import numpy as np
 import pytest
-from osgeo import gdal, gdal_array, ogr
+from osgeo import gdal, gdal_array, ogr, osr
 
 gdal.UseExceptions()
 
@@ -87,11 +86,15 @@ def write_features(tmp_path):
 
     output_fname = tmp_path / "shape.geojson"
 
-    def writer(features):
+    def writer(features, srs=None):
         drv = ogr.GetDriverByName("GeoJSON")
         ds = drv.CreateDataSource(str(output_fname))
 
-        lyr = ds.CreateLayer("shape")
+        ogr_srs = osr.SpatialReference()
+        if srs is not None:
+            ogr_srs.ImportFromEPSG(srs)
+
+        lyr = ds.CreateLayer("shape", ogr_srs)
 
         if type(features) is dict:
             features = [features]
@@ -257,24 +260,28 @@ def test_include_geom(run, write_raster, write_features):
             {
                 "id": "3.14",
                 "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))",
-            }
+            },
+            srs=32145,
         ),
         fid="id",
         id_name="orig_id",
         id_type="float",
         raster=f"metric:{write_raster(data)}",
-        stat=["mean(metric)"],
+        stat=["y=mean(metric)"],
         include_geom=True,
         return_fname=True,
-        output_ext="json",
+        output_ext="shp",
     )
 
-    with open(out, "r") as output:
-        fc = json.load(output)
+    ds = ogr.Open(str(out))
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    g = f.GetGeometryRef()
 
-        f = fc["features"][0]
+    assert g.ExportToWkt().startswith("POLYGON")
 
-        assert f["geometry"]["type"] == "Polygon"
+    srs = lyr.GetSpatialRef()
+    assert "Vermont" in srs.ExportToWkt()
 
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))

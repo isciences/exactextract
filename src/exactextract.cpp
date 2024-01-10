@@ -107,14 +107,14 @@ main(int argc, char** argv)
         auto operations = prepare_operations(stats, rasters);
         const bool defer_writing = std::any_of(operations.begin(), operations.end(), [](const auto& op) { return !op->column_names_known(); });
 
+        GDALDatasetWrapper shp = load_dataset(poly_descriptor, include_cols, src_id_name, dst_id_name, dst_id_type);
+
         std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing
                                                                   ? std::make_unique<
                                                                       exactextract::DeferredGDALWriter>(
-                                                                      output_filename, !nested_output)
+                                                                      output_filename, !nested_output, shp.srs())
                                                                   : std::make_unique<exactextract::GDALWriter>(
-                                                                      output_filename, !nested_output);
-
-        GDALDatasetWrapper shp = load_dataset(poly_descriptor, include_cols, src_id_name, dst_id_name, dst_id_type);
+                                                                      output_filename, !nested_output, shp.srs());
 
         if (!dst_id_name.empty()) {
             include_cols.insert(include_cols.begin(), dst_id_name);

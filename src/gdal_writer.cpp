@@ -29,7 +29,7 @@
 
 namespace exactextract {
 GDALWriter::
-  GDALWriter(const std::string& filename, bool unnest)
+  GDALWriter(const std::string& filename, bool unnest, OGRSpatialReferenceH srs)
   : m_unnest_if_needed(unnest)
 {
     auto driver_name = get_driver_name(filename);
@@ -46,7 +46,7 @@ GDALWriter::
     }
 
     m_dataset = GDALCreate(driver, filename.c_str(), 0, 0, 0, GDT_Unknown, nullptr);
-    m_layer = GDALDatasetCreateLayer(m_dataset, "output", nullptr, wkbUnknown, layer_creation_options);
+    m_layer = GDALDatasetCreateLayer(m_dataset, "output", srs, wkbUnknown, layer_creation_options);
 
     CSLDestroy(layer_creation_options);
 }

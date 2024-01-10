@@ -24,7 +24,7 @@ class GDALWriter : public OutputWriter
 {
 
   public:
-    explicit GDALWriter(const std::string& filename, bool unnest);
+    explicit GDALWriter(const std::string& filename, bool unnest, OGRSpatialReferenceH = nullptr);
 
     ~GDALWriter() override;
 

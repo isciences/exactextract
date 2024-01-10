@@ -42,6 +42,8 @@ class GDALDatasetWrapper : public FeatureSource
 
     ~GDALDatasetWrapper() override;
 
+    OGRSpatialReferenceH srs() const;
+
   private:
     GDALDatasetH m_dataset;
     OGRLayerH m_layer;
