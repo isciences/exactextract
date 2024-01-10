@@ -31,8 +31,7 @@ struct RasterStatsOptions
     bool store_values = false;
     bool store_weights = false;
     bool store_coverage_fraction = false;
-    bool store_x = false;
-    bool store_y = false;
+    bool store_xy = false;
 };
 
 template<typename T>
@@ -72,8 +71,8 @@ class RasterStats
                 float pct_cov = intersection_percentages(i, j);
                 T val;
                 if (pct_cov > 0 && rv.get(i, j, val)) {
-                    process_value(val, pct_cov, 1.0);
                     process_location(intersection_percentages.grid(), i, j);
+                    process_value(val, pct_cov, 1.0);
                 }
             }
         }
@@ -115,14 +114,14 @@ class RasterStats
                 ValueType val;
 
                 if (pct_cov > 0 && rv.get(i, j, val)) {
+                    process_location(common, i, j);
+
                     if (wv.get(i, j, weight)) {
                         process_value(val, pct_cov, weight);
                     } else {
                         // Weight is NODATA, convert to NAN
                         process_value(val, pct_cov, std::numeric_limits<double>::quiet_NaN());
                     }
-
-                    process_location(common, i, j);
                 }
             }
         }
@@ -130,11 +129,8 @@ class RasterStats
 
     void process_location(const Grid<bounded_extent>& grid, std::size_t row, std::size_t col)
     {
-        if (m_options.store_x) {
+        if (m_options.store_xy) {
             m_cell_x.push_back(grid.x_for_col(col));
-        }
-
-        if (m_options.store_y) {
             m_cell_y.push_back(grid.y_for_row(row));
         }
     }
@@ -154,10 +150,16 @@ class RasterStats
 
         if (val < m_min) {
             m_min = val;
+            if (m_options.store_xy) {
+                m_min_xy = { m_cell_x.back(), m_cell_y.back() };
+            }
         }
 
         if (val > m_max) {
             m_max = val;
+            if (m_options.store_xy) {
+                m_max_xy = { m_cell_x.back(), m_cell_y.back() };
+            }
         }
 
         if (m_options.store_histogram) {
@@ -184,7 +186,8 @@ class RasterStats
      * The mean value of cells covered by this polygon, weighted
      * by the percent of the cell that is covered.
      */
-    float mean() const
+    float
+    mean() const
     {
         return sum() / count();
     }
@@ -198,7 +201,8 @@ class RasterStats
      * caller should replace undefined weights with a suitable default
      * before computing statistics.
      */
-    float weighted_mean() const
+    float
+    weighted_mean() const
     {
         return weighted_sum() / weighted_count();
     }
@@ -207,7 +211,8 @@ class RasterStats
      *  Meaningful only when the values of the weighting
      *  raster are between 0 and 1.
      */
-    float weighted_fraction() const
+    float
+    weighted_fraction() const
     {
         return weighted_sum() / sum();
     }
@@ -218,7 +223,8 @@ class RasterStats
      * cover the same number of cells, the greatest value will
      * be returned. Weights are not taken into account.
      */
-    std::optional<T> mode() const
+    std::optional<T>
+    mode() const
     {
         if (variety() == 0) {
             return std::nullopt;
@@ -236,7 +242,8 @@ class RasterStats
      * The minimum value in any raster cell wholly or partially covered
      * by the polygon. Weights are not taken into account.
      */
-    std::optional<T> min() const
+    std::optional<T>
+    min() const
     {
         if (m_sum_ci == 0) {
             return std::nullopt;
@@ -244,11 +251,23 @@ class RasterStats
         return m_min;
     }
 
+    /// XY values corresponding to the center of the cell whose value
+    /// is returned by min()
+    std::optional<std::pair<double, double>>
+    min_xy() const
+    {
+        if (m_sum_ci == 0) {
+            return std::nullopt;
+        }
+        return m_min_xy;
+    }
+
     /**
      * The maximum value in any raster cell wholly or partially covered
      * by the polygon. Weights are not taken into account.
      */
-    std::optional<T> max() const
+    std::optional<T>
+    max() const
     {
         if (m_sum_ci == 0) {
             return std::nullopt;
@@ -256,11 +275,23 @@ class RasterStats
         return m_max;
     }
 
+    /// XY values corresponding to the center of the cell whose value
+    /// is returned by max()
+    std::optional<std::pair<double, double>>
+    max_xy() const
+    {
+        if (m_sum_ci == 0) {
+            return std::nullopt;
+        }
+        return m_max_xy;
+    }
+
     /**
      * The given quantile (0-1) of raster cell values. Coverage fractions
      * are taken into account but weights are not.
      */
-    std::optional<T> quantile(double q) const
+    std::optional<T>
+    quantile(double q) const
     {
         if (m_sum_ci == 0) {
             return std::nullopt;
@@ -283,7 +314,8 @@ class RasterStats
      * The sum of raster cells covered by the polygon, with each raster
      * value weighted by its coverage fraction.
      */
-    float sum() const
+    float
+    sum() const
     {
         return (float)m_sum_xici;
     }
@@ -296,7 +328,8 @@ class RasterStats
      * caller should replace undefined weights with a suitable default
      * before computing statistics.
      */
-    float weighted_sum() const
+    float
+    weighted_sum() const
     {
         return (float)m_sum_xiciwi;
     }
@@ -306,7 +339,8 @@ class RasterStats
      * covered by the polygon. Weights are not taken
      * into account.
      */
-    float count() const
+    float
+    count() const
     {
         return (float)m_sum_ci;
     }
@@ -316,7 +350,8 @@ class RasterStats
      * covered by the polygon. Weights are not taken
      * into account.
      */
-    std::optional<float> count(const T& value) const
+    std::optional<float>
+    count(const T& value) const
     {
         const auto& entry = m_freq.find(value);
 
@@ -332,7 +367,8 @@ class RasterStats
      * a value that equals the specified value.
      * Weights are not taken into account.
      */
-    std::optional<float> frac(const T& value) const
+    std::optional<float>
+    frac(const T& value) const
     {
         auto count_for_value = count(value);
 
@@ -348,7 +384,8 @@ class RasterStats
      * a value that equals the specified value.
      * Weights are not taken into account.
      */
-    std::optional<float> weighted_frac(const T& value) const
+    std::optional<float>
+    weighted_frac(const T& value) const
     {
         auto count_for_value = weighted_count(value);
 
@@ -364,7 +401,8 @@ class RasterStats
      * by the polygon. Cell coverage fractions are taken
      * into account; values of a weighting raster are not.
      */
-    float variance() const
+    float
+    variance() const
     {
         return static_cast<float>(m_variance.variance());
     }
@@ -374,7 +412,8 @@ class RasterStats
      * by the polygon, taking into account cell coverage
      * fractions and values of a weighting raster.
      */
-    float weighted_variance() const
+    float
+    weighted_variance() const
     {
         return static_cast<float>(m_weighted_variance.variance());
     }
@@ -385,7 +424,8 @@ class RasterStats
      * are taken into account; values of a weighting
      * raster are not.
      */
-    float stdev() const
+    float
+    stdev() const
     {
         return static_cast<float>(m_variance.stdev());
     }
@@ -395,7 +435,8 @@ class RasterStats
      * touched by the polygon, taking into account cell
      * coverage fractions and values of a weighting raster.
      */
-    float weighted_stdev() const
+    float
+    weighted_stdev() const
     {
         return static_cast<float>(m_weighted_variance.stdev());
     }
@@ -406,7 +447,8 @@ class RasterStats
      * are taken into account; values of a weighting
      * raster are not.
      */
-    float coefficient_of_variation() const
+    float
+    coefficient_of_variation() const
     {
         return static_cast<float>(m_variance.coefficent_of_variation());
     }
@@ -420,7 +462,8 @@ class RasterStats
      * caller should replace undefined weights with a suitable default
      * before computing statistics.
      */
-    float weighted_count() const
+    float
+    weighted_count() const
     {
         return (float)m_sum_ciwi;
     }
@@ -434,7 +477,8 @@ class RasterStats
      * caller should replace undefined weights with a suitable default
      * before computing statistics.
      */
-    std::optional<float> weighted_count(const T& value) const
+    std::optional<float>
+    weighted_count(const T& value) const
     {
         const auto& entry = m_freq.find(value);
 
@@ -453,7 +497,8 @@ class RasterStats
      *
      * Cell weights are not taken into account.
      */
-    std::optional<T> minority() const
+    std::optional<T>
+    minority() const
     {
         if (variety() == 0) {
             return std::nullopt;
@@ -471,32 +516,38 @@ class RasterStats
      * The number of distinct defined raster values in cells wholly
      * or partially covered by the polygon.
      */
-    size_t variety() const
+    size_t
+    variety() const
     {
         return m_freq.size();
     }
 
-    const std::vector<ValueType>& values() const
+    const std::vector<ValueType>&
+    values() const
     {
         return m_cell_values;
     }
 
-    const std::vector<float>& coverage_fractions() const
+    const std::vector<float>&
+    coverage_fractions() const
     {
         return m_cell_cov;
     }
 
-    const std::vector<double>& weights() const
+    const std::vector<double>&
+    weights() const
     {
         return m_cell_weights;
     }
 
-    const std::vector<double>& center_x() const
+    const std::vector<double>&
+    center_x() const
     {
         return m_cell_x;
     }
 
-    const std::vector<double>& center_y() const
+    const std::vector<double>&
+    center_y() const
     {
         return m_cell_y;
     }
@@ -504,6 +555,8 @@ class RasterStats
   private:
     T m_min;
     T m_max;
+    std::pair<double, double> m_min_xy;
+    std::pair<double, double> m_max_xy;
 
     // ci: coverage fraction of pixel i
     // wi: weight of pixel i
@@ -586,12 +639,14 @@ class RasterStats
     };
 
   public:
-    Iterator begin() const
+    Iterator
+    begin() const
     {
         return Iterator(m_freq.cbegin());
     }
 
-    Iterator end() const
+    Iterator
+    end() const
     {
         return Iterator(m_freq.cend());
     }
@@ -649,7 +704,6 @@ operator<<(std::ostream& os, const RasterStats<T>& stats)
     os << "}" << std::endl;
     return os;
 }
-
 }
 
 #endif
