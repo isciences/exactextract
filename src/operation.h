@@ -117,7 +117,7 @@ class Operation
 
     bool requries_stored_locations() const
     {
-        return stat == "center_x" || stat == "center_y" || stat == "cell_id";
+        return stat == "center_x" || stat == "center_y" || stat == "cell_id" || stat == "min_center_x" || stat == "min_center_y" || stat == "max_center_x" || stat == "max_center_y";
     }
 
     /// Returns a newly constructed `Grid` representing the common grid between

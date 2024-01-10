@@ -83,10 +83,22 @@ Operation::set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f
         std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.min().value_or(m)); },
                    stats,
                    m_missing);
+    } else if (stat == "min_center_x") {
+        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.min_xy().value_or(std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN())).first); },
+                   stats);
+    } else if (stat == "min_center_y") {
+        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.min_xy().value_or(std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN())).second); },
+                   stats);
     } else if (stat == "max") {
         std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.max().value_or(m)); },
                    stats,
                    m_missing);
+    } else if (stat == "max_center_x") {
+        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.max_xy().value_or(std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN())).first); },
+                   stats);
+    } else if (stat == "max_center_y") {
+        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.max_xy().value_or(std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN())).second); },
+                   stats);
     } else if (stat == "majority" || stat == "mode") {
         std::visit(
           [&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.mode().value_or(m)); },

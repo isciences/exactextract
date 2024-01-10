@@ -199,6 +199,8 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
         CHECK(stats.weighted_count() == stats.count());
         CHECK(stats.weighted_sum() == stats.sum());
         CHECK(std::isnan(stats.weighted_mean()));
+        CHECK(!stats.min_xy().has_value());
+        CHECK(!stats.max_xy().has_value());
     }
 
     SECTION("All values defined, no weights provided")
