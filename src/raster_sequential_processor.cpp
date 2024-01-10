@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2023 ISciences, LLC.
+// Copyright (c) 2019-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -122,15 +122,7 @@ RasterSequentialProcessor::process()
     }
 
     for (const auto& f_in : m_features) {
-        auto f_out = m_output.create_feature();
-        for (const auto& col : m_include_cols) {
-            f_out->set(col, f_in);
-        }
-        for (const auto& op : m_operations) {
-            op->set_result(m_reg, f_in, *f_out);
-        }
-        m_output.write(*f_out);
-        m_reg.flush_feature(f_in);
+        write_result(f_in);
     }
 }
 
