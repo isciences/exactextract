@@ -128,4 +128,11 @@ GDALDatasetWrapper::~GDALDatasetWrapper()
     }
     GDALClose(m_dataset);
 }
+
+OGRSpatialReferenceH
+GDALDatasetWrapper::srs() const
+{
+    return OGR_L_GetSpatialRef(m_layer);
+}
+
 }
