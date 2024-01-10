@@ -46,7 +46,7 @@ GDALWriter::
     }
 
     m_dataset = GDALCreate(driver, filename.c_str(), 0, 0, 0, GDT_Unknown, nullptr);
-    m_layer = GDALDatasetCreateLayer(m_dataset, "output", nullptr, wkbNone, layer_creation_options);
+    m_layer = GDALDatasetCreateLayer(m_dataset, "output", nullptr, wkbUnknown, layer_creation_options);
 
     CSLDestroy(layer_creation_options);
 }
@@ -151,7 +151,7 @@ GDALWriter::get_driver_name(const std::string& filename)
 {
     if (ends_with(filename, ".csv")) {
         return "CSV";
-    } else if (ends_with(filename, ".dbf")) {
+    } else if (ends_with(filename, ".dbf") || ends_with(filename, ".shp")) {
         return "ESRI Shapefile";
     } else if (ends_with(filename, "json")) {
         return "GeoJSON";
