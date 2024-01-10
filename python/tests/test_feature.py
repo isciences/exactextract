@@ -59,5 +59,7 @@ def test_feature_copy_to(ogr_point):
     f = JSONFeature()
     GDALFeature(ogr_point).copy_to(f)
 
+    ogr_point.geometry()
+
     assert f.get("area") == 33.6
     assert f.get("name") == "test"

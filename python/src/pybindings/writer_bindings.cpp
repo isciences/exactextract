@@ -33,6 +33,11 @@ class PyWriter : public OutputWriter
         PYBIND11_OVERRIDE(void, OutputWriter, add_column, name);
     }
 
+    void add_geometry() override
+    {
+        PYBIND11_OVERRIDE(void, OutputWriter, add_geometry);
+    }
+
     void finish() override
     {
         PYBIND11_OVERRIDE(void, OutputWriter, finish);
@@ -51,8 +56,9 @@ bind_writer(py::module& m)
 {
     py::class_<OutputWriter, PyWriter>(m, "Writer")
       .def(py::init<>())
-      .def("add_operation", &OutputWriter::add_operation)
       .def("add_column", &OutputWriter::add_column)
+      .def("add_geometry", &OutputWriter::add_geometry)
+      .def("add_operation", &OutputWriter::add_operation)
       .def("finish", &OutputWriter::finish)
       .def("write", &OutputWriter::write);
 }

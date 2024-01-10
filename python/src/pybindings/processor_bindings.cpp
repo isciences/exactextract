@@ -30,6 +30,7 @@ bind_processor(py::module& m)
     py::class_<Processor>(m, "Processor")
       .def("add_operation", &Processor::add_operation)
       .def("add_col", &Processor::include_col)
+      .def("add_geom", &Processor::include_geometry)
       .def("process", &Processor::process)
       .def("set_max_cells_in_memory", &Processor::set_max_cells_in_memory, py::arg("n"))
       .def("show_progress", &Processor::show_progress, py::arg("val"));

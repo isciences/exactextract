@@ -284,7 +284,7 @@ TEMPLATE_TEST_CASE("include_col and include_geom work as expected", "[processor]
     processor.add_operation(Operation("count", "count", &value_src, nullptr));
     processor.include_col("fid");
     processor.include_col("type");
-    processor.include_geometry(true);
+    processor.include_geometry();
     processor.process();
 
     ds.reset();

@@ -41,7 +41,7 @@ def test_json_writer(point_features):
 
 
 def test_gdal_writer(point_features):
-    ogr = pytest.importorskip("ogr")
+    ogr = pytest.importorskip("osgeo.ogr")
 
     drv = ogr.GetDriverByName("Memory")
     ds = drv.CreateDataSource("")
