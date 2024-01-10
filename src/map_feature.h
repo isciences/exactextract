@@ -99,11 +99,17 @@ class MapFeature : public Feature
         for (const auto& [k, v] : m_map) {
             dst.set(k, *this);
         }
+        dst.set_geometry(geometry());
     }
 
     void set_geometry(geom_ptr_r geom)
     {
         m_geom = std::move(geom);
+    }
+
+    void set_geometry(const GEOSGeometry* g) override
+    {
+        m_geom = g ? geos_ptr(m_geos_context, GEOSGeom_clone_r(m_geos_context, g)) : nullptr;
     }
 
     const GEOSGeometry* geometry() const override

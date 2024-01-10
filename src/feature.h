@@ -123,6 +123,8 @@ class Feature
 
     virtual const GEOSGeometry* geometry() const = 0;
 
+    virtual void set_geometry(const GEOSGeometry*) = 0;
+
     // Convenience methods (can be overridden)
     virtual void set(const std::string& name, float value);
 
