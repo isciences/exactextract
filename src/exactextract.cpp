@@ -62,6 +62,7 @@ main(int argc, char** argv)
 
     bool progress = false;
     bool nested_output = false;
+    bool include_geom = false;
 
     app.add_option("-p,--polygons", poly_descriptor, "polygon dataset")->required(true);
     app.add_option("-r,--raster", raster_descriptors, "raster dataset")->required(true);
@@ -74,6 +75,7 @@ main(int argc, char** argv)
     app.add_option("--id-name", dst_id_name, "override name of id field in output")->required(false);
     app.add_flag("--nested-output", nested_output, "nested output");
     app.add_option("--include-col", include_cols, "columns from input to include in output");
+    app.add_flag("--include-geom", include_geom, "include geometry in output");
 
     app.add_flag("--progress", progress);
     app.set_config("--config");
@@ -140,6 +142,10 @@ main(int argc, char** argv)
 
         for (const auto& field : include_cols) {
             proc->include_col(field);
+        }
+
+        if (include_geom) {
+            proc->include_geometry();
         }
 
         proc->set_max_cells_in_memory(max_cells_in_memory);

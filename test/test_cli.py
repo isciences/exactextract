@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import subprocess
 
@@ -11,8 +12,8 @@ gdal.UseExceptions()
 
 @pytest.fixture()
 def run(tmpdir):
-    def runner(*args, return_fname=False, **kwargs):
-        output_fname = tmpdir / "out.csv"
+    def runner(*args, return_fname=False, output_ext="csv", **kwargs):
+        output_fname = tmpdir / f"out.{output_ext}"
 
         arglist = list(args)
 
@@ -245,6 +246,35 @@ def test_include_cols(strategy, run, write_raster, write_features):
 
     assert [row["name"] for row in rows] == ["A", "B"]
     assert [row["class"] for row in rows] == ["1", "2"]
+
+
+def test_include_geom(run, write_raster, write_features):
+
+    data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
+
+    out = run(
+        polygons=write_features(
+            {
+                "id": "3.14",
+                "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))",
+            }
+        ),
+        fid="id",
+        id_name="orig_id",
+        id_type="float",
+        raster=f"metric:{write_raster(data)}",
+        stat=["mean(metric)"],
+        include_geom=True,
+        return_fname=True,
+        output_ext="json",
+    )
+
+    with open(out, "r") as output:
+        fc = json.load(output)
+
+        f = fc["features"][0]
+
+        assert f["geometry"]["type"] == "Polygon"
 
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
