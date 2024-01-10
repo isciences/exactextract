@@ -8,6 +8,7 @@ jobs:
 
   build-library:
     strategy:
+      fail-fast: false
       matrix:
         ci:
           - name: "GEOS 3.12, CLI, PYTHON"
