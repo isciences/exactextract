@@ -509,10 +509,16 @@ def test_types_preserved(dtype):
 @pytest.mark.parametrize("output_type", ("filename", "DataSource"))
 def test_gdal_output(tmp_path, output_type):
     ogr = pytest.importorskip("osgeo.ogr")
+    osr = pytest.importorskip("osgeo.osr")
 
-    rast = NumPyRasterSource(np.full((3, 3), 1))
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(32145)
 
-    square = make_rect(0, 0, 3, 3, properties={"name": "test"})
+    rast = NumPyRasterSource(np.full((3, 3), 1), srs_wkt=srs.ExportToWkt())
+
+    square = JSONFeatureSource(
+        make_rect(0, 0, 3, 3, properties={"name": "test"}), srs_wkt=srs.ExportToWkt()
+    )
 
     fname = tmp_path / "stats.dbf"
 
@@ -564,13 +570,23 @@ def test_gdal_output(tmp_path, output_type):
     assert f["variety"] == 1
     assert f.GetGeometryRef().GetArea() == 9.0
 
+    assert "Vermont" in lyr.GetSpatialRef().ExportToWkt()
+
 
 def test_geopandas_output():
     gpd = pytest.importorskip("geopandas")
+    osr = pytest.importorskip("osgeo.osr")
 
-    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(32145)
 
-    square = make_rect(0, 0, 3, 3, properties={"name": "test"})
+    rast = NumPyRasterSource(
+        np.arange(1, 10, dtype=np.int32).reshape(3, 3), srs_wkt=srs.ExportToWkt()
+    )
+
+    square = JSONFeatureSource(
+        make_rect(0, 0, 3, 3, properties={"name": "test"}), srs_wkt=srs.ExportToWkt()
+    )
 
     result = exact_extract(
         rast,
@@ -583,3 +599,5 @@ def test_geopandas_output():
 
     assert isinstance(result, gpd.GeoDataFrame)
     assert result.area[0] == 9
+
+    assert "Vermont" in str(result.geometry.crs)

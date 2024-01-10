@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import numpy as np
 import pytest
 
@@ -9,7 +6,11 @@ from exactextract import GDALRasterSource, RasterioRasterSource, XArrayRasterSou
 
 @pytest.fixture()
 def global_half_degree(tmp_path):
-    from osgeo import gdal
+    gdal = pytest.importorskip("osgeo.gdal")
+    osr = pytest.importorskip("osgeo.osr")
+
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(4326)
 
     fname = str(tmp_path / "test.nc")
 
@@ -20,6 +21,7 @@ def global_half_degree(tmp_path):
     ds = drv.Create(fname, nx, ny, eType=gdal.GDT_Int32)
     gt = (-180.0, 0.5, 0.0, 90.0, 0.0, -0.5)
     ds.SetGeoTransform(gt)
+    ds.SetSpatialRef(srs)
     band = ds.GetRasterBand(1)
     band.SetNoDataValue(6)
 
@@ -33,7 +35,7 @@ def global_half_degree(tmp_path):
 
 @pytest.fixture()
 def scaled_temperature(tmp_path):
-    from osgeo import gdal
+    gdal = pytest.importorskip("osgeo.gdal")
 
     fname = str(tmp_path / "d2m.nc")
 
@@ -61,7 +63,7 @@ def scaled_temperature(tmp_path):
 @pytest.mark.parametrize(
     "Source", (GDALRasterSource, RasterioRasterSource, XArrayRasterSource)
 )
-def test_gdal_raster(global_half_degree, Source):
+def test_basic_read(global_half_degree, Source):
     try:
         src = Source(global_half_degree, 1)
     except ModuleNotFoundError as e:
@@ -81,6 +83,8 @@ def test_gdal_raster(global_half_degree, Source):
     if Source != XArrayRasterSource:
         assert src.nodata_value() == 6
         assert window.dtype == np.int32
+
+    assert "WGS_1984" in src.srs_wkt()
 
 
 @pytest.mark.parametrize(
