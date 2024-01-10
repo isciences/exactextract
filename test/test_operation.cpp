@@ -20,6 +20,11 @@ class WKTFeatureSource : public FeatureSource
     {
     }
 
+    void reset()
+    {
+        m_count = 0;
+    }
+
     void add_feature(MapFeature m)
     {
         m_features.emplace_back(std::move(m));
@@ -253,4 +258,41 @@ TEMPLATE_TEST_CASE("correct result for feature partially intersecting raster", "
     const MapFeature& f = writer.m_feature;
     CHECK(f.get<double>("count") == 1);
     CHECK(f.get<double>("median") == 3);
+}
+
+TEMPLATE_TEST_CASE("include_col and include_geom work as expected", "[processor]", FeatureSequentialProcessor, RasterSequentialProcessor)
+{
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
+    Matrix<double> values{ { { 1, 2, 3 },
+                             { 4, 5, 6 },
+                             { 7, 8, 9 } } };
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
+
+    WKTFeatureSource ds;
+    MapFeature mf;
+    mf.set("fid", "15");
+    mf.set("type", 13);
+    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))")));
+    ds.add_feature(std::move(mf));
+
+    TestWriter writer;
+
+    TestType processor(ds, writer);
+    processor.add_operation(Operation("count", "count", &value_src, nullptr));
+    processor.include_col("fid");
+    processor.include_col("type");
+    processor.include_geometry(true);
+    processor.process();
+
+    ds.reset();
+    ds.next();
+
+    const MapFeature& f = writer.m_feature;
+    CHECK(f.get<double>("count") == 4.0);
+    CHECK(f.get<std::string>("fid") == "15");
+    CHECK(f.get<std::int32_t>("type") == 13);
+    CHECK(GEOSEquals_r(context, f.geometry(), ds.feature().geometry()) == 1);
 }

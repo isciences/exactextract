@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_PROCESSOR_H
-#define EXACTEXTRACT_PROCESSOR_H
+#pragma once
 
 #include <cstdarg>
 #include <iostream>
@@ -50,8 +49,7 @@ class Processor
 
   public:
     Processor(FeatureSource& ds, OutputWriter& out)
-      : m_reg{}
-      , m_geos_context{ initGEOS_r(errorHandler, errorHandler) }
+      : m_geos_context{ initGEOS_r(errorHandler, errorHandler) }
       , m_output{ out }
       , m_shp{ ds }
     {
@@ -78,6 +76,11 @@ class Processor
         m_output.add_column(col);
     }
 
+    void include_geometry(bool include)
+    {
+        m_include_geometry = include;
+    }
+
     void set_max_cells_in_memory(size_t n)
     {
         m_max_cells_in_memory = n;
@@ -86,6 +89,22 @@ class Processor
     void show_progress(bool val)
     {
         m_show_progress = val;
+    }
+
+    void write_result(const Feature& f_in)
+    {
+        auto f_out = m_output.create_feature();
+        if (m_include_geometry) {
+            f_out->set_geometry(f_in.geometry());
+        }
+        for (const auto& col : m_include_cols) {
+            f_out->set(col, f_in);
+        }
+        for (const auto& op : m_operations) {
+            op->set_result(m_reg, f_in, *f_out);
+        }
+        m_output.write(*f_out);
+        m_reg.flush_feature(f_in);
     }
 
   protected:
@@ -132,6 +151,7 @@ class Processor
     FeatureSource& m_shp;
 
     bool m_show_progress = false;
+    bool m_include_geometry = false;
 
     std::vector<std::unique_ptr<Operation>> m_operations;
 
@@ -140,5 +160,3 @@ class Processor
     size_t m_max_cells_in_memory = 1000000L;
 };
 }
-
-#endif // EXACTEXTRACT_PROCESSOR_H
