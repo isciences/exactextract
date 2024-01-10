@@ -28,16 +28,13 @@ class GDALFeature : public Feature
   public:
     explicit GDALFeature(OGRFeatureH feature)
       : m_feature(feature)
-      , m_context(nullptr)
     {
     }
 
     GDALFeature(GDALFeature&& other) noexcept
       : m_feature(other.m_feature)
       , m_geom(std::move(other.m_geom))
-      , m_context(other.m_context)
     {
-        other.m_context = nullptr;
         other.m_feature = nullptr;
     }
 
@@ -47,15 +44,9 @@ class GDALFeature : public Feature
             OGR_F_Destroy(m_feature);
         }
 
-        if (m_context != nullptr) {
-            GEOS_finish_r(m_context);
-        }
-
         m_feature = other.m_feature;
         m_geom = std::move(other.m_geom);
-        m_context = other.m_context;
 
-        other.m_context = nullptr;
         other.m_feature = nullptr;
 
         return *this;
@@ -65,10 +56,6 @@ class GDALFeature : public Feature
     {
         if (m_feature != nullptr) {
             OGR_F_Destroy(m_feature);
-        }
-
-        if (m_context != nullptr) {
-            GEOS_finish_r(m_context);
         }
     }
 
@@ -109,6 +96,8 @@ class GDALFeature : public Feature
             std::string name = OGR_Fld_GetNameRef(defn);
             dst.set(name, *this);
         }
+
+        dst.set_geometry(geometry());
     }
 
     using Feature::set;
@@ -202,15 +191,32 @@ class GDALFeature : public Feature
         if (m_geom == nullptr) {
             OGRGeometryH geom = OGR_F_GetGeometryRef(m_feature);
 
-            auto sz = static_cast<size_t>(OGR_G_WkbSize(geom));
-            auto buff = std::make_unique<unsigned char[]>(sz);
-            OGR_G_ExportToWkb(geom, wkbXDR, buff.get());
+            if (geom != nullptr) {
+                auto sz = static_cast<size_t>(OGR_G_WkbSize(geom));
+                auto buff = std::make_unique<unsigned char[]>(sz);
+                OGR_G_ExportToWkb(geom, wkbXDR, buff.get());
 
-            m_context = initGEOS_r(nullptr, nullptr);
-            m_geom = geos_ptr(m_context, GEOSGeomFromWKB_buf_r(m_context, buff.get(), sz));
+                m_geom = geos_ptr(m_context, GEOSGeomFromWKB_buf_r(m_context, buff.get(), sz));
+            }
         }
 
         return m_geom.get();
+    }
+
+    void set_geometry(const GEOSGeometry* geom) override
+    {
+        if (geom == nullptr) {
+            m_geom.reset();
+            OGR_F_SetGeometry(m_feature, nullptr);
+        } else {
+            m_geom = geos_ptr(m_context, GEOSGeom_clone_r(m_context, geom));
+
+            std::size_t wkbSize;
+            unsigned char* wkb = GEOSGeomToWKB_buf_r(m_context, m_geom.get(), &wkbSize);
+            OGRGeometryH ogr_geom;
+            OGR_G_CreateFromWkb(wkb, nullptr, &ogr_geom, -1);
+            OGR_F_SetGeometryDirectly(m_feature, ogr_geom);
+        }
     }
 
     OGRFeatureH raw() const
@@ -230,7 +236,7 @@ class GDALFeature : public Feature
 
     OGRFeatureH m_feature;
     mutable geom_ptr_r m_geom;
-    mutable GEOSContextHandle_t m_context;
+    static inline GEOSContextHandle_t m_context = initGEOS_r(nullptr, nullptr);
 };
 
 }

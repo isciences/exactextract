@@ -15,6 +15,18 @@ class GDALFeature(Feature):
     def geometry(self):
         return bytes(self.feature.GetGeometryRef().ExportToWkb())
 
+    def set_geometry(self, wkb):
+        if wkb:
+            from osgeo import ogr
+
+            geom = ogr.CreateGeometryFromWkb(wkb)
+            self.feature.SetGeometryDirectly(geom)
+        elif self.feature.GetGeometryRef():
+            self.feature.SetGeometry(None)
+
+    def set_geometry_format(self):
+        return "wkb"
+
     def fields(self):
         defn = self.feature.GetDefnRef()
         return [defn.GetFieldDefn(i).GetName() for i in range(defn.GetFieldCount())]
@@ -45,9 +57,21 @@ class JSONFeature(Feature):
             return self.feature["properties"][name]
 
     def geometry(self):
-        import json
+        if "geometry" in self.feature:
+            import json
 
-        return json.dumps(self.feature["geometry"])
+            return json.dumps(self.feature["geometry"])
+
+    def set_geometry(self, geojson):
+        if geojson:
+            import json
+
+            self.feature["geometry"] = json.loads(geojson)
+        elif "geometry" in self.feature:
+            del self.feature["geometry"]
+
+    def set_geometry_format(self):
+        return "geojson"
 
     def fields(self):
         fields = []

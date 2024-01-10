@@ -26,8 +26,7 @@ class PyFeatureBase : public Feature
 {
   public:
     PyFeatureBase()
-      : m_context(initGEOS_r(nullptr, nullptr))
-      , m_geom(nullptr)
+      : m_geom(nullptr)
     {
     }
 
@@ -36,7 +35,6 @@ class PyFeatureBase : public Feature
         if (m_geom != nullptr) {
             GEOSGeom_destroy_r(m_context, m_geom);
         }
-        finishGEOS_r(m_context);
     }
 
     // plumbing to connect python-specifc abstract methods
@@ -167,12 +165,41 @@ class PyFeatureBase : public Feature
                 }
             }
 
-            if (m_geom == nullptr) {
+            if (m_geom == nullptr && !py::isinstance<py::none>(geom)) {
                 throw std::runtime_error("Failed to parse geometry.");
             }
         }
 
         return m_geom;
+    }
+
+    void set_geometry(const GEOSGeometry* other) override
+    {
+        if (m_geom != nullptr) {
+            GEOSGeom_destroy_r(m_context, m_geom);
+            m_geom = nullptr;
+        }
+
+        if (other == nullptr) {
+            set_geometry_py(py::none());
+        } else {
+            std::string_view format = set_geometry_format_py().cast<std::string_view>();
+
+            if (format == "wkb") {
+                std::size_t wkb_size;
+                const unsigned char* buf = GEOSGeomToWKB_buf_r(m_context, other, &wkb_size);
+                py::bytes wkb(reinterpret_cast<const char*>(buf), wkb_size);
+                set_geometry_py(wkb);
+            } else if (format == "geojson") {
+                auto writer = GEOSGeoJSONWriter_create_r(m_context);
+                char* geojson = GEOSGeoJSONWriter_writeGeometry_r(m_context, writer, other, 0);
+                set_geometry_py(py::str(geojson));
+                GEOSFree_r(m_context, geojson);
+                GEOSGeoJSONWriter_destroy_r(m_context, writer);
+            } else {
+                throw std::runtime_error("Unhandled format in set_geometry: " + std::string(format));
+            }
+        }
     }
 
     void copy_to(Feature& other) const override
@@ -184,7 +211,7 @@ class PyFeatureBase : public Feature
             other.set(field_name, *this);
         }
 
-        // TODO copy geometry
+        other.set_geometry(geometry());
     }
 
     // abstract methods to be implemented in Python class
@@ -192,6 +219,10 @@ class PyFeatureBase : public Feature
     virtual py::object get_py(const std::string& name) const = 0;
 
     virtual void set_py(const std::string& name, py::object value) = 0;
+
+    virtual void set_geometry_py(py::object value) = 0;
+
+    virtual py::object set_geometry_format_py() = 0;
 
     virtual py::object geometry_py() const = 0;
 
@@ -205,7 +236,7 @@ class PyFeatureBase : public Feature
     }
 
   private:
-    GEOSContextHandle_t m_context;
+    static inline GEOSContextHandle_t m_context = initGEOS_r(nullptr, nullptr);
     mutable GEOSGeometry* m_geom;
 };
 
@@ -215,6 +246,16 @@ class PyFeature : public PyFeatureBase
     py::object geometry_py() const override
     {
         PYBIND11_OVERRIDE_PURE_NAME(py::object, PyFeature, "geometry", geometry_py);
+    }
+
+    void set_geometry_py(py::object wkb) override
+    {
+        PYBIND11_OVERRIDE_PURE_NAME(void, PyFeature, "set_geometry", set_geometry_py, wkb);
+    }
+
+    py::object set_geometry_format_py() override
+    {
+        PYBIND11_OVERRIDE_PURE_NAME(py::object, PyFeature, "set_geometry_format", set_geometry_format_py);
     }
 
     py::object get_py(const std::string& name) const override
@@ -248,6 +289,7 @@ bind_feature(py::module& m)
     py::class_<PyFeature, PyFeatureBase, Feature>(m, "Feature")
       .def(py::init<>())
       .def("geometry", &PyFeature::geometry_py)
+      .def("set_geometry", &PyFeature::set_geometry_py)
       .def("get", &PyFeature::get_py)
       .def("set", &PyFeature::set_py)
       .def("fields", &PyFeature::fields);
