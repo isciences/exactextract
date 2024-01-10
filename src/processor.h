@@ -76,9 +76,11 @@ class Processor
         m_output.add_column(col);
     }
 
-    void include_geometry(bool include)
+    void include_geometry()
     {
-        m_include_geometry = include;
+        m_include_geometry = true;
+
+        m_output.add_geometry();
     }
 
     void set_max_cells_in_memory(size_t n)

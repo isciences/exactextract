@@ -220,6 +220,7 @@ def exact_extract(
     *,
     weights=None,
     include_cols=None,
+    include_geom=False,
     strategy="feature-sequential",
     max_cells_in_memory=30000000,
     output="geojson",
@@ -236,6 +237,8 @@ def exact_extract(
     writer = prep_writer(output)
 
     processor = Processor(vec, writer, ops, include_cols)
+    if include_geom:
+        processor.add_geom()
     processor.set_max_cells_in_memory(max_cells_in_memory)
     processor.process()
 

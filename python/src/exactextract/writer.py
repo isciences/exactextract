@@ -24,9 +24,9 @@ class PandasWriter(Writer):
         super().__init__()
 
         self.fields = {}
-        self.ids = []
         self.feature_count = 0
         self.columns_known = None
+        self.geoms = []
 
     def add_operation(self, op):
         if self.columns_known is None:
@@ -42,6 +42,9 @@ class PandasWriter(Writer):
         if self.columns_known is None:
             self.columns_known = True
         self.fields[col_name] = []
+
+    def add_geometry(self):
+        self.fields["geometry"] = []
 
     def _add_missing_columns(self, f):
         if self.columns_known:
@@ -69,15 +72,26 @@ class PandasWriter(Writer):
             self.fields[field_name].append(value)
         if "id" in f.feature:
             self.fields["id"].append(f.feature["id"])
+        if "geometry" in self.fields and "geometry" in f.feature:
+            import shapely
+
+            self.fields["geometry"].append(
+                shapely.geometry.shape(f.feature["geometry"])
+            )
 
         self.feature_count += 1
 
         self._pad_missing_values()
 
     def features(self):
-        import pandas as pd
+        if "geometry" in self.fields:
+            import geopandas as gpd
 
-        return pd.DataFrame(self.fields, copy=False)
+            return gpd.GeoDataFrame(self.fields, geometry="geometry")
+        else:
+            import pandas as pd
+
+            return pd.DataFrame(self.fields, copy=False)
 
 
 class GDALWriter(Writer):

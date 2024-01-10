@@ -446,13 +446,18 @@ def test_include_cols(strategy):
         make_rect(0.5, 0.5, 2.5, 2.5, id=2, properties={"type": "pear", "a": 4.2})
     )
 
-    results = exact_extract(rast, features, "count", include_cols=["a", "type", "id"])
+    results = exact_extract(
+        rast, features, "count", include_cols=["a", "type", "id"], include_geom=True
+    )
 
     assert results[0]["id"] == 1
     assert results[0]["properties"] == {"a": 4.1, "type": "apple", "count": 4.0}
+    assert results[0]["geometry"]["type"] == "Polygon"
+    assert results[0]["geometry"]["coordinates"][0][0] == [0.5, 0.5]
 
     assert results[1]["id"] == 2
     assert results[1]["properties"] == {"a": 4.2, "type": "pear", "count": 4.0}
+    assert results[1]["geometry"]["type"] == "Polygon"
 
 
 def test_error_no_weights():
@@ -514,7 +519,12 @@ def test_gdal_output(tmp_path, output_type):
         output = drv.CreateDataSource(str(fname))
 
     result = exact_extract(
-        rast, square, ["mean", "count", "variety"], include_cols=["name"], output=output
+        rast,
+        square,
+        ["mean", "count", "variety"],
+        include_cols=["name"],
+        output=output,
+        include_geom=True,
     )
 
     assert result is None
@@ -548,3 +558,24 @@ def test_gdal_output(tmp_path, output_type):
     assert f["mean"] == 1.0
     assert f["count"] == 9.0
     assert f["variety"] == 1
+    assert f.GetGeometryRef().GetArea() == 9.0
+
+
+def test_geopandas_output():
+    gpd = pytest.importorskip("geopandas")
+
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+
+    square = make_rect(0, 0, 3, 3, properties={"name": "test"})
+
+    result = exact_extract(
+        rast,
+        square,
+        ["mean", "count", "variety"],
+        include_cols=["name"],
+        output="pandas",
+        include_geom=True,
+    )
+
+    assert isinstance(result, gpd.GeoDataFrame)
+    assert result.area[0] == 9

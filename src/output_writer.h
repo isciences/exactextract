@@ -41,6 +41,8 @@ class OutputWriter
 
     virtual void add_column(const std::string&) {}
 
+    virtual void add_geometry() {}
+
     /// Method to be called after all `write` has been called
     /// for the last time.
     virtual void finish() {}
