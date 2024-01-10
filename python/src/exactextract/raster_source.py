@@ -64,10 +64,24 @@ class GDALRasterSource(RasterSource):
 
         return arr
 
+    def srs_wkt(self):
+        crs = self.ds.GetSpatialRef()
+        if crs:
+            return crs.ExportToWkt()
+
 
 class NumPyRasterSource(RasterSource):
     def __init__(
-        self, mat, xmin=None, ymin=None, xmax=None, ymax=None, *, nodata=None, name=None
+        self,
+        mat,
+        xmin=None,
+        ymin=None,
+        xmax=None,
+        ymax=None,
+        *,
+        nodata=None,
+        name=None,
+        srs_wkt=None
     ):
         super().__init__()
         self.mat = mat
@@ -82,12 +96,17 @@ class NumPyRasterSource(RasterSource):
         if name:
             self.set_name(name)
 
+        self.srs_wkt_str = srs_wkt
+
     def res(self):
         ny, nx = self.mat.shape
         dy = (self.ext[3] - self.ext[1]) / ny
         dx = (self.ext[2] - self.ext[0]) / nx
 
         return (dx, dy)
+
+    def srs_wkt(self):
+        return self.srs_wkt_str
 
     def extent(self):
         return self.ext
@@ -122,6 +141,11 @@ class RasterioRasterSource(RasterSource):
         dy = (self.ds.bounds.top - self.ds.bounds.bottom) / self.ds.height
 
         return (dx, dy)
+
+    def srs_wkt(self):
+        crs = self.ds.crs
+        if crs:
+            return crs.wkt
 
     def extent(self):
         return (
@@ -161,7 +185,8 @@ class XArrayRasterSource(RasterSource):
             import rioxarray  # noqa: F401
             import xarray
 
-            ds = xarray.open_dataarray(ds)
+            ds = xarray.open_dataset(ds)
+            ds = ds[next(iter(ds.keys()))]  # get first variable, for now
 
         self.ds = ds
         if self.ds.rio.crs is None:
@@ -187,6 +212,11 @@ class XArrayRasterSource(RasterSource):
             return dims[0]
         else:
             raise Exception("Cannot handle >1 non-spatial dimension")
+
+    def srs_wkt(self):
+        crs = self.ds.rio.crs
+        if crs:
+            return crs.wkt
 
     def res(self):
         return tuple(abs(x) for x in self.ds.rio.resolution())

@@ -186,13 +186,13 @@ def prep_processor(strategy):
     return processors[strategy]
 
 
-def prep_writer(output):
+def prep_writer(output, srs_wkt):
     if isinstance(output, Writer):
         return output
     elif output == "geojson":
         return JSONWriter()
     elif output == "pandas":
-        return PandasWriter()
+        return PandasWriter(srs_wkt=srs_wkt)
 
     try:
         from osgeo import gdal, ogr
@@ -202,10 +202,10 @@ def prep_writer(output):
             drv_name = GetOutputDriverFor(output, is_raster=False)
             drv = ogr.GetDriverByName(drv_name)
             ds = drv.CreateDataSource(str(output))
-            return GDALWriter(ds)
+            return GDALWriter(ds, srs_wkt=srs_wkt)
 
         if isinstance(output, gdal.Dataset) or isinstance(output, ogr.DataSource):
-            return GDALWriter(output)
+            return GDALWriter(output, srs_wkt=srs_wkt)
 
     except ImportError:
         pass
@@ -234,7 +234,7 @@ def exact_extract(
 
     Processor = prep_processor(strategy)
 
-    writer = prep_writer(output)
+    writer = prep_writer(output, vec.srs_wkt())
 
     processor = Processor(vec, writer, ops, include_cols)
     if include_geom:

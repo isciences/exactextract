@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ISciences, LLC.
+// Copyright (c) 2023-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -51,6 +51,11 @@ class PyFeatureSourceBase : public FeatureSource
 
     virtual py::object py_iter() = 0;
 
+    virtual py::object py_srs_wkt() const
+    {
+        return py::none();
+    }
+
     // debug
     std::size_t count()
     {
@@ -78,6 +83,11 @@ class PyFeatureSource : public PyFeatureSourceBase
     {
         PYBIND11_OVERRIDE_PURE_NAME(py::object, PyFeatureSource, "__iter__", py_iter);
     }
+
+    py::object py_srs_wkt() const override
+    {
+        PYBIND11_OVERRIDE_NAME(py::str, PyFeatureSourceBase, "srs_wkt", py_srs_wkt);
+    }
 };
 
 void
@@ -90,6 +100,7 @@ bind_feature_source(py::module& m)
     py::class_<PyFeatureSource, PyFeatureSourceBase, FeatureSource>(m, "FeatureSource")
       .def(py::init<>())
       .def("__iter__", &PyFeatureSourceBase::py_iter)
+      .def("srs_wkt", &PyFeatureSourceBase::py_srs_wkt)
       // debug
       .def("feature", &PyFeatureSourceBase::feature)
       .def("count", &PyFeatureSourceBase::count);

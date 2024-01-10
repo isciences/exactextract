@@ -20,13 +20,14 @@ class JSONWriter(Writer):
 
 
 class PandasWriter(Writer):
-    def __init__(self):
+    def __init__(self, *, srs_wkt=None):
         super().__init__()
 
         self.fields = {}
         self.feature_count = 0
         self.columns_known = None
         self.geoms = []
+        self.srs_wkt = srs_wkt
 
     def add_operation(self, op):
         if self.columns_known is None:
@@ -87,7 +88,7 @@ class PandasWriter(Writer):
         if "geometry" in self.fields:
             import geopandas as gpd
 
-            return gpd.GeoDataFrame(self.fields, geometry="geometry")
+            return gpd.GeoDataFrame(self.fields, geometry="geometry", crs=self.srs_wkt)
         else:
             import pandas as pd
 
@@ -95,12 +96,13 @@ class PandasWriter(Writer):
 
 
 class GDALWriter(Writer):
-    def __init__(self, ds, name=""):
+    def __init__(self, ds, name="", *, srs_wkt=None):
         super().__init__()
         self.feature_list = []
         self.ds = ds
         self.layer_name = name
         self.prototype = {"type": "Feature", "properties": {}}
+        self.srs_wkt = srs_wkt
 
     def add_operation(self, op):
         # Create a prototype feature so that field names
@@ -121,11 +123,15 @@ class GDALWriter(Writer):
         return None
 
     def finish(self):
-        from osgeo import ogr
+        from osgeo import ogr, osr
 
         fields = self._collect_fields()
 
-        lyr = self.ds.CreateLayer(self.layer_name)
+        srs = osr.SpatialReference()
+        if self.srs_wkt:
+            srs.ImportFromWkt(self.srs_wkt)
+
+        lyr = self.ds.CreateLayer(self.layer_name, srs)
         for field_def in fields.values():
             lyr.CreateField(field_def)
 

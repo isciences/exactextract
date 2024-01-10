@@ -123,6 +123,11 @@ class PyRasterSourceBase : public RasterSource
 
     virtual py::object nodata_value() const = 0;
 
+    virtual py::object srs_wkt() const
+    {
+        return py::none();
+    }
+
   private:
     mutable std::unique_ptr<Grid<bounded_extent>> m_grid;
 };
@@ -150,6 +155,11 @@ class PyRasterSource : public PyRasterSourceBase
     {
         PYBIND11_OVERRIDE_PURE(py::object, PyRasterSource, nodata_value);
     }
+
+    py::object srs_wkt() const override
+    {
+        PYBIND11_OVERRIDE(py::str, PyRasterSourceBase, srs_wkt);
+    }
 };
 
 void
@@ -165,6 +175,7 @@ bind_raster_source(py::module& m)
       .def(py::init<>())
       .def("extent", &PyRasterSource::extent)
       .def("res", &PyRasterSource::res)
+      .def("srs_wkt", &PyRasterSourceBase::srs_wkt)
       .def("nodata_value", &PyRasterSource::nodata_value)
       .def("read_window", &PyRasterSource::read_window);
 }
