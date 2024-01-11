@@ -37,10 +37,15 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 #Configure some options the various components this module can build
+option(BUILD_BENCHMARKS "Build exactextract benchmarks" OFF)
 option(BUILD_CLI "Build the exactextract cli binary" ON) #requires gdal, cli11
 option(BUILD_TEST "Build the exactextract tests" ON) #requires catch
 option(BUILD_PYTHON "Build the exactextract Python bindings" ON) # requires pybind11
 option(BUILD_DOC "Build documentation" ON) #requires doxygen
+
+if(BUILD_BENCHMARKS)
+    add_subdirectory("benchmark")
+endif()
 
 if(BUILD_CLI)
     # Create our main program, statically linked to our library
