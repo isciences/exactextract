@@ -14,8 +14,8 @@
     - `coverage`
     - `center_x`, `min_center_x`, `max_center_x`
     - `center_y`, `min_center_y`, `max_center_y`
-    - `frac`
-    - `weighted_frac`
+    - `frac`, `weighted_frac`
+    - `values`, `weights`
 - CLI: Additional options added:
     - `--nested-output` option to write the results of operations that return
       multiple values as an array

@@ -1,8 +1,7 @@
 # exactextract
 
-[![Build Status](https://gitlab.com/isciences/exactextract/badges/master/pipeline.svg)](https://gitlab.com/isciences/exactextract/pipelines)
-[![codecov](https://codecov.io/gl/isciences/exactextract/branch/master/graph/badge.svg)](https://codecov.io/gl/isciences/exactextract)
-[![Doxygen](https://img.shields.io/badge/Doxygen-documentation-brightgreen.svg)](https://isciences.gitlab.io/exactextract)
+[![Build Status](https://github.com/isciences/exactextract/actions/workflows/linux_build.yml/badge.svg)
+[![codecov](https://codecov.io/gh/isciences/exactextract/branch/master/graph/badge.svg)](https://codecov.io/gh/isciences/exactextract)
 
 `exactextract` provides a fast and accurate algorithm for summarizing values in the portion of a raster dataset that is covered by a polygon, often referred to as **zonal statistics**. Unlike other zonal statistics implementations, it takes into account raster cells that are partially covered by the polygon.
 
@@ -30,7 +29,7 @@ To achieve better performance, most zonal statistics implementations sacrifice a
 ### Additional Features
 
 `exactextract` can compute statistics against two rasters simultaneously, with a second raster containing weighting values.
-The weighting raster does not need to have the same resolution and extent as the value raster, but the resolutions of the two rasters must be integer multiple of each other, and any difference between the grid origin points must be an integer multiple of the smallest cell size.
+The weighting raster does not need to have the same resolution and extent as the value raster, but the resolutions of the two rasters must be integer multiples of each other, and any difference between the grid origin points must be an integer multiple of the smallest cell size.
 
 ### Compiling
 
@@ -54,9 +53,11 @@ sudo make install
 ```
 
 There are three options available to control what gets compiled. They are each ON by default.
-- `BUILD_CLI` will build main program (which requires GDAL)
-- `BUILD_TEST` will build the catch_test suite
+- `BUILD_BENCHMARKS` will build performance tests
+- `BUILD_CLI` will build a command-line interface (requires GDAL)
 - `BUILD_DOC` will build the doxygen documentation if doxygen is available
+- `BUILD_PYTHON` will build Python bindings (requires pybind11)
+- `BUILD_TEST` will build the catch_test suite
 
 To build just the library and test suite, you can use these options as follows to turn off the CLI (which means GDAL isn't required) and disable the documentation build. The tests and library are built, the tests run, and the library installed if the tests were run successfully:
 
@@ -73,7 +74,8 @@ make
 ### Using `exactextract`
 
 `exactextract` provides a simple command-line interface that uses GDAL to read a vector data source and one or more raster files, perform zonal statistics, and write output to a CSV, netCDF, or other tabular formats supported by GDAL.
-In addition to the command-line executable, an R package ([`exactextractr`](https://github.com/isciences/exactextractr)) allows some functionality of `exactextract` to be used with R `sf` and `raster` objects.
+
+In addition to the command-line executable, an R package ([`exactextractr`](https://github.com/isciences/exactextractr)) and [python bindings](python/README.md) allow the functionality of `exactextract` to be used with R `sf` and `raster` objects.
 
 Command line documentation can be accessed by `exactextract -h`.
 
@@ -83,9 +85,9 @@ A minimal usage is as follows, in which we want to compute a mean temperature fo
 exactextract \
   -r "temp:temperature_2018.tif" \
   -p countries.shp \
-  -f country_name \
   -s "mean(temp)" \
-  -o mean_temperature.csv
+  -o mean_temperature.csv \
+  --include-col country_name
 ```
 
 In this example, `exactextract` will summarize temperatures stored in `temperature_2018.tif` over the country boundaries stored in `countries.shp`.
@@ -95,11 +97,11 @@ In this example, `exactextract` will summarize temperatures stored in `temperatu
     In files with more than one band, the band number (1-indexed) can be specified using square brackets, e.g., `-r temp:temperature.tif[4]`.
   * The `-p` argument provides the location for the polygon input.
     As with the `-r` argument, this can be a file name or some other location understood by GDAL, such as a PostGIS vector source (`-p "PG:dbname=basins[public.basins_lev05]"`).
-  * The `-f` argument indicates that we'd like the field `country_name` from the shapefile to be included as a field in the output file.
   * The `-s` argument instructs `exactextract` to compute the mean of the raster we refer to as `temp` for each polygon.
     These values will be stored as a field called `temp_mean` in the output file.
   * The `-o` argument indicates the location of the output file.
-    The format of the output file is inferred by GDAL using the file extension.
+    The format of the output file is inferred using the file extension.
+  * The `--include-col` argument indicates that we'd like the field `country_name` from the shapefile to be included as a field in the output file.
 
 With reasonable real-world inputs, the processing time of `exactextract` is roughly divided evenly between (a) I/O (reading raster cells, which may require decompression) and (b) computing the area of each raster cell that is covered by each polygon.
 In common usage, we might want to perform many calculations in which one or both of these steps can be reused, such as:
@@ -166,18 +168,31 @@ The area covered by the polygon is shaded purple.
 
 | Name           | Formula                                                                              | Description                                                                     | Typical Application  | Example Result |
 | -------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------- |--------------- |
-| count          | &Sigma;c<sub>i</sub>                                                                 | Sum of all cell coverage fractions. | | 0.5 + 0 + 1 + 0.25 = 1.75 |
-| sum            | &Sigma;x<sub>i</sub>c<sub>i</sub>                                                    | Sum of values of raster cells that intersect the polygon, with each raster value weighted by its coverage fraction. | Total population | 0.5&times;1 + 0&times;2 + 1.0&times;3 + 0.25&times;4 = 4.5 |
-| mean           | (&Sigma;x<sub>i</sub>c<sub>i</sub>)/(&Sigma;c<sub>i</sub>)                           | Mean value of cells that intersect the polygon, weighted by the percent of the cell that is covered. | Average temperature | 4.5/1.75 = 2.57 |
-| weighted_sum   | &Sigma;x<sub>i</sub>c<sub>i</sub>w<sub>i</sub>                                       | Sum of raster cells covered by the polygon, with each raster value weighted by its coverage fraction and weighting raster value. | Total crop production lost | 0.5&times;1&times;5 + 0&times;2&times;6 + 1.0&times;3&times;7 + 0.25&times;4&times;8 = 31.5
-| weighted_mean  | (&Sigma;x<sub>i</sub>c<sub>i</sub>w<sub>i</sub>)/(&Sigma;c<sub>i</sub>w<sub>i</sub>) | Mean value of cells that intersect the polygon, weighted by the product over the coverage fraction and the weighting raster. | Population-weighted average temperature | 31.5 / (0.5&times;5 + 0&times;6 + 1.0&times;7 + 0.25&times;8) = 2.74
-| min            | -                                                                                    | Minimum value of cells that intersect the polygon, not taking coverage fractions or weighting raster values into account. | Minimum elevation | 1 |
-| max            | -                                                                                    | Maximum value of cells that intersect the polygon, not taking coverage fractions or weighting raster values into account.  | Maximum temperature | 4 |
-| minority       | -                                                                                    | The raster value occupying the least number of cells, taking into account cell coverage fractions but not weighting raster values. | Least common land cover type | - |
-| majority       | -                                                                                    | The raster value occupying the greatest number of cells, taking into account cell coverage fractions but not weighting raster values. | Most common land cover type | - |
-| variety        | -                                                                                    | The number of distinct raster values in cells wholly or partially covered by the polygon. | Number of land cover types | - |
-| variance       | (&Sigma;c<sub>i</sub>(x<sub>i</sub> - x&#773;)<sup>2</sup>)/(&Sigma;c<sub>i</sub>)                | Population variance of cell values that intersect the polygon, taking into account coverage fraction. | - | 1.10 |
-| stdev          | &Sqrt;variance                                                                       | Population standard deviation of cell values that intersect the polygon, taking into account coverage fraction. | - | 1.05 |
+| cell_id        | - | Array with 0-based index of each cell that intersects the polygon, increasing left-to-right. | - | [ 3, 4, 5 ] 
+| center_x       | -                                                                                    | Array with cell center x-coordinate for each cell that intersects the polygon. Each cell center may or may not be inside the polygon. | - | [ -72.5, -72.25, -72.0 ] |
+| center_y       | -                                                                                    | Array with cell center y-coordinate for each cell that intersects the polygon. Each cell center may or may not be inside the polygon. | - | [ -44.5, 44.25, 44.0 ] |
 | coefficient_of_variation | stdev / mean                                                               | Population coefficient of variation of cell values that intersect the polygon, taking into account coverage fraction. | - | 0.41 |
+| count          | &Sigma;c<sub>i</sub>                                                                 | Sum of all cell coverage fractions. | | 0.5 + 0 + 1 + 0.25 = 1.75 |
+| coverage       | - | Array with coverage fraction of each cell that intersects the polygon | - | [ 0.22, 1.0, 0.44 ]
 | frac           | -                                                                                    | Fraction of covered cells that are occupied by each distinct raster value. | Land cover summary | - | 
+| majority       | -                                                                                    | The raster value occupying the greatest number of cells, taking into account cell coverage fractions but not weighting raster values. | Most common land cover type | - |
+| max            | -                                                                                    | Maximum value of cells that intersect the polygon, not taking coverage fractions or weighting raster values into account.  | Maximum temperature | 4 |
+| max_center_x   | - | Cell center x-coordinate for the cell containing the maximum value intersected by the polygon. The center of this cell may or may not be inside the polygon. | Highest point in watershed | -72.25 |
+| max_center_y   | - | Cell center y-coordinate for the cell containing the maximum value intersected by the polygon. The center of this cell may or may not be inside the polygon. | Highest point in watershed | 44.25 |
+| mean           | (&Sigma;x<sub>i</sub>c<sub>i</sub>)/(&Sigma;c<sub>i</sub>)                           | Mean value of cells that intersect the polygon, weighted by the percent of each cell that is covered. | Average temperature | 4.5/1.75 = 2.57 |
+| median         |                                                                                      | Median value of cells that intersect the polygon, weighted by the percent of each cell that is covered | Average temperature | 2 |
+| min            | -                                                                                    | Minimum value of cells that intersect the polygon, not taking coverage fractions or weighting raster values into account. | Minimum elevation | 1 |
+| min_center_x   | - | Cell center x-coordinate for the cell containing the minimum value intersected by the polygon. The center of this cell may or may not be inside the polygon. | Lowest point in watershed | -72.25 |
+| min_center_y   | - | Cell center y-coordinate for the cell containing the minimum value intersected by the polygon. The center of this cell may or may not be inside the polygon. | Lowest point in watershed | 44.25 |
+| minority       | -                                                                                    | The raster value occupying the least number of cells, taking into account cell coverage fractions but not weighting raster values. | Least common land cover type | - |
+| stdev          | &Sqrt;variance                                                                       | Population standard deviation of cell values that intersect the polygon, taking into account coverage fraction. | - | 1.05 |
+| sum            | &Sigma;x<sub>i</sub>c<sub>i</sub>                                                    | Sum of values of raster cells that intersect the polygon, with each raster value weighted by its coverage fraction. | Total population | 0.5&times;1 + 0&times;2 + 1.0&times;3 + 0.25&times;4 = 4.5 |
+| values         |                                                                                      | Array of raster values for each cell that intersects the polygon | - | - |
+| variance       | (&Sigma;c<sub>i</sub>(x<sub>i</sub> - x&#773;)<sup>2</sup>)/(&Sigma;c<sub>i</sub>)   | Population variance of cell values that intersect the polygon, taking into account coverage fraction. | - | 1.10 |
+| variety        | -                                                                                    | The number of distinct raster values in cells wholly or partially covered by the polygon. | Number of land cover types | - |
 | weighted_frac  | -                                                                                    | Fraction of covered cells that are occupied by each distinct raster value, weighted by the value of a second weighting raster. | Population-weighted land cover summary | - | 
+| weighted_mean  | (&Sigma;x<sub>i</sub>c<sub>i</sub>w<sub>i</sub>)/(&Sigma;c<sub>i</sub>w<sub>i</sub>) | Mean value of cells that intersect the polygon, weighted by the product over the coverage fraction and the weighting raster. | Population-weighted average temperature | 31.5 / (0.5&times;5 + 0&times;6 + 1.0&times;7 + 0.25&times;8) = 2.74
+| weighted_stdev |                                                                                      | Weighted version of `stdev`.
+| weighted_sum   | &Sigma;x<sub>i</sub>c<sub>i</sub>w<sub>i</sub>                                       | Sum of raster cells covered by the polygon, with each raster value weighted by its coverage fraction and weighting raster value. | Total crop production lost | 0.5&times;1&times;5 + 0&times;2&times;6 + 1.0&times;3&times;7 + 0.25&times;4&times;8 = 31.5
+| weighted_variance |                                                                                   | Weighted version of `variance`
+| weights        |                                                                                      | Array of weight values for each cell that intersects the polygon | - |
