@@ -4,7 +4,12 @@ cmake-build-*
 *.o
 *.swo
 *.swp
+*.autosave
+*.user
 .vscode
 .idea/
 callgrind.out.*
 __pycache__
+*.egg-info
+build/
+dist/
