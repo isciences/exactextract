@@ -95,6 +95,11 @@ class Operation
         return !(stat == "frac" || stat == "weighted_frac");
     }
 
+    bool requires_variance() const
+    {
+        return stat == "variance" || stat == "weighted_variance" || stat == "stdev" || stat == "weighted_stdev" || stat == "coefficient_of_variation";
+    }
+
     bool requires_histogram() const
     {
         return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "median" || stat == "frac" || stat == "weighted_frac";

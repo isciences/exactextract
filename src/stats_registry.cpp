@@ -26,6 +26,7 @@ StatsRegistry::prepare(const Operation& op)
     m_stats_options.store_weights |= op.requires_stored_weights();
     m_stats_options.store_coverage_fraction |= op.requires_stored_coverage_fractions();
     m_stats_options.store_xy |= op.requries_stored_locations();
+    m_stats_options.calc_variance |= op.requires_variance();
 }
 
 void

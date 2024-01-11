@@ -27,6 +27,7 @@ namespace exactextract {
 
 struct RasterStatsOptions
 {
+    bool calc_variance = false;
     bool store_histogram = false;
     bool store_values = false;
     bool store_weights = false;
@@ -140,13 +141,14 @@ class RasterStats
         m_sum_ci += static_cast<double>(coverage);
         m_sum_xici += static_cast<double>(val) * static_cast<double>(coverage);
 
-        m_variance.process(val, coverage);
-
         double ciwi = static_cast<double>(coverage) * weight;
         m_sum_ciwi += ciwi;
         m_sum_xiciwi += static_cast<double>(val) * ciwi;
 
-        m_weighted_variance.process(val, ciwi);
+        if (m_options.calc_variance) {
+            m_variance.process(val, coverage);
+            m_weighted_variance.process(val, ciwi);
+        }
 
         if (val < m_min) {
             m_min = val;

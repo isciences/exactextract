@@ -208,6 +208,7 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
         // Example application: precipitation over polygon in the middle of continent
         RasterStatsOptions opts;
         opts.store_histogram = true;
+        opts.calc_variance = true;
         RasterStats<TestType> stats{ opts };
         stats.process(areas, all_values_defined);
 
@@ -232,6 +233,7 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
     {
         // Example application: precipitation at edge of continent
         RasterStatsOptions opts;
+        opts.calc_variance = true;
         opts.store_histogram = true;
         RasterStats<TestType> stats{ opts };
         stats.process(areas, some_values_defined);
@@ -303,6 +305,7 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
         // Example: population-weighted temperature in polygon covered by temperature but without pop data
         RasterStatsOptions opts;
         opts.store_histogram = true;
+        opts.calc_variance = true;
         RasterStats<TestType> stats{ opts };
         stats.process(areas, all_values_defined, all_values_missing);
 
@@ -325,6 +328,7 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
     {
         RasterStatsOptions opts;
         opts.store_histogram = true;
+        opts.calc_variance = true;
         RasterStats<TestType> stats{ opts };
         stats.process(areas, all_values_defined, some_values_defined);
 
