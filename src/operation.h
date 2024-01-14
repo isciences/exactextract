@@ -20,7 +20,6 @@
 #include "raster_source.h"
 #include "raster_stats.h"
 #include "stats_registry.h"
-#include "utils.h"
 
 namespace exactextract {
 /**
@@ -32,32 +31,15 @@ namespace exactextract {
 class Operation
 {
   public:
-    Operation(std::string p_stat,
-              std::string p_name,
-              RasterSource* p_values,
-              RasterSource* p_weights = nullptr)
-      : stat{ std::move(p_stat) }
-      , name{ std::move(p_name) }
-      , values{ p_values }
-      , weights{ p_weights }
-      , m_missing{ get_missing_value() }
-    {
-        if (stat == "quantile") {
-            setQuantileFieldNames();
-        } else {
-            m_field_names.push_back(name);
-        }
-
-        if (starts_with(stat, "weighted") && weights == nullptr) {
-            throw std::runtime_error("No weights provided for weighted stat: " + stat);
-        }
-
-        if (weighted()) {
-            m_key = values->name() + "|" + weights->name();
-        } else {
-            m_key = values->name();
-        }
-    }
+    /// \param stat The name of the statistic computed by this Operation
+    /// \param name The name of the field to which the result of the Operation will be written
+    /// \param values The RasterSource from which values will be read
+    /// \param weights The RasterSource from which weights will be read, if `stat` is a weighted
+    ///                stat.
+    Operation(std::string stat,
+              std::string name,
+              RasterSource* values,
+              RasterSource* weights = nullptr);
 
     virtual std::unique_ptr<Operation> clone() const
     {

@@ -83,22 +83,22 @@ A minimal usage is as follows, in which we want to compute a mean temperature fo
 
 ```bash
 exactextract \
-  -r "temp:temperature_2018.tif" \
+  -r "temperature_2018.tif" \
   -p countries.shp \
-  -s "mean(temp)" \
+  -s "mean" \
   -o mean_temperature.csv \
   --include-col country_name
 ```
 
 In this example, `exactextract` will summarize temperatures stored in `temperature_2018.tif` over the country boundaries stored in `countries.shp`.
-  * The `-r` argument provides the location for of the raster input and specifies that we'd like to refer to it later on using the name `temp`.
-    The location may be specified as a filename or any other location understood by GDAL.
+  * The `-r` argument provides the location for of the raster input. The location may be specified as a filename or any other location understood by GDAL.
     For example, a single variable within a netCDF file can be accessed using `-r temp:NETCDF:outputs.nc:tmp2m`.
-    In files with more than one band, the band number (1-indexed) can be specified using square brackets, e.g., `-r temp:temperature.tif[4]`.
+    In files with more than one band, the band number (1-indexed) can be specified using square brackets, e.g., `-r temperature.tif[4]`. If the band number
+    is not specified, statistics will be output for all bands.
   * The `-p` argument provides the location for the polygon input.
     As with the `-r` argument, this can be a file name or some other location understood by GDAL, such as a PostGIS vector source (`-p "PG:dbname=basins[public.basins_lev05]"`).
-  * The `-s` argument instructs `exactextract` to compute the mean of the raster we refer to as `temp` for each polygon.
-    These values will be stored as a field called `temp_mean` in the output file.
+  * The `-s` argument instructs `exactextract` to compute the mean for each polygon.
+    These values will be stored as a field called `mean` in the output file.
   * The `-o` argument indicates the location of the output file.
     The format of the output file is inferred using the file extension.
   * The `--include-col` argument indicates that we'd like the field `country_name` from the shapefile to be included as a field in the output file.
@@ -113,27 +113,40 @@ The following more advanced usage shows how `exactextract` might be called to pe
 
 ```bash
 exactextract \
-  -r "temp_2016:temperature_2016.tif" \
-  -r "temp_2017:temperature_2017.tif" \
-  -r "temp_2018:temperature_2018.tif" \
+  -r "temperature_2016.tif" \
+  -r "temperature_2017.tif" \
+  -r "temperature_2018.tif" \
   -p countries.shp \
-  -f country_name \
-  -s "min(temp_2016)" \
-  -s "mean(temp_2016)" \
-  -s "max(temp_2016)" \
-  -s "min(temp_2017)" \
-  -s "mean(temp_2017)" \
-  -s "max(temp_2017)" \
-  -s "min(temp_2017)" \
-  -s "mean(temp_2017)" \
-  -s "max(temp_2017)" \
+  -include-col country_name \
+  -s "min" \
+  -s "mean" \
+  -s "max" \
   -o temp_summary.csv
 ```
 
-In this case, the output `temp_summary.csv` file would contain the fields `min_temp_2016`, `mean_temp_2016`, etc. Each raster would be read only a single time, and each polygon/raster overlay would be performed a single time, because the three input rasters have the same extent and resolution.
+In this case, the output `temp_summary.csv` file would contain the fields `temperature_2016_min`, `temperature_2016_mean`, etc. Each raster would be read only a single time, and each polygon/raster overlay would be performed a single time, because the three input rasters have the same extent and resolution.
 
 Another more advanced usage of `exactextract` involves calculations in which the values of one raster are weighted by the values of a second raster.
 For example, we may wish to calculate both a standard and population-weighted mean temperature for each country:
+
+```bash
+exactextract \
+  -r "temperature_2018.tif" \
+  -w "world_population.tif" \
+  -p countries.shp \
+  -f country_name \
+  -s "mean" \
+  -s "pop_weighted_mean=weighted_mean" \
+  -o mean_temperature.csv
+```
+
+This also demonstrates the ability to control the name of a stat's output column by prefixing the stat name with an output column name.
+
+Further details on weighted statistics are provided in the section below.
+
+### Alternate syntax
+
+`exactextract` 0.1 required a somewhat more verbose syntax in which each raster was required to have a name that could be provided as an argument to a stat function, e.g.:
 
 ```bash
 exactextract \
@@ -146,9 +159,7 @@ exactextract \
   -o mean_temperature.csv
 ```
 
-This also demonstrates the ability to control the name of a stat's output column by prefixing the stat name with an output column name.
-
-Further details on weighted statistics are provided in the section below.
+This syntax is still supported.
 
 ### Supported Statistics
 

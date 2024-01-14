@@ -21,38 +21,36 @@
 namespace exactextract {
 
 GDALRasterWrapper::
-  GDALRasterWrapper(const std::string& filename, int bandnum)
-  : m_grid{ Grid<bounded_extent>::make_empty() }
+  GDALRasterWrapper(const std::string& dsn, int bandnum)
+  : GDALRasterWrapper(std::make_shared<GDALRaster>(dsn), bandnum)
 {
-    auto rast = GDALOpen(filename.c_str(), GA_ReadOnly);
-    if (!rast) {
-        throw std::runtime_error("Failed to open " + filename);
-    }
+}
+
+GDALRasterWrapper::
+  GDALRasterWrapper(std::shared_ptr<GDALRaster> rast, int bandnum)
+  : m_rast(rast)
+  , m_grid{ Grid<bounded_extent>::make_empty() }
+{
 
     int has_nodata;
-    auto band = GDALGetRasterBand(rast, bandnum);
+    auto band = GDALGetRasterBand(m_rast->get(), bandnum);
     double nodata_value = GDALGetRasterNoDataValue(band, &has_nodata);
 
-    m_rast = rast;
     m_band = band;
     m_nodata_value = nodata_value;
     m_has_nodata = static_cast<bool>(has_nodata);
-    set_name(filename);
+    // set_name(GDALGetDescription(m_rast->get()));
     compute_raster_grid();
 }
 
 GDALRasterWrapper::~GDALRasterWrapper()
 {
-    // We can't use a std::unique_ptr because GDALDatasetH is an incomplete type.
-    // So we include a destructor and move constructor to manage the resource.
-    if (m_rast != nullptr)
-        GDALClose(m_rast);
 }
 
 bool
 GDALRasterWrapper::cartesian() const
 {
-    OGRSpatialReferenceH srs = GDALGetSpatialRef(m_rast);
+    OGRSpatialReferenceH srs = GDALGetSpatialRef(m_rast->get());
     return srs == nullptr || !OSRIsGeographic(srs);
 }
 
@@ -148,7 +146,7 @@ void
 GDALRasterWrapper::compute_raster_grid()
 {
     double adfGeoTransform[6];
-    if (GDALGetGeoTransform(m_rast, adfGeoTransform) != CE_None) {
+    if (GDALGetGeoTransform(m_rast->get(), adfGeoTransform) != CE_None) {
         throw std::runtime_error("Error reading transform");
     }
 
@@ -157,8 +155,8 @@ GDALRasterWrapper::compute_raster_grid()
     double ulx = adfGeoTransform[0];
     double uly = adfGeoTransform[3];
 
-    int nx = GDALGetRasterXSize(m_rast);
-    int ny = GDALGetRasterYSize(m_rast);
+    int nx = GDALGetRasterXSize(m_rast->get());
+    int ny = GDALGetRasterYSize(m_rast->get());
 
     Box box{ ulx,
              uly - ny * dy,
@@ -166,17 +164,6 @@ GDALRasterWrapper::compute_raster_grid()
              uly };
 
     m_grid = { box, dx, dy };
-}
-
-GDALRasterWrapper::
-  GDALRasterWrapper(exactextract::GDALRasterWrapper&& src) noexcept
-  : m_rast{ src.m_rast }
-  , m_band{ src.m_band }
-  , m_nodata_value{ src.m_nodata_value }
-  , m_has_nodata{ src.m_has_nodata }
-  , m_grid{ src.m_grid }
-{
-    src.m_rast = nullptr;
 }
 
 }

@@ -2,9 +2,10 @@
 
 ### Breaking changes
 
-- exactextract now emits placeholder statistic results for features that do not
+- CLI now emits placeholder statistic results for features that do not
   intersect the raster. If the input raster has a NODATA value it will be used,
   otherwise NaN will be written.
+- CLI now processes all bands of a multi-band raster if no band is specified.
 
 ### Enhancements
 

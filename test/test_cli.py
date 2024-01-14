@@ -29,7 +29,8 @@ def run(tmpdir):
 
         cmd = [str(x) for x in ["./exactextract", "-o", output_fname] + arglist]
 
-        # cmd_str = " ".join([x if x.startswith("-") else f'"{x}"' for x in cmd])
+        cmd_str = " ".join([x if x.startswith("-") else f'"{x}"' for x in cmd])
+        print(cmd_str)
 
         subprocess.run(cmd, check=True)
 
@@ -54,27 +55,35 @@ def write_raster(tmp_path):
 
         files.append(fname)
 
-        ny, nx = data.shape
+        if len(data.shape) == 3:
+            nz, ny, nx = data.shape
+        else:
+            nz = 1
+            ny, nx = data.shape
 
         drv = gdal.GetDriverByName("GTiff")
         ds = drv.Create(
             fname,
             xsize=nx,
             ysize=ny,
-            bands=1,
+            bands=nz,
             eType=gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype),
         )
         ds.SetGeoTransform([0, 1, 0, ny, 0, -1])
 
-        ds.GetRasterBand(1).WriteArray(data)
+        if nz == 1:
+            ds.GetRasterBand(1).WriteArray(data)
+        else:
+            for i in range(nz):
+                ds.GetRasterBand(i + 1).WriteArray(data[i, :])
 
-        if nodata:
-            ds.GetRasterBand(1).SetNoDataValue(nodata)
-
-        if scale:
-            ds.GetRasterBand(1).SetScale(scale)
-        if offset:
-            ds.GetRasterBand(1).SetOffset(offset)
+        for i in range(nz):
+            if nodata:
+                ds.GetRasterBand(i + 1).SetNoDataValue(nodata)
+            if scale:
+                ds.GetRasterBand(i + 1).SetScale(scale)
+            if offset:
+                ds.GetRasterBand(i + 1).SetOffset(offset)
 
         return fname
 
@@ -139,6 +148,121 @@ def test_multiple_stats(strategy, run, write_raster, write_features):
     assert list(rows[0].keys()) == ["id", "metric_mean", "metric_variety"]
     assert float(rows[0]["metric_mean"]) == pytest.approx(2.16667, 1e-3)
     assert rows[0]["metric_variety"] == "3"
+
+
+def test_implicit_syntax(run, write_raster, write_features):
+
+    data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
+
+    rows = run(
+        polygons=write_features(
+            {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
+        ),
+        fid="id",
+        raster=write_raster(data),
+        stat=["mean", "variety"],
+    )
+
+    assert len(rows) == 1
+    assert list(rows[0].keys()) == ["id", "mean", "variety"]
+    assert float(rows[0]["mean"]) == pytest.approx(2.16667, 1e-3)
+    assert rows[0]["variety"] == "3"
+
+
+@pytest.mark.parametrize(
+    "raster,stats,expected_names",
+    (
+        (
+            "{}",
+            ["mean", "variety"],
+            ["id", "band_1_mean", "band_2_mean", "band_1_variety", "band_2_variety"],
+        ),
+        (
+            "metric:{}",
+            ["mean", "variety"],
+            [
+                "id",
+                "metric_band_1_mean",
+                "metric_band_2_mean",
+                "metric_band_1_variety",
+                "metric_band_2_variety",
+            ],
+        ),
+        (
+            "metric:{}",
+            ["s=mean(metric_band_1)", "variety"],
+            ["id", "s", "metric_band_1_variety", "metric_band_2_variety"],
+        ),
+        ("{}[2]", ["mean", "variety"], ["id", "mean", "variety"]),
+    ),
+)
+def test_multiband_unweighted(
+    run, write_raster, write_features, raster, stats, expected_names
+):
+
+    data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
+    data = np.stack((data, data * 2))
+
+    rows = run(
+        polygons=write_features(
+            {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
+        ),
+        fid="id",
+        raster=raster.format(write_raster(data)),
+        stat=stats,
+    )
+
+    assert len(rows) == 1
+    assert list(rows[0].keys()) == expected_names
+
+
+def test_multiband_weighted(
+    run,
+    write_raster,
+    write_features,
+    value_bands,
+    weight_bands,
+    raster,
+    stats,
+    expected_names,
+):
+    pass
+
+
+@pytest.mark.parametrize(
+    "rasters,stats,expected_names",
+    (
+        (
+            ("{}", "{}"),
+            ["mean", "count"],
+            ["id", "raster0_mean", "raster1_mean", "raster0_count", "raster1_count"],
+        ),
+        (
+            ("{}", "r1:{}"),
+            ["mean", "count(r1)"],
+            ["id", "raster0_mean", "r1_mean", "r1_count"],
+        ),
+    ),
+)
+def test_multiple_rasters(
+    run, write_raster, write_features, rasters, stats, expected_names
+):
+    data1 = np.arange(12, dtype=np.int32).reshape(3, 4)
+    data2 = np.sqrt(data1)
+
+    rows = run(
+        polygons=write_features(
+            {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
+        ),
+        fid="id",
+        raster=[
+            rasters[0].format(write_raster(data1)),
+            rasters[1].format(write_raster(data2)),
+        ],
+        stat=stats,
+    )
+
+    assert list(rows[0].keys()) == expected_names
 
 
 def test_stats_deferred(run, write_raster, write_features):

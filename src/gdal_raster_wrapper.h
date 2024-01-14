@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2018-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,21 +11,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_GDAL_RASTER_WRAPPER_H
-#define EXACTEXTRACT_GDAL_RASTER_WRAPPER_H
+#pragma once
 
 #include "box.h"
 #include "grid.h"
 #include "raster.h"
-
 #include "raster_source.h"
 
+#include <gdal.h>
+
 namespace exactextract {
+
+class GDALRaster
+{
+  public:
+    GDALRaster(const std::string& dsn)
+      : m_dataset(GDALOpen(dsn.c_str(), GA_ReadOnly))
+    {
+        if (m_dataset == nullptr) {
+            throw std::runtime_error("Failed to read raster: " + dsn);
+        }
+    }
+
+    ~GDALRaster()
+    {
+        if (m_dataset != nullptr) {
+            GDALClose(m_dataset);
+        }
+    }
+
+    GDALDatasetH get()
+    {
+        return m_dataset;
+    }
+
+  private:
+    GDALDatasetH m_dataset;
+};
 
 class GDALRasterWrapper : public RasterSource
 {
 
   public:
+    GDALRasterWrapper(std::shared_ptr<GDALRaster> rast, int bandnum);
+
     GDALRasterWrapper(const std::string& filename, int bandnum);
 
     const Grid<bounded_extent>& grid() const override
@@ -37,16 +66,10 @@ class GDALRasterWrapper : public RasterSource
 
     ~GDALRasterWrapper() override;
 
-    GDALRasterWrapper(const GDALRasterWrapper&) = delete;
-    GDALRasterWrapper(GDALRasterWrapper&&) noexcept;
-
     bool cartesian() const;
 
   private:
-    using GDALDatasetH = void*;
-    using GDALRasterBandH = void*;
-
-    GDALDatasetH m_rast;
+    std::shared_ptr<GDALRaster> m_rast;
     GDALRasterBandH m_band;
     double m_nodata_value;
     bool m_has_nodata;
@@ -65,5 +88,3 @@ class GDALRasterWrapper : public RasterSource
     }
 };
 }
-
-#endif // EXACTEXTRACT_GDAL_RASTER_WRAPPER_H
