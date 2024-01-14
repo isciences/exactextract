@@ -45,7 +45,7 @@ TEST_CASE("Parsing raster descriptor: file with no band")
 
     CHECK(std::get<0>(parsed) == "land_area");
     CHECK(std::get<1>(parsed) == "gpw_v4_land.tif");
-    CHECK(std::get<2>(parsed) == 1);
+    CHECK(std::get<2>(parsed) == 0);
 }
 
 TEST_CASE("Parsing raster descriptor: file with no name and no band")
@@ -54,9 +54,9 @@ TEST_CASE("Parsing raster descriptor: file with no name and no band")
 
     auto parsed = parse_raster_descriptor(descriptor);
 
-    CHECK(std::get<0>(parsed) == "gpw_v4_land.tif");
+    CHECK(std::get<0>(parsed) == "");
     CHECK(std::get<1>(parsed) == "gpw_v4_land.tif");
-    CHECK(std::get<2>(parsed) == 1);
+    CHECK(std::get<2>(parsed) == 0);
 }
 
 TEST_CASE("Parsing raster descriptor: file with no name but a specific band")
@@ -65,7 +65,7 @@ TEST_CASE("Parsing raster descriptor: file with no name but a specific band")
 
     auto parsed = parse_raster_descriptor(descriptor);
 
-    CHECK(std::get<0>(parsed) == "gpw_v4_land.tif");
+    CHECK(std::get<0>(parsed) == "");
     CHECK(std::get<1>(parsed) == "gpw_v4_land.tif");
     CHECK(std::get<2>(parsed) == 8);
 }
@@ -78,7 +78,7 @@ TEST_CASE("Parsing ugly raster descriptor")
 
     CHECK(std::get<0>(parsed) == "gpw[3]");
     CHECK(std::get<1>(parsed) == "gpw_v4_land.tif");
-    CHECK(std::get<2>(parsed) == 1);
+    CHECK(std::get<2>(parsed) == 0);
 }
 
 TEST_CASE("Degenerate raster descriptor")
@@ -91,7 +91,7 @@ TEST_CASE("Parsing stat descriptor with no weighting")
 {
     auto descriptor = parse_stat_descriptor("sum(population)");
 
-    CHECK(descriptor.name == "population_sum");
+    CHECK(descriptor.name == "");
     CHECK(descriptor.stat == "sum");
     CHECK(descriptor.values == "population");
     CHECK(descriptor.weights == "");
@@ -101,7 +101,7 @@ TEST_CASE("Parsing stat descriptor with weighting")
 {
     auto descriptor = parse_stat_descriptor("mean(deficit,population)");
 
-    CHECK(descriptor.name == "deficit_mean_population");
+    CHECK(descriptor.name == "");
     CHECK(descriptor.stat == "mean");
     CHECK(descriptor.values == "deficit");
     CHECK(descriptor.weights == "population");
@@ -115,6 +115,26 @@ TEST_CASE("Parsing stat descriptor with name and weighting")
     CHECK(descriptor.stat == "mean");
     CHECK(descriptor.values == "deficit");
     CHECK(descriptor.weights == "population");
+}
+
+TEST_CASE("Parsing stat descriptor with no arguments")
+{
+    auto descriptor = parse_stat_descriptor("mean");
+
+    CHECK(descriptor.stat == "mean");
+    CHECK(descriptor.name == "");
+    CHECK(descriptor.values == "");
+    CHECK(descriptor.weights == "");
+}
+
+TEST_CASE("Parsing stat descriptor with name and no arguments")
+{
+    auto descriptor = parse_stat_descriptor("pop_mean=mean");
+
+    CHECK(descriptor.stat == "mean");
+    CHECK(descriptor.name == "pop_mean");
+    CHECK(descriptor.values == "");
+    CHECK(descriptor.weights == "");
 }
 
 TEST_CASE("Parsing degenerate stat descriptors")

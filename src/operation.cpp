@@ -1,4 +1,5 @@
 #include "operation.h"
+#include "utils.h"
 
 #include <sstream>
 
@@ -14,6 +15,33 @@ make_field_name(const std::string& prefix, const T& value)
         return ss.str();
     } else {
         return prefix + std::to_string(value);
+    }
+}
+
+Operation::Operation(std::string p_stat,
+                     std::string p_name,
+                     RasterSource* p_values,
+                     RasterSource* p_weights)
+  : stat{ std::move(p_stat) }
+  , name{ std::move(p_name) }
+  , values{ p_values }
+  , weights{ p_weights }
+  , m_missing{ get_missing_value() }
+{
+    if (stat == "quantile") {
+        setQuantileFieldNames();
+    } else {
+        m_field_names.push_back(name);
+    }
+
+    if (starts_with(stat, "weighted") && weights == nullptr) {
+        throw std::runtime_error("No weights provided for weighted stat: " + stat);
+    }
+
+    if (weighted()) {
+        m_key = values->name() + "|" + weights->name();
+    } else {
+        m_key = values->name();
     }
 }
 

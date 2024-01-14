@@ -87,6 +87,8 @@ if(BUILD_CLI)
         src/gdal_feature_unnester.h
         src/gdal_writer.h
         src/gdal_writer.cpp
+        src/utils_cli.h
+        src/utils_cli.cpp
     )
 
     target_link_libraries(exactextract_gdal

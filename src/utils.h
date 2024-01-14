@@ -11,16 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_UTILS_H
-#define EXACTEXTRACT_UTILS_H
+#pragma once
 
-#include <array>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 namespace exactextract {
+
+class Operation;
+class RasterSource;
 
 struct StatDescriptor
 {
@@ -37,6 +39,13 @@ std::tuple<std::string, std::string, int>
 parse_raster_descriptor(const std::string& descriptor);
 StatDescriptor
 parse_stat_descriptor(const std::string& descriptor);
+
+using RasterSourceVect = std::vector<std::unique_ptr<RasterSource>>;
+
+std::vector<std::unique_ptr<Operation>>
+prepare_operations(const std::vector<std::string>& descriptors,
+                   const RasterSourceVect& rasters,
+                   const RasterSourceVect& weights);
 
 // https://stackoverflow.com/a/2072890
 inline bool
@@ -55,5 +64,3 @@ starts_with(std::string const& value, std::string const& prefix)
     return std::equal(prefix.cbegin(), prefix.cend(), value.cbegin());
 }
 }
-
-#endif // EXACTEXTRACT_UTILS_H

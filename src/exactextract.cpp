@@ -29,6 +29,7 @@
 #include "processor.h"
 #include "raster_sequential_processor.h"
 #include "utils.h"
+#include "utils_cli.h"
 #include "version.h"
 
 using exactextract::GDALDatasetWrapper;
@@ -42,13 +43,6 @@ load_dataset(const std::string& descriptor,
              const std::string& dst_id_name,
              const std::string& dst_id_type);
 
-static std::unordered_map<std::string, GDALRasterWrapper>
-load_rasters(const std::vector<std::string>& descriptors);
-
-static std::vector<std::unique_ptr<Operation>>
-prepare_operations(const std::vector<std::string>& descriptors,
-                   std::unordered_map<std::string, GDALRasterWrapper>& rasters);
-
 int
 main(int argc, char** argv)
 {
@@ -57,6 +51,7 @@ main(int argc, char** argv)
     std::string poly_descriptor, src_id_name, output_filename, strategy, dst_id_type, dst_id_name;
     std::vector<std::string> stats;
     std::vector<std::string> raster_descriptors;
+    std::vector<std::string> weight_descriptors;
     std::vector<std::string> include_cols;
     size_t max_cells_in_memory = 30;
 
@@ -66,6 +61,7 @@ main(int argc, char** argv)
 
     app.add_option("-p,--polygons", poly_descriptor, "polygon dataset")->required(true);
     app.add_option("-r,--raster", raster_descriptors, "raster dataset")->required(true);
+    app.add_option("-w,--weights", weight_descriptors, "weighting dataset")->required(false);
     app.add_option("-f,--fid", src_id_name, "id from polygon dataset to retain in output")->required(false);
     app.add_option("-o,--output", output_filename, "output filename")->required(true);
     app.add_option("-s,--stat", stats, "statistics")->required(false)->expected(-1);
@@ -102,9 +98,11 @@ main(int argc, char** argv)
     try {
         GDALAllRegister();
         OGRRegisterAll();
-        auto rasters = load_rasters(raster_descriptors);
 
-        auto operations = prepare_operations(stats, rasters);
+        auto rasters = exactextract::load_gdal_rasters(raster_descriptors);
+        auto weights = exactextract::load_gdal_rasters(weight_descriptors);
+
+        auto operations = prepare_operations(stats, rasters, weights);
         const bool defer_writing = std::any_of(operations.begin(), operations.end(), [](const auto& op) { return !op->column_names_known(); });
 
         GDALDatasetWrapper shp = load_dataset(poly_descriptor, include_cols, src_id_name, dst_id_name, dst_id_type);
@@ -207,56 +205,4 @@ load_dataset(const std::string& descriptor,
     }
 
     return ds;
-}
-
-static std::unordered_map<std::string, GDALRasterWrapper>
-load_rasters(const std::vector<std::string>& descriptors)
-{
-    std::unordered_map<std::string, GDALRasterWrapper> rasters;
-
-    for (const auto& descriptor : descriptors) {
-        auto parsed = exactextract::parse_raster_descriptor(descriptor);
-
-        auto name = std::get<0>(parsed);
-
-        rasters.emplace(name, GDALRasterWrapper{ std::get<1>(parsed), std::get<2>(parsed) });
-        rasters.at(name).set_name(name);
-    }
-
-    return rasters;
-}
-
-static std::vector<std::unique_ptr<Operation>>
-prepare_operations(
-  const std::vector<std::string>& descriptors,
-  std::unordered_map<std::string, GDALRasterWrapper>& rasters)
-{
-    std::vector<std::unique_ptr<Operation>> ops;
-
-    for (const auto& descriptor : descriptors) {
-        const auto stat = exactextract::parse_stat_descriptor(descriptor);
-
-        auto values_it = rasters.find(stat.values);
-        if (values_it == rasters.end()) {
-            throw std::runtime_error("Unknown raster " + stat.values + " in stat descriptor: " + descriptor);
-        }
-
-        GDALRasterWrapper* values = &(values_it->second);
-        GDALRasterWrapper* weights;
-
-        if (stat.weights.empty()) {
-            weights = nullptr;
-        } else {
-            auto weights_it = rasters.find(stat.weights);
-            if (weights_it == rasters.end()) {
-                throw std::runtime_error("Unknown raster " + stat.weights + " in stat descriptor: " + descriptor);
-            }
-
-            weights = &(weights_it->second);
-        }
-
-        ops.emplace_back(std::make_unique<Operation>(stat.stat, stat.name, values, weights));
-    }
-
-    return ops;
 }
