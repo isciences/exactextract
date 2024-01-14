@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 
 #include "feature.h"
@@ -31,6 +32,8 @@ namespace exactextract {
 class Operation
 {
   public:
+    using ArgMap = std::map<std::string, std::string>;
+
     /// \param stat The name of the statistic computed by this Operation
     /// \param name The name of the field to which the result of the Operation will be written
     /// \param values The RasterSource from which values will be read
@@ -39,7 +42,8 @@ class Operation
     Operation(std::string stat,
               std::string name,
               RasterSource* values,
-              RasterSource* weights = nullptr);
+              RasterSource* weights = nullptr,
+              ArgMap options = {});
 
     virtual std::unique_ptr<Operation> clone() const
     {
@@ -128,12 +132,6 @@ class Operation
         return m_key;
     }
 
-    void set_quantiles(const std::vector<double>& quantiles)
-    {
-        m_quantiles = quantiles;
-        setQuantileFieldNames();
-    }
-
     void set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const;
 
     void set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f_out) const;
@@ -148,9 +146,7 @@ class Operation
   private:
     std::string m_key;
 
-    void setQuantileFieldNames();
-
-    std::vector<double> m_quantiles;
+    double m_quantile;
 
     using missing_value_t = std::variant<double, std::int8_t, std::int16_t, std::int32_t, std::int64_t>;
 

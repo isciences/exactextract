@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ISciences, LLC.
+// Copyright (c) 2019-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <map>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -30,7 +32,7 @@ struct StatDescriptor
     std::string values;
     std::string weights;
     std::string stat;
-    std::vector<double> quantiles;
+    std::map<std::string, std::string> args;
 };
 
 std::pair<std::string, std::string>
@@ -63,4 +65,17 @@ starts_with(std::string const& value, std::string const& prefix)
         return false;
     return std::equal(prefix.cbegin(), prefix.cend(), value.cbegin());
 }
+
+std::vector<std::string>
+split(const std::string& value, char delim);
+
+// https://stackoverflow.com/a/217605/2171894
+inline void
+ltrim(std::string& s)
+{
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+                return !std::isspace(ch);
+            }));
+}
+
 }

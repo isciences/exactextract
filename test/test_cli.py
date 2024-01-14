@@ -140,12 +140,12 @@ def test_multiple_stats(strategy, run, write_raster, write_features):
         ),
         fid="id",
         raster=f"metric:{write_raster(data)}",
-        stat=["mean(metric)", "variety(metric)"],
+        stat=["mean(metric)", "variety(metric)", "quantile(q=0.25)"],
         strategy=strategy,
     )
 
     assert len(rows) == 1
-    assert list(rows[0].keys()) == ["id", "metric_mean", "metric_variety"]
+    assert list(rows[0].keys()) == ["id", "metric_mean", "metric_variety", "q25"]
     assert float(rows[0]["metric_mean"]) == pytest.approx(2.16667, 1e-3)
     assert rows[0]["metric_variety"] == "3"
 
@@ -216,17 +216,17 @@ def test_multiband_unweighted(
     assert list(rows[0].keys()) == expected_names
 
 
-def test_multiband_weighted(
-    run,
-    write_raster,
-    write_features,
-    value_bands,
-    weight_bands,
-    raster,
-    stats,
-    expected_names,
-):
-    pass
+# def test_multiband_weighted(
+#    run,
+#    write_raster,
+#    write_features,
+#    value_bands,
+#    weight_bands,
+#    raster,
+#    stats,
+#    expected_names,
+# ):
+#    pass
 
 
 @pytest.mark.parametrize(

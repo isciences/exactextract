@@ -21,6 +21,21 @@
 
 namespace exactextract {
 
+// https://stackoverflow.com/a/46931770
+std::vector<std::string>
+split(const std::string& s, char delim)
+{
+    std::vector<std::string> result;
+    std::stringstream ss(s);
+    std::string item;
+
+    while (getline(ss, item, delim)) {
+        result.push_back(item);
+    }
+
+    return result;
+}
+
 std::pair<std::string, std::string>
 parse_dataset_descriptor(const std::string& descriptor)
 {
@@ -80,7 +95,7 @@ StatDescriptor
 parse_stat_descriptor(const std::string& p_descriptor)
 {
     if (p_descriptor.empty()) {
-        throw std::runtime_error("Invalid stat descriptor.");
+        throw std::runtime_error("Invalid stat descriptor. Descriptor is empty.");
     }
 
     std::string descriptor = p_descriptor;
@@ -100,23 +115,55 @@ parse_stat_descriptor(const std::string& p_descriptor)
     std::smatch func_name_match;
     if (std::regex_search(descriptor, func_name_match, re_func_name)) {
         ret.stat = func_name_match[1].str();
+        descriptor.erase(0, func_name_match.length(1));
     } else {
-        throw std::runtime_error("Invalid stat descriptor.");
+        throw std::runtime_error("Invalid stat descriptor. No stat name found.");
     }
 
     // Parse stat arguments
-    const std::regex re_args(R"(\(([,\w]+)+\)$)");
-    std::smatch arg_names_match;
-    if (std::regex_search(descriptor, arg_names_match, re_args)) {
-        auto args = arg_names_match[1].str();
+    const std::regex re_args(R"(\(([ ,.=\w-]+)+\)$)");
+    std::smatch args_match;
+    if (std::regex_search(descriptor, args_match, re_args)) {
+        auto args = split(args_match[1].str(), ',');
+        descriptor.erase(0, args_match.length());
 
-        auto pos = args.find(',');
-        if (pos == std::string::npos) {
-            ret.values = std::move(args);
-        } else {
-            ret.values = args.substr(0, pos);
-            ret.weights = args.substr(pos + 1);
+        for (std::size_t i = 0; i < args.size(); i++) {
+            ltrim(args[i]);
+
+            if (args[i].empty()) {
+                throw std::runtime_error("Invalid stat descriptor. Empty argument.");
+            }
+
+            auto kv = split(args[i], '=');
+            if (kv.size() == 1) {
+                if (!ret.args.empty()) {
+                    throw std::runtime_error("Invalid stat descriptor. Raster name provided after keyword arguments.");
+                }
+
+                if (i == 0) {
+                    ret.values = std::move(args[i]);
+                } else if (i == 1) {
+                    ret.weights = std::move(args[i]);
+                } else {
+                    throw std::runtime_error("Invalid stat descriptor. Expected keyword argument.");
+                }
+            } else if (kv.size() == 2) {
+                const auto& arg_name = kv.front();
+                const auto& arg_value = kv.back();
+
+                bool inserted = ret.args.try_emplace(arg_name, arg_value).second;
+                if (!inserted) {
+                    throw std::runtime_error("Invalid stat descriptor. Argument " + arg_name + " + specified multiple times.");
+                }
+            } else {
+                throw std::runtime_error("Invalid stat descriptor. Malformed keyword argument: " + args[i]);
+                ;
+            }
         }
+    }
+
+    if (!descriptor.empty()) {
+        throw std::runtime_error("Invalid stat descriptor. Failed to parse: " + descriptor);
     }
 
     return ret;
@@ -161,7 +208,8 @@ prepare_operations_implicit(
           sd.stat,
           make_name(v, w, sd.stat, full_names),
           v,
-          w));
+          w,
+          sd.args));
     }
 }
 
@@ -205,7 +253,7 @@ prepare_operations_explicit(
         weights = weights_it->second;
     }
 
-    ops.emplace_back(std::make_unique<Operation>(stat.stat, stat.name.empty() ? values->name() + "_" + stat.stat : stat.name, values, weights));
+    ops.emplace_back(std::make_unique<Operation>(stat.stat, stat.name.empty() ? values->name() + "_" + stat.stat : stat.name, values, weights, stat.args));
 }
 
 std::vector<std::unique_ptr<Operation>>
