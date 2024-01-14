@@ -97,6 +97,17 @@ TEST_CASE("Parsing stat descriptor with no weighting")
     CHECK(descriptor.weights == "");
 }
 
+TEST_CASE("Parsing stat descriptor with arguments and no weighting")
+{
+    auto descriptor = parse_stat_descriptor("sum(population,min_frac=-1)");
+
+    CHECK(descriptor.name == "");
+    CHECK(descriptor.stat == "sum");
+    CHECK(descriptor.values == "population");
+    CHECK(descriptor.weights == "");
+    CHECK(descriptor.args["min_frac"] == "-1");
+}
+
 TEST_CASE("Parsing stat descriptor with weighting")
 {
     auto descriptor = parse_stat_descriptor("mean(deficit,population)");
@@ -105,6 +116,28 @@ TEST_CASE("Parsing stat descriptor with weighting")
     CHECK(descriptor.stat == "mean");
     CHECK(descriptor.values == "deficit");
     CHECK(descriptor.weights == "population");
+}
+
+TEST_CASE("Parsing stat descriptor with weighting and arguments")
+{
+    auto descriptor = parse_stat_descriptor("quantile(deficit,population,q=0.75)");
+
+    CHECK(descriptor.name == "");
+    CHECK(descriptor.stat == "quantile");
+    CHECK(descriptor.values == "deficit");
+    CHECK(descriptor.weights == "population");
+    CHECK(descriptor.args["q"] == "0.75");
+}
+
+TEST_CASE("Spaces allowed between arguments")
+{
+    auto descriptor = parse_stat_descriptor("quantile(deficit, population, q=0.75)");
+
+    CHECK(descriptor.name == "");
+    CHECK(descriptor.stat == "quantile");
+    CHECK(descriptor.values == "deficit");
+    CHECK(descriptor.weights == "population");
+    CHECK(descriptor.args["q"] == "0.75");
 }
 
 TEST_CASE("Parsing stat descriptor with name and weighting")
@@ -127,6 +160,17 @@ TEST_CASE("Parsing stat descriptor with no arguments")
     CHECK(descriptor.weights == "");
 }
 
+TEST_CASE("Parsing stat descriptor with only keyword arguments")
+{
+    auto descriptor = parse_stat_descriptor("mean(ignore_nodata=false)");
+
+    CHECK(descriptor.stat == "mean");
+    CHECK(descriptor.name == "");
+    CHECK(descriptor.values == "");
+    CHECK(descriptor.weights == "");
+    CHECK(descriptor.args["ignore_nodata"] == "false");
+}
+
 TEST_CASE("Parsing stat descriptor with name and no arguments")
 {
     auto descriptor = parse_stat_descriptor("pop_mean=mean");
@@ -139,6 +183,10 @@ TEST_CASE("Parsing stat descriptor with name and no arguments")
 
 TEST_CASE("Parsing degenerate stat descriptors")
 {
-    CHECK_THROWS_WITH(parse_stat_descriptor(""), "Invalid stat descriptor.");
-    CHECK_THROWS_WITH(parse_stat_descriptor("sum()"), "Invalid stat descriptor.");
+    CHECK_THROWS_WITH(parse_stat_descriptor(""), Catch::StartsWith("Invalid stat descriptor."));
+    CHECK_THROWS_WITH(parse_stat_descriptor("sum(a,b,c)"), Catch::StartsWith("Invalid stat descriptor."));
+    CHECK_THROWS_WITH(parse_stat_descriptor("sum banana"), Catch::StartsWith("Invalid stat descriptor"));
+    CHECK_THROWS_WITH(parse_stat_descriptor("sum(b=2,a)"), Catch::StartsWith("Invalid stat descriptor."));
+    CHECK_THROWS_WITH(parse_stat_descriptor("sum(a,b=2,b=3)"), Catch::StartsWith("Invalid stat descriptor."));
+    CHECK_THROWS_WITH(parse_stat_descriptor("sum(,a)"), Catch::StartsWith("Invalid stat descriptor."));
 }

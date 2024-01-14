@@ -1,6 +1,7 @@
 #include "operation.h"
 #include "utils.h"
 
+#include <charconv>
 #include <sstream>
 
 namespace exactextract {
@@ -18,10 +19,33 @@ make_field_name(const std::string& prefix, const T& value)
     }
 }
 
-Operation::Operation(std::string p_stat,
-                     std::string p_name,
-                     RasterSource* p_values,
-                     RasterSource* p_weights)
+template<typename T>
+T
+extract_arg(Operation::ArgMap& options, const std::string& name)
+{
+    auto it = options.find(name);
+    if (it == options.end()) {
+        throw std::runtime_error("Missing required argument: " + name);
+    }
+
+    const std::string& raw_value = it->second;
+
+    T value;
+    if (std::from_chars(raw_value.data(), raw_value.data() + raw_value.size(), value).ec == std::errc{}) {
+        options.erase(it);
+    } else {
+        throw std::runtime_error("Failed to parse value of argument: " + name);
+    }
+
+    return value;
+}
+
+Operation::
+  Operation(std::string p_stat,
+            std::string p_name,
+            RasterSource* p_values,
+            RasterSource* p_weights,
+            std::map<std::string, std::string> options)
   : stat{ std::move(p_stat) }
   , name{ std::move(p_name) }
   , values{ p_values }
@@ -29,7 +53,8 @@ Operation::Operation(std::string p_stat,
   , m_missing{ get_missing_value() }
 {
     if (stat == "quantile") {
-        setQuantileFieldNames();
+        m_quantile = extract_arg<double>(options, "q");
+        m_field_names.push_back(make_field_name(name + "_", static_cast<int>(m_quantile * 100)));
     } else {
         m_field_names.push_back(name);
     }
@@ -42,6 +67,10 @@ Operation::Operation(std::string p_stat,
         m_key = values->name() + "|" + weights->name();
     } else {
         m_key = values->name();
+    }
+
+    if (!options.empty()) {
+        throw std::runtime_error("Unexpected argument(s) to stat: " + stat);
     }
 }
 
@@ -180,9 +209,7 @@ Operation::set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f
                    stats);
     } else if (stat == "quantile") {
         std::visit([&f_out, this](const auto& x, const auto& m) {
-            for (std::size_t i = 0; i < m_quantiles.size(); i++) {
-                f_out.set(m_field_names[i], x.quantile(m_quantiles[i]).value_or(m));
-            }
+            f_out.set(m_field_names[0], x.quantile(m_quantile).value_or(m));
         },
                    stats,
                    m_missing);
@@ -205,14 +232,4 @@ Operation::set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f
     }
 }
 
-void
-Operation::setQuantileFieldNames()
-{
-    for (double q : m_quantiles) {
-        std::stringstream ss;
-        int qint = static_cast<int>(100 * q);
-        ss << "q_" << qint;
-        m_field_names.push_back(ss.str());
-    }
-}
 }

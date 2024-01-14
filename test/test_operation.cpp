@@ -296,3 +296,40 @@ TEMPLATE_TEST_CASE("include_col and include_geom work as expected", "[processor]
     CHECK(f.get<std::int32_t>("type") == 13);
     CHECK(GEOSEquals_r(context, f.geometry(), ds.feature().geometry()) == 1);
 }
+
+TEST_CASE("Operation arguments", "[operation]")
+{
+    MemoryRasterSource mrs{ std::make_unique<Raster<float>>(Raster<float>::make_empty()) };
+
+    SECTION("successful arg parsing")
+    {
+        Operation::ArgMap args{ { "q", "5" } };
+
+        Operation op("quantile", "quantile", &mrs, nullptr, args);
+
+        // args are not modified
+        CHECK(args.find("q") != args.end());
+    }
+
+    SECTION("error if not all args are consumed")
+    {
+        Operation::ArgMap args{ { "q", "5" }, { "qq", "15" } };
+        CHECK_THROWS_WITH(Operation("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Unexpected argument"));
+
+        // args are not modified
+        CHECK(args.find("q") != args.end());
+        CHECK(args.find("qq") != args.end());
+    }
+
+    SECTION("error if arg cannot be parsed")
+    {
+        Operation::ArgMap args{ { "q", "chicken" } };
+        CHECK_THROWS_WITH(Operation("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Failed to parse"));
+    }
+
+    SECTION("error if required arg is missing")
+    {
+        Operation::ArgMap args;
+        CHECK_THROWS_WITH(Operation("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Missing required argument"));
+    }
+}
