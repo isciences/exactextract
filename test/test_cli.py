@@ -16,23 +16,33 @@ def run(tmpdir):
 
         arglist = list(args)
 
-        for k, v in kwargs.items():
-            k = k.replace("_", "-")
+        for arg_name, arg_values in kwargs.items():
+            arg_name = arg_name.replace("_", "-")
 
-            if isinstance(v, (str, os.PathLike, bool)):
-                v = [v]
-            for x in v:
-                if x is True:
-                    arglist += [f"--{k}"]
+            if isinstance(arg_values, (str, os.PathLike, bool)):
+                arg_values = [arg_values]
+            for v in arg_values:
+                if v is True:
+                    arglist += [f"--{arg_name}"]
                 else:
-                    arglist += [f"--{k}", f"{x}"]
+                    arglist += [f"--{arg_name}", f"{v}"]
 
         cmd = [str(x) for x in ["./exactextract", "-o", output_fname] + arglist]
 
         cmd_str = " ".join([x if x.startswith("-") else f'"{x}"' for x in cmd])
-        print(cmd_str)
 
-        subprocess.run(cmd, check=True)
+        # print(cmd_str)
+
+        try:
+            subprocess.run(cmd, check=True)
+            fail = False
+        except subprocess.CalledProcessError:
+            fail = True
+
+        if fail:
+            # avoid failing from "except" block to get a less verbose
+            # failure message
+            pytest.fail(f"Command failed: {cmd_str}")
 
         if return_fname:
             return output_fname
@@ -140,17 +150,24 @@ def test_multiple_stats(strategy, run, write_raster, write_features):
         ),
         fid="id",
         raster=f"metric:{write_raster(data)}",
-        stat=["mean(metric)", "variety(metric)", "quantile(q=0.25)"],
+        stat=["mean(metric)", "variety(metric)", "quantile(metric, q=0.25)"],
         strategy=strategy,
     )
 
     assert len(rows) == 1
-    assert list(rows[0].keys()) == ["id", "metric_mean", "metric_variety", "q25"]
+    assert list(rows[0].keys()) == [
+        "id",
+        "metric_mean",
+        "metric_variety",
+        "metric_quantile_25",
+    ]
     assert float(rows[0]["metric_mean"]) == pytest.approx(2.16667, 1e-3)
     assert rows[0]["metric_variety"] == "3"
 
 
 def test_implicit_syntax(run, write_raster, write_features):
+    # Don't provide a name to the raster, and don't reference any raster names
+    # in the stat function invocations
 
     data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
 
@@ -164,104 +181,170 @@ def test_implicit_syntax(run, write_raster, write_features):
     )
 
     assert len(rows) == 1
+
+    # Since we only have one input raster with only one band, the constructed
+    # column names don't include a raster name
     assert list(rows[0].keys()) == ["id", "mean", "variety"]
     assert float(rows[0]["mean"]) == pytest.approx(2.16667, 1e-3)
     assert rows[0]["variety"] == "3"
 
 
-@pytest.mark.parametrize(
-    "raster,stats,expected_names",
-    (
-        (
-            "{}",
-            ["mean", "variety"],
-            ["id", "band_1_mean", "band_2_mean", "band_1_variety", "band_2_variety"],
-        ),
-        (
-            "metric:{}",
-            ["mean", "variety"],
-            [
-                "id",
-                "metric_band_1_mean",
-                "metric_band_2_mean",
-                "metric_band_1_variety",
-                "metric_band_2_variety",
-            ],
-        ),
-        (
-            "metric:{}",
-            ["s=mean(metric_band_1)", "variety"],
-            ["id", "s", "metric_band_1_variety", "metric_band_2_variety"],
-        ),
-        ("{}[2]", ["mean", "variety"], ["id", "mean", "variety"]),
+naming_test_cases = {
+    # Values: Single-input band from a multi-band raster
+    # Weights: None
+    # Stats: No name references
+    # Names include raster: No
+    # Names include band: No
+    "single_raster_single_band_unnamed": (
+        "{}[2]",
+        None,
+        ["mean", "variety"],
+        ["id", "mean", "variety"],
     ),
+    # Values: Single band from a unnamed multi-band raster
+    # Weights: Single band from a unnamed multi-band raster
+    # Stats: No name references
+    # Names include raster: No
+    # Names include band: No
+    "weighted_single_raster_single_band_unnamed": (
+        "{}[1]",
+        "{}[2]",
+        ["weighted_mean", "variety"],
+        ["id", "weighted_mean", "variety"],
+    ),
+    # Values: Unnamed multi-band raster
+    # Weights: None
+    # Stats: No name references
+    # Names include raster: No
+    # Names include band: No
+    "single_raster_multiband_unnamed": (
+        "{}",
+        None,
+        ["mean", "variety"],
+        ["id", "band_1_mean", "band_2_mean", "band_1_variety", "band_2_variety"],
+    ),
+    # Values: Named multi-band raster
+    # Weights: None
+    # Stats: No name references
+    # Names include raster: Yes
+    # Names include band: Yes
+    "single_raster_single_band_named": (
+        "metric:{}",
+        None,
+        ["mean", "variety"],
+        [
+            "id",
+            "metric_band_1_mean",
+            "metric_band_2_mean",
+            "metric_band_1_variety",
+            "metric_band_2_variety",
+        ],
+    ),
+    # Values: Named multi-band raster
+    # Weights: Named single-band raster
+    # Stats: No name references
+    # Names include raster: Yes
+    # Names include band: Yes
+    "single_raster_weighted_multiband_named": (
+        "metric:{}",
+        "wx:{}[1]",
+        ["weighted_mean", "variety"],
+        [
+            "id",
+            "metric_band_1_wx_weighted_mean",
+            "metric_band_2_wx_weighted_mean",
+            "metric_band_1_variety",
+            "metric_band_2_variety",
+        ],
+    ),
+    # Values: Named single-band raster
+    # Weights: None
+    # Stats: Some reference names, some do not
+    # Names include raster: only if no name reference
+    # Names include band: Yes
+    "single_raster_single_band_named_override": (
+        "metric:{}",
+        None,
+        ["s=mean(metric_band_1)", "variety"],
+        ["id", "s", "metric_band_1_variety", "metric_band_2_variety"],
+    ),
+    # Values: Two unnamed single-band rasters
+    # Weights: None
+    # Stats: No name references
+    # Names include raster: Yes (constructed name)
+    # Names include band: No
+    "multiple_raster_single_band_unnamed": (
+        ("{}[1]", "{}[1]"),
+        None,
+        ["mean", "count"],
+        ["id", "raster0_mean", "raster1_mean", "raster0_count", "raster1_count"],
+    ),
+    # Values: Two unnamed multi-band rasters
+    # Weights: None
+    # Stats: No name references
+    # Names include raster: Yes (constructed name)
+    # Names include band: No
+    "multiple_raster_multiband_unnamed": (
+        ("{}", "{}"),
+        None,
+        ["mean", "count"],
+        [
+            "id",
+            "raster0_band_1_mean",
+            "raster0_band_2_mean",
+            "raster1_band_1_mean",
+            "raster1_band_2_mean",
+            "raster0_band_1_count",
+            "raster0_band_2_count",
+            "raster1_band_1_count",
+            "raster1_band_2_count",
+        ],
+    ),
+    # We have two input rasters and specify a name for one, so we
+    # so we derive a names from the filename of the other
+    "multiple_raster_single_band_some_named": (
+        ("{}[1]", "r0:{}[1]"),
+        None,
+        ["mean", "count(r0)"],
+        ["id", "raster0_mean", "r0_mean", "r0_count"],
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    "raster,weights,stats,expected_names",
+    naming_test_cases.values(),
+    ids=naming_test_cases.keys(),
 )
-def test_multiband_unweighted(
-    run, write_raster, write_features, raster, stats, expected_names
+def test_column_naming(
+    run, write_raster, write_features, raster, weights, stats, expected_names
 ):
 
     data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
     data = np.stack((data, data * 2))
 
+    if type(raster) is str:
+        raster = [raster]
+
+    if weights is None:
+        weights = []
+    elif type(weights) is str:
+        weights = [weights]
+
+    raster_args = [r.format(write_raster(data)) for r in raster]
+    weight_args = [w.format(write_raster(data)) for w in weights]
+
     rows = run(
         polygons=write_features(
             {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
         ),
         fid="id",
-        raster=raster.format(write_raster(data)),
+        raster=raster_args,
+        weights=weight_args,
         stat=stats,
     )
 
     assert len(rows) == 1
-    assert list(rows[0].keys()) == expected_names
-
-
-# def test_multiband_weighted(
-#    run,
-#    write_raster,
-#    write_features,
-#    value_bands,
-#    weight_bands,
-#    raster,
-#    stats,
-#    expected_names,
-# ):
-#    pass
-
-
-@pytest.mark.parametrize(
-    "rasters,stats,expected_names",
-    (
-        (
-            ("{}", "{}"),
-            ["mean", "count"],
-            ["id", "raster0_mean", "raster1_mean", "raster0_count", "raster1_count"],
-        ),
-        (
-            ("{}", "r1:{}"),
-            ["mean", "count(r1)"],
-            ["id", "raster0_mean", "r1_mean", "r1_count"],
-        ),
-    ),
-)
-def test_multiple_rasters(
-    run, write_raster, write_features, rasters, stats, expected_names
-):
-    data1 = np.arange(12, dtype=np.int32).reshape(3, 4)
-    data2 = np.sqrt(data1)
-
-    rows = run(
-        polygons=write_features(
-            {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
-        ),
-        fid="id",
-        raster=[
-            rasters[0].format(write_raster(data1)),
-            rasters[1].format(write_raster(data2)),
-        ],
-        stat=stats,
-    )
-
     assert list(rows[0].keys()) == expected_names
 
 
