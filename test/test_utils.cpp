@@ -1,10 +1,18 @@
 #include "catch.hpp"
+#include "memory_raster_source.h"
 
+#include "operation.h"
 #include "utils.h"
+
+using exactextract::MemoryRasterSource;
+using exactextract::Raster;
+using exactextract::RasterSource;
+using exactextract::RasterVariant;
 
 using exactextract::parse_dataset_descriptor;
 using exactextract::parse_raster_descriptor;
 using exactextract::parse_stat_descriptor;
+using exactextract::prepare_operations;
 
 TEST_CASE("Parsing feature descriptor: no layer specified")
 {
@@ -189,4 +197,76 @@ TEST_CASE("Parsing degenerate stat descriptors")
     CHECK_THROWS_WITH(parse_stat_descriptor("sum(b=2,a)"), Catch::StartsWith("Invalid stat descriptor."));
     CHECK_THROWS_WITH(parse_stat_descriptor("sum(a,b=2,b=3)"), Catch::StartsWith("Invalid stat descriptor."));
     CHECK_THROWS_WITH(parse_stat_descriptor("sum(,a)"), Catch::StartsWith("Invalid stat descriptor."));
+}
+
+auto
+make_rasters(const std::string& prefix, std::size_t n)
+{
+    std::vector<std::unique_ptr<RasterSource>> ret;
+
+    for (std::size_t i = 0; i < n; i++) {
+        ret.emplace_back(std::make_unique<MemoryRasterSource>(
+          RasterVariant(std::make_unique<Raster<float>>(Raster<float>::make_empty()))));
+        ret.back()->set_name(prefix + "_" + std::to_string(n));
+    }
+
+    return ret;
+}
+
+TEST_CASE("prepare_operations")
+{
+    SECTION("values are recycled")
+    {
+        auto values = make_rasters("v", 3);
+        auto weights = make_rasters("w", 1);
+        std::vector<std::string> stats{ "weighted_mean" };
+
+        auto ops = prepare_operations(stats, values, weights);
+
+        CHECK(ops.size() == 3);
+        for (std::size_t i = 0; i < ops.size(); i++) {
+            CHECK(ops[i]->values == values[i].get());
+            CHECK(ops[i]->weights == weights[0].get());
+        }
+    }
+
+    SECTION("weights are recycled")
+    {
+        auto values = make_rasters("v", 1);
+        auto weights = make_rasters("w", 3);
+        std::vector<std::string> stats{ "weighted_mean" };
+
+        auto ops = prepare_operations(stats, values, weights);
+
+        CHECK(ops.size() == 3);
+        for (std::size_t i = 0; i < ops.size(); i++) {
+            CHECK(ops[i]->values == values[0].get());
+            CHECK(ops[i]->weights == weights[i].get());
+        }
+    }
+
+    SECTION("values and weights are paired bandwise")
+    {
+        auto values = make_rasters("v", 3);
+        auto weights = make_rasters("w", 3);
+        std::vector<std::string> stats{ "weighted_mean" };
+
+        auto ops = prepare_operations(stats, values, weights);
+
+        CHECK(ops.size() == 3);
+        for (std::size_t i = 0; i < ops.size(); i++) {
+            CHECK(ops[i]->values == values[i].get());
+            CHECK(ops[i]->weights == weights[i].get());
+        }
+    }
+
+    SECTION("values and weights have incompatible lengths")
+    {
+        auto values = make_rasters("v", 3);
+        auto weights = make_rasters("w", 2);
+        std::vector<std::string> stats{ "weighted_mean" };
+
+        CHECK_THROWS_WITH(prepare_operations(stats, values, weights),
+                          Catch::Contains("number of bands"));
+    }
 }
