@@ -26,7 +26,7 @@ void
 bind_operation(py::module& m)
 {
     py::class_<Operation>(m, "Operation")
-      .def(py::init<std::string, std::string, RasterSource*, RasterSource*>())
+      .def(py::init<std::string, std::string, RasterSource*, RasterSource*, std::map<std::string, std::string>>())
       .def_property_readonly("column_names_known", &Operation::column_names_known)
       .def("field_names", &Operation::field_names)
       .def("grid", &Operation::grid)
