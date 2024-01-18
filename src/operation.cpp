@@ -19,6 +19,18 @@ make_field_name(const std::string& prefix, const T& value)
     }
 }
 
+std::optional<double>
+read(const std::string& value)
+{
+    char* end = nullptr;
+    double d = std::strtod(value.data(), &end);
+    if (end == value.data() + value.size()) {
+        return d;
+    }
+
+    return std::nullopt;
+}
+
 template<typename T>
 T
 extract_arg(Operation::ArgMap& options, const std::string& name)
@@ -30,14 +42,14 @@ extract_arg(Operation::ArgMap& options, const std::string& name)
 
     const std::string& raw_value = it->second;
 
-    T value;
-    if (std::from_chars(raw_value.data(), raw_value.data() + raw_value.size(), value).ec == std::errc{}) {
-        options.erase(it);
-    } else {
+    // std::from_chars not supported in clang
+    auto parsed = read(raw_value);
+    if (!parsed.has_value()) {
         throw std::runtime_error("Failed to parse value of argument: " + name);
     }
 
-    return value;
+    options.erase(it);
+    return parsed.value();
 }
 
 Operation::
