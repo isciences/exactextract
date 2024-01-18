@@ -16,6 +16,7 @@
 #include "raster_source.h"
 
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 
