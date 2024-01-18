@@ -201,7 +201,8 @@ prepare_operations_implicit(
         throw std::runtime_error("Value and weight rasters must have a single band or the same number of bands.");
     }
 
-    for (std::size_t i = 0; i < values.size(); i++) {
+    std::size_t nops = std::max(values.size(), weights.size());
+    for (std::size_t i = 0; i < nops; i++) {
         RasterSource* v = &*values[i % values.size()];
         RasterSource* w = weights.empty() ? nullptr : &*weights[i % weights.size()];
 
@@ -225,12 +226,12 @@ prepare_operations_explicit(
     std::unordered_map<std::string, RasterSource*> weights_map;
 
     for (const auto& rast : raster_sources) {
-        source_map[rast->name()] = rast.get();
-        weights_map[rast->name()] = rast.get();
+        source_map[rast->name()] = rast;
+        weights_map[rast->name()] = rast;
     }
 
     for (const auto& rast : weight_sources) {
-        weights_map[rast->name()] = rast.get();
+        weights_map[rast->name()] = rast;
     }
 
     auto values_it = source_map.find(stat.values);
@@ -258,10 +259,28 @@ prepare_operations_explicit(
 }
 
 std::vector<std::unique_ptr<Operation>>
+prepare_operations(const std::vector<std::string>& descriptors,
+                   const std::vector<std::unique_ptr<RasterSource>>& p_rasters,
+                   const std::vector<std::unique_ptr<RasterSource>>& p_weights)
+{
+    std::vector<RasterSource*> rasters(p_rasters.size());
+    std::vector<RasterSource*> weights(p_weights.size());
+
+    for (std::size_t i = 0; i < p_rasters.size(); i++) {
+        rasters[i] = p_rasters[i].get();
+    }
+    for (std::size_t i = 0; i < p_weights.size(); i++) {
+        weights[i] = p_weights[i].get();
+    }
+
+    return prepare_operations(descriptors, rasters, weights);
+}
+
+std::vector<std::unique_ptr<Operation>>
 prepare_operations(
   const std::vector<std::string>& descriptors,
-  const std::vector<std::unique_ptr<RasterSource>>& rasters,
-  const std::vector<std::unique_ptr<RasterSource>>& weights)
+  const RasterSourceVect& rasters,
+  const RasterSourceVect& weights)
 {
     std::vector<std::unique_ptr<Operation>> ops;
 

@@ -42,12 +42,17 @@ parse_raster_descriptor(const std::string& descriptor);
 StatDescriptor
 parse_stat_descriptor(const std::string& descriptor);
 
-using RasterSourceVect = std::vector<std::unique_ptr<RasterSource>>;
+using RasterSourceVect = std::vector<RasterSource*>;
 
 std::vector<std::unique_ptr<Operation>>
 prepare_operations(const std::vector<std::string>& descriptors,
                    const RasterSourceVect& rasters,
                    const RasterSourceVect& weights);
+
+std::vector<std::unique_ptr<Operation>>
+prepare_operations(const std::vector<std::string>& descriptors,
+                   const std::vector<std::unique_ptr<RasterSource>>& rasters,
+                   const std::vector<std::unique_ptr<RasterSource>>& weights);
 
 // https://stackoverflow.com/a/2072890
 inline bool
