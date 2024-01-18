@@ -19,6 +19,7 @@ class Operation(_Operation):
         field_name: str,
         raster: RasterSource,
         weights: Optional[RasterSource] = None,
+        options=None,
     ):
         """
         Create Operation object from stat name, field name, raster, and weighted raster
@@ -31,4 +32,10 @@ class Operation(_Operation):
         """
         if raster is None:
             raise TypeError
-        super().__init__(stat_name, field_name, raster, weights)
+
+        if options is None:
+            options = {}
+
+        args = {str(k): str(v) for k, v in options.items()}
+
+        super().__init__(stat_name, field_name, raster, weights, args)

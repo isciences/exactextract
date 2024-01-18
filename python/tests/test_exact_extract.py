@@ -51,7 +51,8 @@ def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
         ("mode", 5),
         ("majority", 5),
         ("minority", 1),
-        # TODO: add quantiles
+        ("quantile(q=0.25)", {"quantile_25": 3}),
+        ("quantile(q=0.75)", {"quantile_75": 6}),
         ("variety", 9),
         ("variance", 5),
         ("stdev", math.sqrt(5)),
@@ -83,6 +84,9 @@ def test_basic_stats(stat, expected, output_format):
     square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
 
     result = exact_extract(rast, square, stat, output=output_format)
+
+    if type(expected) is dict:
+        stat, expected = next(iter(expected.items()))
 
     if output_format == "geojson":
         value = result[0]["properties"][stat]

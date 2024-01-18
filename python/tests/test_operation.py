@@ -57,3 +57,9 @@ def test_valid_weights(np_raster_source):
 def test_invalid_weights(np_raster_source):
     with pytest.raises(TypeError):
         Operation("count", "test", np_raster_source, "invalid")  # type: ignore
+
+
+def test_stat_arguments(np_raster_source):
+
+    op = Operation("quantile", "test", np_raster_source, None, {"q": 0.333})
+    assert op.values == np_raster_source
