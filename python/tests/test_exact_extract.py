@@ -467,6 +467,11 @@ def test_include_cols(strategy):
     assert results[1]["properties"] == {"a": 4.2, "type": "pear", "count": 4.0}
     assert results[1]["geometry"]["type"] == "Polygon"
 
+    # include_cols may also be a string
+    results = exact_extract(rast, features, "count", include_cols="type")
+
+    assert results[0]["properties"]["type"] == "apple"
+
 
 def test_error_no_weights():
     rast = NumPyRasterSource(np.arange(1, 13).reshape(3, 4))

@@ -198,6 +198,9 @@ def exact_extract(
 
     ops = prep_ops(ops, rast, weights)
 
+    if type(include_cols) is str:
+        include_cols = [include_cols]
+
     Processor = prep_processor(strategy)
 
     writer = prep_writer(output, vec.srs_wkt())
