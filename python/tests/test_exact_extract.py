@@ -213,17 +213,17 @@ def test_multiband():
     assert len(results) == len(squares)
 
     assert results[0]["properties"] == {
-        "mean_a": 7.0,
-        "count_a": 0.25,
-        "mean_b": 14.0,
-        "count_b": 0.25,
+        "a_mean": 7.0,
+        "a_count": 0.25,
+        "b_mean": 14.0,
+        "b_count": 0.25,
     }
 
     assert results[1]["properties"] == {
-        "mean_a": 5.0,
-        "count_a": 4.0,
-        "mean_b": 10.0,
-        "count_b": 4.0,
+        "a_mean": 5.0,
+        "a_count": 4.0,
+        "b_mean": 10.0,
+        "b_count": 4.0,
     }
 
 
@@ -246,19 +246,19 @@ def test_weighted_multiband():
 
     assert results[0]["properties"] == pytest.approx(
         {
-            "mean_a": 7.0,
-            "mean_b": 14.0,
-            "weighted_mean_a_w1": 7.0,
-            "weighted_mean_b_w2": float("nan"),
+            "a_mean": 7.0,
+            "b_mean": 14.0,
+            "a_w1_weighted_mean": 7.0,
+            "b_w2_weighted_mean": float("nan"),
         },
         nan_ok=True,
     )
 
     assert results[1]["properties"] == {
-        "mean_a": 5.0,
-        "mean_b": 10.0,
-        "weighted_mean_a_w1": 7.0,
-        "weighted_mean_b_w2": 10.0,
+        "a_mean": 5.0,
+        "b_mean": 10.0,
+        "a_w1_weighted_mean": 7.0,
+        "b_w2_weighted_mean": 10.0,
     }
 
 
@@ -277,10 +277,10 @@ def test_weighted_multiband_values():
     assert len(results) == 1
 
     assert results[0]["properties"] == {
-        "mean_a": 5.0,
-        "mean_b": 10.0,
-        "weighted_mean_a_w": 7.0,
-        "weighted_mean_b_w": 14.0,
+        "a_mean": 5.0,
+        "b_mean": 10.0,
+        "a_w_weighted_mean": 7.0,
+        "b_w_weighted_mean": 14.0,
     }
 
 
@@ -299,9 +299,9 @@ def test_weighted_multiband_weights():
     assert len(results) == 1
 
     assert results[0]["properties"] == {
-        "mean_a": 5.0,
-        "weighted_mean_a_w1": 7.0,
-        "weighted_mean_a_w2": 5.0,
+        "a_mean": 5.0,
+        "a_w1_weighted_mean": 7.0,
+        "a_w2_weighted_mean": 5.0,
     }
 
 
@@ -402,16 +402,16 @@ def open_with_lib(fname, libname):
             ),
             [
                 {
-                    "count_band_1": 0.25,
-                    "count_band_2": 0.25,
-                    "mean_band_1": 7.0,
-                    "mean_band_2": 14.0,
+                    "band_1_count": 0.25,
+                    "band_2_count": 0.25,
+                    "band_1_mean": 7.0,
+                    "band_2_mean": 14.0,
                 },
                 {
-                    "count_band_1": 4.0,
-                    "count_band_2": 4.0,
-                    "mean_band_1": 5.0,
-                    "mean_band_2": 10.0,
+                    "band_1_count": 4.0,
+                    "band_2_count": 4.0,
+                    "band_1_mean": 5.0,
+                    "band_2_mean": 10.0,
                 },
             ],
         ),

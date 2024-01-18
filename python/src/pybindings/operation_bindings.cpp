@@ -17,6 +17,7 @@
 #include "operation.h"
 #include "operation_bindings.h"
 #include "raster_source.h"
+#include "utils.h"
 
 namespace py = pybind11;
 
@@ -34,5 +35,7 @@ bind_operation(py::module& m)
       .def_readonly("name", &Operation::name)
       .def_readonly("values", &Operation::values)
       .def_readonly("weights", &Operation::weights);
+
+    m.def("prepare_operations", py::overload_cast<const std::vector<std::string>&, const std::vector<RasterSource*>&, const std::vector<RasterSource*>&>(&prepare_operations));
 }
 }

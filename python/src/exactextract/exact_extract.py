@@ -6,7 +6,7 @@ from .feature_source import (
     GeoPandasFeatureSource,
     JSONFeatureSource,
 )
-from .operation import Operation
+from .operation import prepare_operations
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
 from .raster_source import (
     GDALRasterSource,
@@ -133,48 +133,14 @@ def prep_vec(vec):
     raise Exception("Unhandled feature datatype")
 
 
-def prep_ops(stats, value_rast, weights_rast=None):
+def prep_ops(stats, values, weights=None):
     if type(stats) is str:
         stats = [stats]
 
-    ops = []
+    if weights is None:
+        weights = []
 
-    if weights_rast is None:
-        weights_rast = [None]
-
-    full_names = len(value_rast) > 1 or len(weights_rast) > 1
-
-    def make_name(v, w, stat):
-        if not full_names:
-            return stat
-
-        if stat.startswith("weighted"):
-            if w:
-                return f"{stat}_{v.name()}_{w.name()}"
-            else:
-                raise ValueError(f"No weights specified for {stat}")
-
-        return f"{stat}_{v.name()}"
-
-    if len(weights_rast) == len(value_rast):
-        for v, w in zip(value_rast, weights_rast):
-            ops += [Operation(stat, make_name(v, w, stat), v, w) for stat in stats]
-    elif len(value_rast) > 1 and len(weights_rast) == 1:
-        # recycle weights
-        w = weights_rast[0]
-        for v in value_rast:
-            ops += [Operation(stat, make_name(v, w, stat), v, w) for stat in stats]
-    elif len(value_rast) == 1 and len(weights_rast) > 1:
-        # recycle values
-        v = value_rast[0]
-        for w in weights_rast:
-            ops += [Operation(stat, make_name(v, w, stat), v, w) for stat in stats]
-    else:
-        raise ValueError
-
-    # TODO dedup ops (non-weighted ops included with weighted)
-
-    return ops
+    return prepare_operations(stats, values, weights)
 
 
 def prep_processor(strategy):
