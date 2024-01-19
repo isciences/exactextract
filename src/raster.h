@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 ISciences, LLC.
+// Copyright (c) 2018-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_RASTER_H
-#define EXACTEXTRACT_RASTER_H
+#pragma once
 
 #include <array>
 #include <cmath>
@@ -42,6 +41,9 @@ class AbstractRaster
       , m_has_nodata{ true }
     {
     }
+
+    AbstractRaster(AbstractRaster&& other) = default;
+    AbstractRaster& operator=(AbstractRaster&& other) = default;
 
     virtual ~AbstractRaster() = default;
 
@@ -108,6 +110,11 @@ class AbstractRaster
         if (m_has_nodata && val == m_nodata) {
             return false;
         }
+
+        if (m_mask && !m_mask->operator()(row, col)) {
+            return false;
+        }
+
         if constexpr (std::is_floating_point<T>::value) {
             if (std::isnan(val)) {
                 return false;
@@ -121,6 +128,11 @@ class AbstractRaster
     {
         m_has_nodata = true;
         m_nodata = val;
+    }
+
+    void set_mask(std::unique_ptr<AbstractRaster<std::int8_t>> mask)
+    {
+        m_mask = std::move(mask);
     }
 
     bool operator==(const AbstractRaster<T>& other) const
@@ -239,6 +251,7 @@ class AbstractRaster
     Grid<bounded_extent> m_grid;
     T m_nodata;
     bool m_has_nodata;
+    std::unique_ptr<AbstractRaster<std::int8_t>> m_mask;
 };
 
 using RasterVariant = std::variant<
@@ -393,5 +406,3 @@ operator<<(std::ostream& os, const AbstractRaster<T>& m)
     return os;
 }
 }
-
-#endif // EXACTEXTRACT_RASTER_H
