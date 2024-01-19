@@ -101,7 +101,21 @@ class Operation
         return false;
     }
 
-    /// Returns a constructed `Grid` representing the common grid between
+    /// Return the minimum fraction of a pixel that must be covered for its value
+    /// to be considered in this `Operation`.
+    float min_coverage() const
+    {
+        return m_min_coverage;
+    }
+
+    /// Returns whether pixel covered fractions should be considered in this `Operation`,
+    /// or if calculations should equally weight all included pixels.
+    bool coverage_as_binary() const
+    {
+        return m_coverage_as_binary;
+    }
+
+    /// Returns a newly constructed `Grid` representing the common grid between
     /// the value and weighting rasters
     Grid<bounded_extent> grid() const;
 
@@ -136,7 +150,8 @@ class Operation
     Operation(std::string stat,
               std::string name,
               RasterSource* values,
-              RasterSource* weights = nullptr);
+              RasterSource* weights,
+              ArgMap& options);
 
     std::string m_key;
 
@@ -147,6 +162,9 @@ class Operation
     missing_value_t get_missing_value();
 
     const StatsRegistry::RasterStatsVariant& empty_stats() const;
+
+    float m_min_coverage;
+    bool m_coverage_as_binary;
 };
 
 }

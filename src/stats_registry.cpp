@@ -27,6 +27,8 @@ StatsRegistry::prepare(const Operation& op)
     m_stats_options.store_coverage_fraction |= op.requires_stored_coverage_fractions();
     m_stats_options.store_xy |= op.requires_stored_locations();
     m_stats_options.calc_variance |= op.requires_variance();
+    m_stats_options.coverage_as_binary |= op.coverage_as_binary();
+    m_stats_options.min_coverage_fraction = op.min_coverage();
 }
 
 void
