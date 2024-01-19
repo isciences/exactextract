@@ -4,7 +4,8 @@
 import os
 
 import numpy as np
-from _exactextract import RasterSource
+
+from ._exactextract import RasterSource
 
 
 class GDALRasterSource(RasterSource):

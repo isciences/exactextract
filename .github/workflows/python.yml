@@ -30,7 +30,6 @@ jobs:
         environment-file: .github/python_test_env.yml
 
     - name: Install
-      working-directory: ./python
       run: pip install . -v
 
     - name: Test
