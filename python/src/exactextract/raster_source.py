@@ -115,7 +115,7 @@ class NumPyRasterSource(RasterSource):
         return self.nodata
 
     def read_window(self, x0, y0, nx, ny):
-        return self.mat[y0 : y0 + ny, x0 : x0 + ny]
+        return self.mat[y0 : y0 + ny, x0 : x0 + nx]
 
 
 class RasterioRasterSource(RasterSource):
