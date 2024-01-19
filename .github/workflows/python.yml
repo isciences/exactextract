@@ -35,4 +35,14 @@ jobs:
     - name: Test
       run: pytest python/tests
       
+    - name: Build source distribution
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      run: python -m build . --sdist
+
+    - name: Upload distribution(s)
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.os }}-py${{ matrix.python-version }}
+        path: ./dist/*
 
