@@ -32,6 +32,7 @@ class AbstractRaster
       : m_grid{ ex }
       , m_nodata{ std::is_floating_point<T>::value ? std::numeric_limits<T>::quiet_NaN() : std::numeric_limits<T>::min() }
       , m_has_nodata{ false }
+      , m_mask{ nullptr }
     {
     }
 
@@ -39,6 +40,7 @@ class AbstractRaster
       : m_grid{ ex }
       , m_nodata{ nodata_val }
       , m_has_nodata{ true }
+      , m_mask{ nullptr }
     {
     }
 

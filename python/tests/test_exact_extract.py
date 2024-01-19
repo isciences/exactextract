@@ -110,6 +110,53 @@ def test_basic_stats(stat, expected, output_format):
         assert expected.dtype == value.dtype
 
 
+def test_coverage_ignore_fraction():
+    # when coverage_weight=none, we ignore the coverage fraction and count
+    # all touched pixels equally
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 1.0, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        ["mean(coverage_weight=none)", "count(coverage_weight=none)"],
+    )[0]["properties"]
+
+    assert result == {"count": 6.0, "mean": 3.5}
+
+
+def test_min_coverage():
+    # with min_coverage_frac we can exclude pixels that are not fully covered
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        ["cell_id(min_coverage_frac=0.49)", "count(min_coverage_frac=0.49)"],
+    )[0]["properties"]
+
+    assert list(result["cell_id"]) == [1, 3, 4, 5, 7]
+    assert result["count"] == 3.0
+
+
+def test_min_coverage_ignore_fraction():
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        [
+            "cell_id(min_coverage_frac=0,coverage_weight=none)",
+            "sum(min_coverage_frac=0,coverage_weight=none)",
+        ],
+    )[0]["properties"]
+
+    assert list(result["cell_id"]) == [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    assert result["sum"] == np.arange(1, 10).sum()
+
+
 @pytest.mark.parametrize("output_format", ("geojson", "pandas"), indirect=True)
 def test_multiple_stats(output_format):
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))

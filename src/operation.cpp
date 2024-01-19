@@ -41,6 +41,14 @@ make_field_name(const std::string& prefix, const T& value)
     }
 }
 
+template<typename T>
+std::optional<T>
+read(const std::string& value)
+{
+    return value;
+}
+
+template<>
 std::optional<double>
 read(const std::string& value)
 {
@@ -53,19 +61,40 @@ read(const std::string& value)
     return std::nullopt;
 }
 
+template<>
+std::optional<bool>
+read(const std::string& value)
+{
+    std::string value_lower = value;
+    for (auto& c : value_lower) {
+        c = std::tolower(c);
+    }
+    if (value == "yes" || value == "true") {
+        return true;
+    }
+    if (value == "no" || value == "false") {
+        return false;
+    }
+    return std::nullopt;
+}
+
 template<typename T>
 T
-extract_arg(Operation::ArgMap& options, const std::string& name)
+extract_arg(Operation::ArgMap& options, const std::string& name, std::optional<T> default_value = std::nullopt)
 {
     auto it = options.find(name);
     if (it == options.end()) {
+        if (default_value.has_value()) {
+            return default_value.value();
+        }
+
         throw std::runtime_error("Missing required argument: " + name);
     }
 
     const std::string& raw_value = it->second;
 
     // std::from_chars not supported in clang
-    auto parsed = read(raw_value);
+    auto parsed = read<T>(raw_value);
     if (!parsed.has_value()) {
         throw std::runtime_error("Failed to parse value of argument: " + name);
     }
@@ -95,7 +124,7 @@ class OperationImpl : public Operation
                   RasterSource* p_values,
                   RasterSource* p_weights,
                   ArgMap options)
-      : Operation(p_stat, "", p_values, p_weights)
+      : Operation(p_stat, "", p_values, p_weights, options)
     {
         static_cast<Derived*>(this)->handle_options(options);
 
@@ -392,22 +421,34 @@ Operation::
   Operation(std::string p_stat,
             std::string p_name,
             RasterSource* p_values,
-            RasterSource* p_weights)
+            RasterSource* p_weights,
+            ArgMap& options)
   : stat{ std::move(p_stat) }
   , name{ std::move(p_name) }
   , values{ p_values }
   , weights{ p_weights }
   , m_missing{ get_missing_value() }
 {
+    m_min_coverage = static_cast<float>(extract_arg<double>(options, "min_coverage_frac", 0.0));
+    std::string coverage_type = extract_arg<std::string>(options, "coverage_weight", "fraction");
+    if (coverage_type == "fraction") {
+        m_coverage_as_binary = false;
+    } else if (coverage_type == "none") {
+        m_coverage_as_binary = true;
+    } else {
+        throw std::runtime_error("Unexpected coverage_weight type: " + coverage_type);
+    }
+
     if (starts_with(stat, "weighted") && weights == nullptr) {
         throw std::runtime_error("No weights provided for weighted stat: " + stat);
     }
 
-    if (weighted()) {
-        m_key = values->name() + "|" + weights->name();
-    } else {
-        m_key = values->name();
-    }
+    std::stringstream ss;
+    ss << "values:" << values->name();
+    ss << "|weights:" << (weights ? weights->name() : "");
+    ss << "|mincov:" << m_min_coverage;
+    ss << "|fullpx:" << m_coverage_as_binary;
+    m_key = ss.str();
 }
 
 bool

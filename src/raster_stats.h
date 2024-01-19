@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_RASTER_STATS_H
-#define EXACTEXTRACT_RASTER_STATS_H
+#pragma once
 
 #include <algorithm>
 #include <limits>
@@ -27,12 +26,14 @@ namespace exactextract {
 
 struct RasterStatsOptions
 {
+    float min_coverage_fraction = 0.0;
     bool calc_variance = false;
     bool store_histogram = false;
     bool store_values = false;
     bool store_weights = false;
     bool store_coverage_fraction = false;
     bool store_xy = false;
+    bool coverage_as_binary = false;
 };
 
 template<typename T>
@@ -71,7 +72,7 @@ class RasterStats
             for (size_t j = 0; j < rv.cols(); j++) {
                 float pct_cov = intersection_percentages(i, j);
                 T val;
-                if (pct_cov > 0 && rv.get(i, j, val)) {
+                if (pct_cov > m_options.min_coverage_fraction && rv.get(i, j, val)) {
                     process_location(intersection_percentages.grid(), i, j);
                     process_value(val, pct_cov, 1.0);
                 }
@@ -114,7 +115,7 @@ class RasterStats
                 WeightType weight;
                 ValueType val;
 
-                if (pct_cov > 0 && rv.get(i, j, val)) {
+                if (pct_cov > m_options.min_coverage_fraction && rv.get(i, j, val)) {
                     process_location(common, i, j);
 
                     if (wv.get(i, j, weight)) {
@@ -138,6 +139,14 @@ class RasterStats
 
     void process_value(const T& val, float coverage, double weight)
     {
+        if (m_options.store_coverage_fraction) {
+            m_cell_cov.push_back(coverage);
+        }
+
+        if (m_options.coverage_as_binary) {
+            coverage = 1.0f;
+        }
+
         m_sum_ci += static_cast<double>(coverage);
         m_sum_xici += static_cast<double>(val) * static_cast<double>(coverage);
 
@@ -169,10 +178,6 @@ class RasterStats
             entry.m_sum_ci += static_cast<double>(coverage);
             entry.m_sum_ciwi += ciwi;
             m_quantiles.reset();
-        }
-
-        if (m_options.store_coverage_fraction) {
-            m_cell_cov.push_back(coverage);
         }
 
         if (m_options.store_values) {
@@ -714,5 +719,3 @@ operator<<(std::ostream& os, const RasterStats<T>& stats)
     return os;
 }
 }
-
-#endif
