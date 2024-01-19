@@ -55,7 +55,7 @@ jobs:
     - name: test
       run: |
         cd build
-        valgrind --leak-check=full --error-exitcode=1 ./catch_tests
+        valgrind --leak-check=full --error-exitcode=1 test/catch_tests
         ctest -R cli --output-on-failure
         ctest -R pybindings --output-on-failure
     - name: generate coverage report
