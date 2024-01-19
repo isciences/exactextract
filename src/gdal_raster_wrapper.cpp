@@ -116,27 +116,56 @@ GDALRasterWrapper::read_box(const Box& box)
         }
     }
 
-    if (!cropped_grid.empty()) {
-        auto error = GDALRasterIO(m_band,
-                                  GF_Read,
-                                  (int)cropped_grid.col_offset(m_grid),
-                                  (int)cropped_grid.row_offset(m_grid),
-                                  (int)cropped_grid.cols(),
-                                  (int)cropped_grid.rows(),
-                                  buffer,
-                                  (int)cropped_grid.cols(),
-                                  (int)cropped_grid.rows(),
-                                  read_type,
-                                  0,
-                                  0);
+    if (cropped_grid.empty()) {
+        return ret;
+    }
 
-        if (error) {
-            throw std::runtime_error("Error reading from raster.");
-        }
+    auto error = GDALRasterIO(m_band,
+                              GF_Read,
+                              (int)cropped_grid.col_offset(m_grid),
+                              (int)cropped_grid.row_offset(m_grid),
+                              (int)cropped_grid.cols(),
+                              (int)cropped_grid.rows(),
+                              buffer,
+                              (int)cropped_grid.cols(),
+                              (int)cropped_grid.rows(),
+                              read_type,
+                              0,
+                              0);
+
+    if (error) {
+        throw std::runtime_error("Error reading from raster.");
     }
 
     if (has_scale || has_offset) {
         apply_scale_and_offset(static_cast<double*>(buffer), cropped_grid.size(), scale, offset);
+    }
+
+    if (GDALRasterBandH mask = GDALGetMaskBand(m_band)) {
+        auto mask_rast = make_raster<std::int8_t>(cropped_grid);
+        buffer = mask_rast->data().data();
+
+        error = GDALRasterIO(mask,
+                             GF_Read,
+                             (int)cropped_grid.col_offset(m_grid),
+                             (int)cropped_grid.row_offset(m_grid),
+                             (int)cropped_grid.cols(),
+                             (int)cropped_grid.rows(),
+                             buffer,
+                             (int)cropped_grid.cols(),
+                             (int)cropped_grid.rows(),
+                             GDT_Byte,
+                             0,
+                             0);
+
+        std::visit([&mask_rast](auto& rast) {
+            rast->set_mask(std::move(mask_rast));
+        },
+                   ret);
+
+        if (error) {
+            throw std::runtime_error("Error reading from raster.");
+        }
     }
 
     return ret;
