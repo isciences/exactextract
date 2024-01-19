@@ -19,6 +19,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace exactextract {
 
@@ -208,7 +209,7 @@ prepare_operations_implicit(
 
         ops.push_back(Operation::create(
           sd.stat,
-          make_name(v, w, sd.stat, full_names),
+          sd.name.empty() ? make_name(v, w, sd.stat, full_names) : sd.name,
           v,
           w,
           sd.args));
@@ -276,6 +277,18 @@ prepare_operations(const std::vector<std::string>& descriptors,
     return prepare_operations(descriptors, rasters, weights);
 }
 
+static void
+check_unique_names(const std::vector<std::unique_ptr<Operation>>& ops)
+{
+    std::unordered_set<std::string> op_names;
+    for (const auto& op : ops) {
+        bool inserted = op_names.insert(op->name).second;
+        if (!inserted) {
+            throw std::runtime_error("Operation name is not unique: " + op->name);
+        }
+    }
+}
+
 std::vector<std::unique_ptr<Operation>>
 prepare_operations(
   const std::vector<std::string>& descriptors,
@@ -293,6 +306,8 @@ prepare_operations(
             prepare_operations_explicit(ops, parsed, rasters, weights);
         }
     }
+
+    check_unique_names(ops);
 
     return ops;
 }

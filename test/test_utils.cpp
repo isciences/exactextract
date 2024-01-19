@@ -204,10 +204,10 @@ make_rasters(const std::string& prefix, std::size_t n)
 {
     std::vector<std::unique_ptr<RasterSource>> ret;
 
-    for (std::size_t i = 0; i < n; i++) {
+    for (std::size_t i = 1; i <= n; i++) {
         ret.emplace_back(std::make_unique<MemoryRasterSource>(
           RasterVariant(std::make_unique<Raster<float>>(Raster<float>::make_empty()))));
-        ret.back()->set_name(prefix + "_" + std::to_string(n));
+        ret.back()->set_name(prefix + std::to_string(i));
     }
 
     return ret;
@@ -215,7 +215,7 @@ make_rasters(const std::string& prefix, std::size_t n)
 
 TEST_CASE("prepare_operations")
 {
-    SECTION("values are recycled")
+    SECTION("weights are recycled")
     {
         auto values = make_rasters("v", 3);
         auto weights = make_rasters("w", 1);
@@ -228,9 +228,13 @@ TEST_CASE("prepare_operations")
             CHECK(ops[i]->values == values[i].get());
             CHECK(ops[i]->weights == weights[0].get());
         }
+
+        CHECK(ops[0]->name == "v1_w1_weighted_mean");
+        CHECK(ops[1]->name == "v2_w1_weighted_mean");
+        CHECK(ops[2]->name == "v3_w1_weighted_mean");
     }
 
-    SECTION("weights are recycled")
+    SECTION("values are recycled")
     {
         auto values = make_rasters("v", 1);
         auto weights = make_rasters("w", 3);
@@ -243,6 +247,10 @@ TEST_CASE("prepare_operations")
             CHECK(ops[i]->values == values[0].get());
             CHECK(ops[i]->weights == weights[i].get());
         }
+
+        CHECK(ops[0]->name == "v1_w1_weighted_mean");
+        CHECK(ops[1]->name == "v1_w2_weighted_mean");
+        CHECK(ops[2]->name == "v1_w3_weighted_mean");
     }
 
     SECTION("values and weights are paired bandwise")
@@ -258,6 +266,10 @@ TEST_CASE("prepare_operations")
             CHECK(ops[i]->values == values[i].get());
             CHECK(ops[i]->weights == weights[i].get());
         }
+
+        CHECK(ops[0]->name == "v1_w1_weighted_mean");
+        CHECK(ops[1]->name == "v2_w2_weighted_mean");
+        CHECK(ops[2]->name == "v3_w3_weighted_mean");
     }
 
     SECTION("values and weights have incompatible lengths")
@@ -268,5 +280,25 @@ TEST_CASE("prepare_operations")
 
         CHECK_THROWS_WITH(prepare_operations(stats, values, weights),
                           Catch::Contains("number of bands"));
+    }
+
+    SECTION("error when operation names are duplicated")
+    {
+        auto values = make_rasters("v", 1);
+        std::vector<std::unique_ptr<RasterSource>> weights;
+        std::vector<std::string> stats{ "mean", "mean(min_coverage_frac=0.25)" };
+
+        CHECK_THROWS_WITH(prepare_operations(stats, values, weights),
+                          Catch::Contains("name is not unique"));
+
+        // overriding a name solves the problem
+        stats = { "mean", "adj_mean=mean(min_coverage_frac=0.25)" };
+
+        auto ops = prepare_operations(stats, values, weights);
+
+        CHECK(ops.size() == 2);
+
+        CHECK(ops[0]->name == "mean");
+        CHECK(ops[1]->name == "adj_mean");
     }
 }
