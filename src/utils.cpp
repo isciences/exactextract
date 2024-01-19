@@ -196,13 +196,21 @@ prepare_operations_implicit(
   const RasterSourceVect& values,
   const RasterSourceVect& weights)
 {
+    auto nvalues = values.size();
+    auto nweights = weights.size();
+    if (!starts_with(sd.stat, "weighted")) {
+        // Avoid looping over weights and generating duplicate Operations
+        // for an unweighted stat
+        nweights = std::min(nweights, 1ul);
+    }
+
     const bool full_names = values.size() > 1 || weights.size() > 1;
 
-    if (values.size() > 1 && weights.size() > 1 && values.size() != weights.size()) {
+    if (nvalues > 1 && nweights > 1 && nvalues != nweights) {
         throw std::runtime_error("Value and weight rasters must have a single band or the same number of bands.");
     }
 
-    std::size_t nops = std::max(values.size(), weights.size());
+    std::size_t nops = std::max(nvalues, nweights);
     for (std::size_t i = 0; i < nops; i++) {
         RasterSource* v = &*values[i % values.size()];
         RasterSource* w = weights.empty() ? nullptr : &*weights[i % weights.size()];
