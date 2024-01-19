@@ -610,3 +610,20 @@ def test_geopandas_output():
     assert result.area[0] == 9
 
     assert "Vermont" in str(result.geometry.crs)
+
+
+def test_masked_array():
+    data = np.arange(1, 10, dtype=np.int32).reshape(3, 3)
+    invalid = np.array(
+        [[False, False, False], [True, True, True], [False, False, False]]
+    )
+
+    masked = np.ma.masked_array(data, invalid)
+
+    rast = NumPyRasterSource(masked)
+
+    square = make_rect(0, 0, 3, 3)
+
+    result = exact_extract(rast, square, ["values"])[0]["properties"]
+
+    assert np.array_equal(result["values"], masked.compressed())

@@ -59,6 +59,15 @@ class PyRasterSourceBase : public RasterSource
             rast->set_nodata(nodata.cast<T>());
         }
 
+        if (hasattr(values, "mask")) {
+            py::object np = py::module_::import("numpy");
+            py::function invert = np.attr("invert");
+            py::array mask = values.attr("mask");
+            py::array invmask = invert(mask);
+            auto mask_rast = std::make_unique<NumPyRaster<std::int8_t>>(invmask, grid);
+            rast->set_mask(std::move(mask_rast));
+        }
+
         return rast;
     }
 
