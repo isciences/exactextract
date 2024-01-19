@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import subprocess
 
@@ -28,6 +29,9 @@ def run(tmpdir):
                     arglist += [f"--{arg_name}", f"{v}"]
 
         cmd = [str(x) for x in ["./exactextract", "-o", output_fname] + arglist]
+
+        if os.environ.get("USE_VALGRIND", "NO") == "YES":
+            cmd.insert(0, "valgrind")
 
         cmd_str = " ".join([x if x.startswith("-") else f'"{x}"' for x in cmd])
 
@@ -59,7 +63,7 @@ def write_raster(tmp_path):
 
     files = []
 
-    def writer(data, nodata=None, scale=None, offset=None):
+    def writer(data, *, mask=None, nodata=None, scale=None, offset=None):
 
         fname = str(tmp_path / f"raster{len(files)}.tif")
 
@@ -94,6 +98,11 @@ def write_raster(tmp_path):
                 ds.GetRasterBand(i + 1).SetScale(scale)
             if offset:
                 ds.GetRasterBand(i + 1).SetOffset(offset)
+            if mask is not None:
+                ds.GetRasterBand(i + 1).CreateMaskBand(gdal.GMF_ALL_VALID)
+                mb = ds.GetRasterBand(i + 1).GetMaskBand()
+                assert mb.WriteArray(mask) == gdal.CE_None
+                del mb
 
         return fname
 
@@ -408,7 +417,7 @@ def test_feature_intersecting_nodata(
             {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
         ),
         fid="id",
-        raster=f"metric:{write_raster(data, nodata)}",
+        raster=f"metric:{write_raster(data, nodata=nodata)}",
         stat=["count(metric)", "mean(metric)", "mode(metric)"],
         strategy=strategy,
     )
@@ -646,3 +655,22 @@ def test_id_change_type(run, write_raster, write_features):
     values = lines[1].split(",")
 
     assert values[0] == "3.14"  # value is unquoted
+
+
+def test_mask_band(run, write_raster, write_features):
+
+    data = np.arange(1, 10, dtype=np.float32).reshape((3, 3))
+    valid = np.array(
+        [[False, False, False], [True, True, True], [False, False, False]]
+    ).astype(np.int8)
+
+    rows = run(
+        polygons=write_features(
+            {"geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
+        ),
+        raster=write_raster(data, mask=valid),
+        stat=["cell_id"],
+        nested_output=True,
+    )
+
+    assert json.loads(rows[0]["cell_id"]) == [3, 4, 5]
