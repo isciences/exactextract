@@ -31,6 +31,7 @@ target_include_directories(_exactextract PRIVATE
     ${SRC_GENERATED})
 set_property(TARGET ${LIB_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(_exactextract PRIVATE ${LIB_NAME} GEOS::geos_c)
+install(TARGETS _exactextract DESTINATION exactextract)
 
 add_test(NAME "pybindings" 
          COMMAND ${CMAKE_COMMAND} -E env

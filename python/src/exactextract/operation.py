@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from _exactextract import Operation as _Operation
-from _exactextract import prepare_operations  # noqa: F401
-
+from ._exactextract import Operation as _Operation
+from ._exactextract import prepare_operations  # noqa: F401
 from .raster_source import RasterSource
 
 

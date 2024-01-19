@@ -1,4 +1,4 @@
-from _exactextract import Feature
+from ._exactextract import Feature
 
 
 class GDALFeature(Feature):

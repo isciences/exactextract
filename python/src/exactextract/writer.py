@@ -1,7 +1,6 @@
 import copy
 
-from _exactextract import Writer
-
+from ._exactextract import Writer
 from .feature import GDALFeature, JSONFeature
 
 
