@@ -30,6 +30,7 @@ GDALDatasetWrapper::feature() const
 
 GDALDatasetWrapper::GDALDatasetWrapper(const std::string& filename, const std::string& layer)
   : m_feature(nullptr)
+  , m_layer_is_sql(false)
 {
     m_dataset = GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
     if (m_dataset == nullptr) {
@@ -126,7 +127,7 @@ GDALDatasetWrapper::~GDALDatasetWrapper()
     if (m_layer_is_sql) {
         GDALDatasetReleaseResultSet(m_dataset, m_layer);
     }
-    GDALClose(m_dataset);
+    GDALReleaseDataset(m_dataset);
 }
 
 OGRSpatialReferenceH
