@@ -357,7 +357,7 @@ def test_column_naming(
     assert list(rows[0].keys()) == expected_names
 
 
-def test_stats_deferred(run, write_raster, write_features):
+def test_frac_output(run, write_raster, write_features):
     data = np.array([[1, 2, 3], [1, 2, 2], [3, 3, 3]], np.int16)
 
     rows = run(
@@ -372,17 +372,17 @@ def test_stats_deferred(run, write_raster, write_features):
         ),
         fid="id",
         raster=f"class:{write_raster(data)}",
-        stat="frac(class)",
+        stat=["unique", "frac"],
     )
 
-    assert len(rows) == 2
-    assert list(rows[0].keys()) == ["id", "frac_2", "frac_3"]
+    assert len(rows) == 3
 
-    assert rows[0]["frac_2"] == ""
-    assert float(rows[0]["frac_3"]) == 1
+    assert rows[0] == {"id": "1", "unique": "3", "frac": "1"}
 
-    assert float(rows[1]["frac_2"]) == 0.75
-    assert float(rows[1]["frac_3"]) == 0.25
+    # order of rows for a given feature may vary between platforms
+    rows = sorted(rows[1:], key=lambda x: x["unique"])
+    assert rows[0] == {"id": "2", "unique": "2", "frac": "0.75"}
+    assert rows[1] == {"id": "2", "unique": "3", "frac": "0.25"}
 
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))

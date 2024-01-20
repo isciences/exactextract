@@ -103,16 +103,11 @@ main(int argc, char** argv)
         auto weights = exactextract::load_gdal_rasters(weight_descriptors);
 
         auto operations = prepare_operations(stats, rasters, weights);
-        const bool defer_writing = std::any_of(operations.begin(), operations.end(), [](const auto& op) { return !op->column_names_known(); });
 
         GDALDatasetWrapper shp = load_dataset(poly_descriptor, include_cols, src_id_name, dst_id_name, dst_id_type);
 
-        std::unique_ptr<exactextract::GDALWriter> gdal_writer = defer_writing
-                                                                  ? std::make_unique<
-                                                                      exactextract::DeferredGDALWriter>(
-                                                                      output_filename, !nested_output, shp.srs())
-                                                                  : std::make_unique<exactextract::GDALWriter>(
-                                                                      output_filename, !nested_output, shp.srs());
+        std::unique_ptr<exactextract::GDALWriter> gdal_writer = std::make_unique<exactextract::GDALWriter>(
+          output_filename, !nested_output, shp.srs());
 
         if (!dst_id_name.empty()) {
             include_cols.insert(include_cols.begin(), dst_id_name);

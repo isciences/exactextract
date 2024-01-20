@@ -206,7 +206,7 @@ prepare_operations_implicit(
         RasterSource* v = &*values[i % values.size()];
         RasterSource* w = weights.empty() ? nullptr : &*weights[i % weights.size()];
 
-        ops.push_back(std::make_unique<Operation>(
+        ops.push_back(Operation::create(
           sd.stat,
           make_name(v, w, sd.stat, full_names),
           v,
@@ -255,7 +255,7 @@ prepare_operations_explicit(
         weights = weights_it->second;
     }
 
-    ops.emplace_back(std::make_unique<Operation>(stat.stat, stat.name.empty() ? values->name() + "_" + stat.stat : stat.name, values, weights, stat.args));
+    ops.emplace_back(Operation::create(stat.stat, stat.name.empty() ? values->name() + "_" + stat.stat : stat.name, values, weights, stat.args));
 }
 
 std::vector<std::unique_ptr<Operation>>

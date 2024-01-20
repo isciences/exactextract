@@ -23,50 +23,21 @@ class PandasWriter(Writer):
         super().__init__()
 
         self.fields = {}
-        self.feature_count = 0
-        self.columns_known = None
         self.geoms = []
         self.srs_wkt = srs_wkt
 
     def add_operation(self, op):
-        if self.columns_known is None:
-            self.columns_known = True
-
-        if op.column_names_known:
-            for field_name in op.field_names():
-                self.fields[field_name] = []
-        else:
-            self.columns_known = False
+        self.fields[op.name] = []
 
     def add_column(self, col_name):
-        if self.columns_known is None:
-            self.columns_known = True
         self.fields[col_name] = []
 
     def add_geometry(self):
         self.fields["geometry"] = []
 
-    def _add_missing_columns(self, f):
-        if self.columns_known:
-            return
-        if "id" in f and "id" not in self.fields:
-            self.fields["id"] = [None] * self.feature_count
-        for field_name in f["properties"]:
-            if field_name not in self.fields:
-                self.fields[field_name] = [None] * self.feature_count
-
-    def _pad_missing_values(self):
-        if self.columns_known:
-            return
-        for field in self.fields.values():
-            if len(field) < self.feature_count:
-                field.append(None)
-
     def write(self, feature):
         f = JSONFeature()
         feature.copy_to(f)
-
-        self._add_missing_columns(f.feature)
 
         for field_name, value in f.feature["properties"].items():
             self.fields[field_name].append(value)
@@ -78,10 +49,6 @@ class PandasWriter(Writer):
             self.fields["geometry"].append(
                 shapely.geometry.shape(f.feature["geometry"])
             )
-
-        self.feature_count += 1
-
-        self._pad_missing_values()
 
     def features(self):
         if "geometry" in self.fields:
@@ -107,8 +74,7 @@ class GDALWriter(Writer):
         # Create a prototype feature so that field names
         # match the order they are specified in input
         # operations.
-        for field_name in op.field_names():
-            self.prototype["properties"][field_name] = None
+        self.prototype["properties"][op.name] = None
 
     def add_column(self, col_name):
         self.prototype["properties"][col_name] = None

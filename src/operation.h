@@ -35,40 +35,23 @@ class Operation
     using ArgMap = std::map<std::string, std::string>;
 
     /// \param stat The name of the statistic computed by this Operation
-    /// \param name The name of the field to which the result of the Operation will be written
+    /// \param name The base of the field name to which the result of the Operation will be written.
     /// \param values The RasterSource from which values will be read
     /// \param weights The RasterSource from which weights will be read, if `stat` is a weighted
     ///                stat.
-    Operation(std::string stat,
-              std::string name,
-              RasterSource* values,
-              RasterSource* weights = nullptr,
-              ArgMap options = {});
+    /// \param options Optional arguments to be processed by this stat
+    static std::unique_ptr<Operation> create(std::string stat,
+                                             std::string name,
+                                             RasterSource* values,
+                                             RasterSource* weights = nullptr,
+                                             ArgMap options = {});
 
-    virtual std::unique_ptr<Operation> clone() const
-    {
-        return std::make_unique<Operation>(*this);
-    }
+    virtual ~Operation() = default;
 
-    /// Returns the list of field names that are assigned by this `Operation`
-    const std::vector<std::string>& field_names() const
-    {
-        return m_field_names;
-    }
+    virtual std::unique_ptr<Operation> clone() const = 0;
 
     /// Returns `true` if the rasters associated with this Operation intersect the box
-    bool intersects(const Box& box) const
-    {
-        if (!values->grid().extent().intersects(box)) {
-            return false;
-        }
-
-        if (weighted() && !weights->grid().extent().intersects(box)) {
-            return false;
-        }
-
-        return true;
-    }
+    bool intersects(const Box& box) const;
 
     /// Returns `true` if the operation uses values from a weighting raster
     bool weighted() const
@@ -76,51 +59,54 @@ class Operation
         return weights != nullptr;
     }
 
-    bool column_names_known() const
+    /// Method which an implementation can override to indicate that variance or
+    /// standard deviation values will be read from a `RasterStats`.
+    virtual bool requires_variance() const
     {
-        return !(stat == "frac" || stat == "weighted_frac");
+        return false;
     }
 
-    bool requires_variance() const
+    /// Method which an implementation can override to indicate that `RasterStats`
+    /// should prepare a histogram.
+    virtual bool requires_histogram() const
     {
-        return stat == "variance" || stat == "weighted_variance" || stat == "stdev" || stat == "weighted_stdev" || stat == "coefficient_of_variation";
+        return false;
     }
 
-    bool requires_histogram() const
+    /// Method which an implementation can override to indicate that `RasterStats`
+    /// should retain the value for every cell it processes.
+    virtual bool requires_stored_values() const
     {
-        return stat == "mode" || stat == "minority" || stat == "majority" || stat == "variety" || stat == "quantile" || stat == "median" || stat == "frac" || stat == "weighted_frac";
+        return false;
     }
 
-    bool requires_stored_values() const
+    /// Method which an implementation can override to indicate that `RasterStats`
+    /// should retain the weight for every cell it processes.
+    virtual bool requires_stored_weights() const
     {
-        return stat == "values";
+        return false;
     }
 
-    bool requires_stored_weights() const
+    /// Method which an implementation can override to indicate that `RasterStats`
+    /// should retain the coverage fraction for every cell it processes.
+    virtual bool requires_stored_coverage_fractions() const
     {
-        return stat == "weights";
+        return false;
     }
 
-    bool requires_stored_coverage_fractions() const
+    /// Method which an implementation can override to indicate that `RasterStats`
+    /// should retain the center coordinates for every cell it processes.
+    virtual bool requires_stored_locations() const
     {
-        return stat == "coverage";
+        return false;
     }
 
-    bool requries_stored_locations() const
-    {
-        return stat == "center_x" || stat == "center_y" || stat == "cell_id" || stat == "min_center_x" || stat == "min_center_y" || stat == "max_center_x" || stat == "max_center_y";
-    }
-
-    /// Returns a newly constructed `Grid` representing the common grid between
+    /// Returns a constructed `Grid` representing the common grid between
     /// the value and weighting rasters
-    Grid<bounded_extent> grid() const
-    {
-        if (weighted()) {
-            return values->grid().common_grid(weights->grid());
-        } else {
-            return values->grid();
-        }
-    }
+    Grid<bounded_extent> grid() const;
+
+    /// Returns the type of the `Operation` result
+    virtual const std::type_info& result_type() const = 0;
 
     /// Returns a key for which a `StatsRegistry` can be queried to get a
     /// `RasterStats` object which can be used to populate the columns associated
@@ -132,10 +118,13 @@ class Operation
         return m_key;
     }
 
+    /// Assigns the result of the `Operation` to `f_out`, given a `StatsRegistry` can a Feature to query it with.
     void set_result(const StatsRegistry& reg, const Feature& f_in, Feature& f_out) const;
 
-    void set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f_out) const;
+    /// Assigns the result of the `Operation` to `f_out`, given a `RasterStats` from which to read values.
+    virtual void set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f_out) const = 0;
 
+    /// Populates a field in `f_out` with a missing value
     void set_empty_result(Feature& f_out) const;
 
     std::string stat;
@@ -143,10 +132,13 @@ class Operation
     RasterSource* values;
     RasterSource* weights;
 
-  private:
-    std::string m_key;
+  protected:
+    Operation(std::string stat,
+              std::string name,
+              RasterSource* values,
+              RasterSource* weights = nullptr);
 
-    double m_quantile;
+    std::string m_key;
 
     using missing_value_t = std::variant<double, std::int8_t, std::int16_t, std::int32_t, std::int64_t>;
 
@@ -155,8 +147,6 @@ class Operation
     missing_value_t get_missing_value();
 
     const StatsRegistry::RasterStatsVariant& empty_stats() const;
-
-  protected:
-    std::vector<std::string> m_field_names;
 };
+
 }

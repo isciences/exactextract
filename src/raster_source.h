@@ -27,10 +27,10 @@ class RasterSource
     virtual const Grid<bounded_extent>& grid() const = 0;
     virtual RasterVariant read_box(const Box& box) = 0;
 
-    const RasterVariant& read_empty()
+    const RasterVariant& read_empty() const
     {
         if (!m_empty) {
-            m_empty = std::make_unique<RasterVariant>(read_box(Box::make_empty()));
+            m_empty = std::make_unique<RasterVariant>(const_cast<RasterSource*>(this)->read_box(Box::make_empty()));
         }
 
         return *m_empty;
@@ -50,7 +50,7 @@ class RasterSource
 
   private:
     std::string m_name;
-    std::unique_ptr<RasterVariant> m_empty;
+    mutable std::unique_ptr<RasterVariant> m_empty;
 };
 }
 

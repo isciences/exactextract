@@ -91,10 +91,13 @@ TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[op
 
     TestWriter writer;
     FeatureSequentialProcessor fsp(ds, writer);
-    fsp.add_operation(Operation("mode", "mode", &value_src, nullptr));
+    auto op = Operation::create("mode", "mode", &value_src, nullptr);
+    fsp.add_operation(*op);
     fsp.process();
 
     const MapFeature& f = writer.m_feature;
+
+    CHECK(op->result_type() == typeid(TestType));
 
     const auto& pix_typ = typeid(TestType);
     if (pix_typ == typeid(float) || pix_typ == typeid(double)) {
@@ -104,7 +107,7 @@ TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[op
     }
 }
 
-TEMPLATE_TEST_CASE("frac sets appropriate column names", "[operation]", std::int8_t, double)
+TEMPLATE_TEST_CASE("frac values correspond to entries in unique()", "[operation]", std::int8_t, double)
 {
     GEOSContextHandle_t context = init_geos();
 
@@ -123,7 +126,8 @@ TEMPLATE_TEST_CASE("frac sets appropriate column names", "[operation]", std::int
     ds.add_feature(std::move(mf));
 
     std::vector<std::unique_ptr<Operation>> ops;
-    ops.emplace_back(std::make_unique<Operation>("frac", "x", &value_src, nullptr));
+    ops.emplace_back(Operation::create("unique", "unique", &value_src, nullptr));
+    ops.emplace_back(Operation::create("frac", "frac", &value_src, nullptr));
 
     TestWriter writer;
 
@@ -136,56 +140,30 @@ TEMPLATE_TEST_CASE("frac sets appropriate column names", "[operation]", std::int
 
     const MapFeature& f = writer.m_feature;
 
-    CHECK(f.get<double>("frac_1") == 0.0625);
-    CHECK(f.get<double>("frac_2") == 0.50);
-    CHECK(f.get<double>("frac_3") == 0.4375);
+    std::map<TestType, double> fracs;
 
-    CHECK_THROWS(f.get<double>("frac_9"));
-}
+    auto frac = f.get_double_array("frac");
+    if constexpr (std::is_floating_point<TestType>::value) {
+        auto unique = f.get_double_array("unique");
 
-TEMPLATE_TEST_CASE("weighted_frac sets appropriate column names", "[operation]", std::int8_t, double)
-{
-    GEOSContextHandle_t context = init_geos();
+        CHECK(unique.size == frac.size);
 
-    Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
-    Matrix<TestType> values{ { { 9, 1, 1 },
-                               { 2, 2, 2 },
-                               { 3, 3, 3 } } };
+        for (std::size_t i = 0; i < unique.size; i++) {
+            fracs[unique.data[i]] = frac.data[i];
+        }
+    } else {
+        auto unique = f.get_integer_array("unique");
 
-    auto value_rast = std::make_unique<Raster<TestType>>(std::move(values), ex.extent());
-    MemoryRasterSource value_src(std::move(value_rast));
+        CHECK(unique.size == frac.size);
 
-    Matrix<double> weights{ { { 0, 0, 0 },
-                              { 0, 2, 0 },
-                              { 0, 0, 1 } } };
-    auto weight_rast = std::make_unique<Raster<double>>(std::move(weights), ex.extent());
-    MemoryRasterSource weight_src(std::move(weight_rast));
-
-    WKTFeatureSource ds;
-    MapFeature mf;
-    mf.set("fid", 15);
-    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0 0, 3 0, 3 3, 0 0))")));
-    ds.add_feature(std::move(mf));
-
-    std::vector<std::unique_ptr<Operation>> ops;
-    ops.emplace_back(std::make_unique<Operation>("weighted_frac", "x", &value_src, &weight_src));
-
-    TestWriter writer;
-
-    FeatureSequentialProcessor fsp(ds, writer);
-    for (const auto& op : ops) {
-        fsp.add_operation(*op);
+        for (std::size_t i = 0; i < unique.size; i++) {
+            fracs[unique.data[i]] = frac.data[i];
+        }
     }
 
-    fsp.process();
-
-    const MapFeature& f = writer.m_feature;
-
-    CHECK(f.get<double>("weighted_frac_1") == 0.00f);
-    CHECK(f.get<double>("weighted_frac_2") == 0.50f);
-    CHECK(f.get<double>("weighted_frac_3") == 0.50f);
-
-    CHECK_THROWS(f.get<double>("weighted_frac_9"));
+    CHECK(fracs.at(1.0) == 0.0625);
+    CHECK(fracs.at(2.0) == 0.50);
+    CHECK(fracs.at(3.0) == 0.4375);
 }
 
 TEST_CASE("error thrown if no weights provided for weighted operation", "[operation]")
@@ -198,7 +176,7 @@ TEST_CASE("error thrown if no weights provided for weighted operation", "[operat
     auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
     MemoryRasterSource value_src(std::move(value_rast));
 
-    CHECK_THROWS(Operation("weighted_mean", "test", &value_src, nullptr));
+    CHECK_THROWS(Operation::create("weighted_mean", "test", &value_src, nullptr));
 }
 
 TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]", FeatureSequentialProcessor, RasterSequentialProcessor)
@@ -222,8 +200,10 @@ TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]
     TestWriter writer;
 
     TestType processor(ds, writer);
-    processor.add_operation(Operation("count", "count", &value_src, nullptr));
-    processor.add_operation(Operation("median", "median", &value_src, nullptr));
+    auto count = Operation::create("count", "count", &value_src, nullptr);
+    auto median = Operation::create("median", "median", &value_src, nullptr);
+    processor.add_operation(*count);
+    processor.add_operation(*median);
     processor.process();
 
     const MapFeature& f = writer.m_feature;
@@ -251,8 +231,10 @@ TEMPLATE_TEST_CASE("correct result for feature partially intersecting raster", "
     TestWriter writer;
 
     TestType processor(ds, writer);
-    processor.add_operation(Operation("count", "count", &value_src, nullptr));
-    processor.add_operation(Operation("median", "median", &value_src, nullptr));
+    auto count = Operation::create("count", "count", &value_src, nullptr);
+    auto median = Operation::create("median", "median", &value_src, nullptr);
+    processor.add_operation(*count);
+    processor.add_operation(*median);
     processor.process();
 
     const MapFeature& f = writer.m_feature;
@@ -281,7 +263,8 @@ TEMPLATE_TEST_CASE("include_col and include_geom work as expected", "[processor]
     TestWriter writer;
 
     TestType processor(ds, writer);
-    processor.add_operation(Operation("count", "count", &value_src, nullptr));
+    auto count = Operation::create("count", "count", &value_src, nullptr);
+    processor.add_operation(*count);
     processor.include_col("fid");
     processor.include_col("type");
     processor.include_geometry();
@@ -303,9 +286,10 @@ TEST_CASE("Operation arguments", "[operation]")
 
     SECTION("successful arg parsing")
     {
-        Operation::ArgMap args{ { "q", "5" } };
+        Operation::ArgMap args{ { "q", "0.05" } };
 
-        Operation op("quantile", "quantile", &mrs, nullptr, args);
+        auto op = Operation::create("quantile", "fizz", &mrs, nullptr, args);
+        CHECK(op->name == "fizz_5");
 
         // args are not modified
         CHECK(args.find("q") != args.end());
@@ -313,8 +297,8 @@ TEST_CASE("Operation arguments", "[operation]")
 
     SECTION("error if not all args are consumed")
     {
-        Operation::ArgMap args{ { "q", "5" }, { "qq", "15" } };
-        CHECK_THROWS_WITH(Operation("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Unexpected argument"));
+        Operation::ArgMap args{ { "q", "0.05" }, { "qq", "0.15" } };
+        CHECK_THROWS_WITH(Operation::create("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Unexpected argument"));
 
         // args are not modified
         CHECK(args.find("q") != args.end());
@@ -324,12 +308,18 @@ TEST_CASE("Operation arguments", "[operation]")
     SECTION("error if arg cannot be parsed")
     {
         Operation::ArgMap args{ { "q", "chicken" } };
-        CHECK_THROWS_WITH(Operation("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Failed to parse"));
+        CHECK_THROWS_WITH(Operation::create("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Failed to parse"));
+    }
+
+    SECTION("error if arg is invalid")
+    {
+        Operation::ArgMap args{ { "q", "5" } };
+        CHECK_THROWS_WITH(Operation::create("quantile", "quantile", &mrs, nullptr, args), Catch::Contains("must be between 0 and 1"));
     }
 
     SECTION("error if required arg is missing")
     {
         Operation::ArgMap args;
-        CHECK_THROWS_WITH(Operation("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Missing required argument"));
+        CHECK_THROWS_WITH(Operation::create("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Missing required argument"));
     }
 }

@@ -77,9 +77,9 @@ GDALWriter::copy_field(const GDALDatasetWrapper& w, const std::string& name)
 OGRFieldType
 GDALWriter::ogr_type(const std::type_info& typ, bool unnest)
 {
-    if (typ == typeid(std::int32_t)) {
+    if (typ == typeid(std::int8_t) || typ == typeid(std::int16_t) || typ == typeid(std::int32_t) || typ == typeid(std::size_t)) {
         return OFTInteger;
-    } else if (typ == typeid(double)) {
+    } else if (typ == typeid(double) || typ == typeid(float)) {
         return OFTReal;
     } else if (typ == typeid(std::string)) {
         return OFTString;
@@ -90,7 +90,7 @@ GDALWriter::ogr_type(const std::type_info& typ, bool unnest)
     } else if (typ == typeid(Feature::Integer64Array)) {
         return unnest ? OFTInteger64 : OFTInteger64List;
     } else {
-        throw std::runtime_error("Unhandled type in GDALWriter::add_operation");
+        throw std::runtime_error("Unhandled type in GDALWriter::add_operation: " + std::string(typ.name()));
     }
 }
 
@@ -100,19 +100,17 @@ GDALWriter::add_operation(const Operation& op)
     MapFeature mf;
     op.set_empty_result(mf);
 
-    for (const auto& field_name : op.field_names()) {
-        const auto& typ = mf.field_type(field_name);
+    const auto& typ = op.result_type();
 
-        if (typ == typeid(Feature::DoubleArray) || typ == typeid(Feature::IntegerArray) || typ == typeid(Feature::Integer64Array)) {
-            m_contains_nested_fields = true;
-        }
-
-        OGRFieldType ogr_typ = ogr_type(typ, m_unnest_if_needed);
-
-        auto def = OGR_Fld_Create(field_name.c_str(), ogr_typ);
-        OGR_L_CreateField(m_layer, def, true);
-        OGR_Fld_Destroy(def);
+    if (typ == typeid(Feature::DoubleArray) || typ == typeid(Feature::IntegerArray) || typ == typeid(Feature::Integer64Array)) {
+        m_contains_nested_fields = true;
     }
+
+    OGRFieldType ogr_typ = ogr_type(typ, m_unnest_if_needed);
+
+    auto def = OGR_Fld_Create(op.name.c_str(), ogr_typ);
+    OGR_L_CreateField(m_layer, def, true);
+    OGR_Fld_Destroy(def);
 }
 
 void

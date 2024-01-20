@@ -6,6 +6,15 @@
 
 namespace exactextract {
 
+// https://stackoverflow.com/a/62757885/2171894
+template<typename>
+constexpr bool is_optional_impl = false;
+template<typename T>
+constexpr bool is_optional_impl<std::optional<T>> = true;
+template<typename T>
+constexpr bool is_optional =
+  is_optional_impl<std::remove_cv_t<std::remove_reference_t<T>>>;
+
 template<typename T>
 std::string
 make_field_name(const std::string& prefix, const T& value)
@@ -52,38 +61,424 @@ extract_arg(Operation::ArgMap& options, const std::string& name)
     return parsed.value();
 }
 
+/// The OperationImpl classes uses CRTP to make it easier to implement the `Operation` interface.
+/// In particular, `Operation::set_result` requires some dispatch on `RasterStatsVariant` which
+/// would be cumbersome to re-implement for every `Operation`. Instead, an implementation
+/// deriving from OperationImpl can implement the following template:
+/// template<typename Stats>
+/// auto get(const Stats& stats) const
+///
+/// Macros (REQ_VARIANCE, REQ_VALUES, etc.) are provided to overload Operation methods that
+/// control the behavior of `RasterStats`.
+///
+/// For simple operations, an `OPERATION` macro is provided that allows the implementation
+/// class to be defined with a single expression.
+template<typename Derived>
+class OperationImpl : public Operation
+{
+  public:
+    OperationImpl(std::string p_stat,
+                  std::string p_name,
+                  RasterSource* p_values,
+                  RasterSource* p_weights,
+                  ArgMap options)
+      : Operation(p_stat, "", p_values, p_weights)
+    {
+        static_cast<Derived*>(this)->handle_options(options);
+
+        if (starts_with(stat, "weighted") && weights == nullptr) {
+            throw std::runtime_error("No weights provided for weighted stat: " + stat);
+        }
+
+        if (weighted()) {
+            m_key = values->name() + "|" + weights->name();
+        } else {
+            m_key = values->name();
+        }
+
+        if (!options.empty()) {
+            throw std::runtime_error("Unexpected argument(s) to stat: " + stat);
+        }
+
+        static_cast<Derived*>(this)->set_name(p_name);
+    }
+
+    void handle_options(ArgMap&) {}
+
+    void set_name(const std::string& p_name)
+    {
+        name = p_name;
+    }
+
+    std::unique_ptr<Operation> clone() const override
+    {
+        return std::make_unique<Derived>(static_cast<const Derived&>(*this));
+    }
+
+    const std::type_info& result_type() const override
+    {
+        const auto& rast = values->read_empty();
+        return std::visit([this](const auto& r) -> const std::type_info& {
+            using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
+
+            using result_type = std::decay_t<decltype(static_cast<const Derived*>(this)->get(std::declval<RasterStats<value_type>>()))>;
+
+            if constexpr (is_optional<result_type>) {
+                return typeid(decltype(std::declval<result_type>().value()));
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<float>>) {
+                return typeid(Feature::DoubleArray);
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<double>>) {
+                return typeid(Feature::DoubleArray);
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<std::int8_t>>) {
+                return typeid(Feature::IntegerArray);
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<std::int16_t>>) {
+                return typeid(Feature::IntegerArray);
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<std::int32_t>>) {
+                return typeid(Feature::IntegerArray);
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<std::int64_t>>) {
+                return typeid(Feature::Integer64Array);
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<std::size_t>>) {
+                return typeid(Feature::Integer64Array);
+            }
+
+            return typeid(result_type);
+        },
+                          rast);
+    }
+
+    void
+    set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f_out) const override
+    {
+        std::visit([this, &f_out](const auto& s) {
+            auto&& value = static_cast<const Derived*>(this)->get(s);
+
+            if constexpr (is_optional<decltype(value)>) {
+                std::visit([this, &f_out, &value](const auto& m) {
+                    f_out.set(name, value.value_or(m));
+                },
+                           m_missing);
+            } else {
+                f_out.set(name, value);
+            }
+        },
+                   stats);
+    }
+};
+
+#define REQ_HISTOGRAM                        \
+    bool requires_histogram() const override \
+    {                                        \
+        return true;                         \
+    }
+#define REQ_VARIANCE                        \
+    bool requires_variance() const override \
+    {                                       \
+        return true;                        \
+    }
+#define REQ_STORED_VALUES                        \
+    bool requires_stored_values() const override \
+    {                                            \
+        return true;                             \
+    }
+#define REQ_STORED_WEIGHTS                        \
+    bool requires_stored_weights() const override \
+    {                                             \
+        return true;                              \
+    }
+#define REQ_STORED_COV                                       \
+    bool requires_stored_coverage_fractions() const override \
+    {                                                        \
+        return true;                                         \
+    }
+#define REQ_STORED_XY                               \
+    bool requires_stored_locations() const override \
+    {                                               \
+        return true;                                \
+    }
+
+#define OPERATION(STAT, IMPL, ...)                \
+    class STAT : public OperationImpl<STAT>       \
+    {                                             \
+      public:                                     \
+        using OperationImpl<STAT>::OperationImpl; \
+        template<typename Stats>                  \
+        auto get(const Stats& stats) const        \
+        {                                         \
+            return (IMPL);                        \
+        }                                         \
+        __VA_ARGS__                               \
+    }
+
+constexpr std::pair<double, double> NAN_PAIR{ std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() };
+
+OPERATION(CENTER_X, stats.center_x(), REQ_STORED_XY);
+OPERATION(CENTER_Y, stats.center_y(), REQ_STORED_XY);
+OPERATION(COUNT, stats.count());
+OPERATION(COV, stats.coefficient_of_variation(), REQ_VARIANCE);
+OPERATION(COVERAGE, stats.coverage_fractions(), REQ_STORED_COV);
+OPERATION(MAJORITY, stats.mode(), REQ_HISTOGRAM);
+OPERATION(MAX, stats.max());
+OPERATION(MAX_CENTER_X, stats.max_xy().value_or(NAN_PAIR).first, REQ_STORED_XY);
+OPERATION(MAX_CENTER_Y, stats.max_xy().value_or(NAN_PAIR).second, REQ_STORED_XY);
+OPERATION(MEAN, stats.mean());
+OPERATION(MEDIAN, stats.quantile(0.5), REQ_HISTOGRAM);
+OPERATION(MIN, stats.min());
+OPERATION(MINORITY, stats.minority(), REQ_HISTOGRAM);
+OPERATION(MIN_CENTER_X, stats.min_xy().value_or(NAN_PAIR).first, REQ_STORED_XY);
+OPERATION(MIN_CENTER_Y, stats.min_xy().value_or(NAN_PAIR).second, REQ_STORED_XY);
+OPERATION(STDEV, stats.stdev(), REQ_VARIANCE);
+OPERATION(SUM, stats.sum());
+OPERATION(VALUES, stats.values(), REQ_STORED_VALUES);
+OPERATION(VARIANCE, stats.variance(), REQ_VARIANCE);
+OPERATION(VARIETY, stats.variety(), REQ_HISTOGRAM);
+OPERATION(WEIGHTED_MEAN, stats.weighted_mean());
+OPERATION(WEIGHTED_STDEV, stats.weighted_stdev(), REQ_VARIANCE);
+OPERATION(WEIGHTED_SUM, stats.weighted_sum());
+OPERATION(WEIGHTED_VARIANCE, stats.weighted_variance(), REQ_VARIANCE);
+OPERATION(WEIGHTS, stats.weights(), REQ_STORED_WEIGHTS);
+
+class CellId : public OperationImpl<CellId>
+{
+  public:
+    REQ_STORED_XY
+    using OperationImpl::OperationImpl;
+
+    template<typename Stats>
+    auto get(const Stats& stats) const
+    {
+        const auto& x = stats.center_x();
+        const auto& y = stats.center_y();
+        std::vector<std::int64_t> cells(x.size());
+        for (std::size_t i = 0; i < x.size(); i++) {
+            cells[i] = static_cast<std::int64_t>(values->grid().get_cell(x[i], y[i]));
+        }
+
+        return cells;
+    }
+};
+
+class Quantile : public OperationImpl<Quantile>
+{
+  public:
+    REQ_HISTOGRAM
+
+    using OperationImpl::OperationImpl;
+
+    void handle_options(ArgMap& options)
+    {
+        m_quantile = extract_arg<double>(options, "q");
+        if (m_quantile < 0 || m_quantile > 1) {
+            throw std::invalid_argument("Quantile must be between 0 and 1.");
+        }
+    }
+
+    void set_name(const std::string& p_name)
+    {
+        name = make_field_name(p_name + "_", static_cast<int>(m_quantile * 100));
+    }
+
+    template<typename Stats>
+    auto get(const Stats& stats) const
+    {
+        return stats.quantile(m_quantile);
+    }
+
+  private:
+    double m_quantile;
+};
+
+class Unique : public OperationImpl<Unique>
+{
+  public:
+    REQ_HISTOGRAM
+    using OperationImpl::OperationImpl;
+
+    template<typename Stats>
+    auto get(const Stats& stats) const
+    {
+        return std::vector<typename Stats::ValueType>(stats.begin(), stats.end());
+    }
+};
+
+template<bool Weighted>
+class Frac : public OperationImpl<Frac<Weighted>>
+{
+  public:
+    REQ_HISTOGRAM
+    using OperationImpl<Frac<Weighted>>::OperationImpl;
+
+    template<typename Stats>
+    auto get(const Stats& stats) const
+    {
+        std::vector<double> fracs;
+        fracs.reserve(stats.variety());
+        for (const auto& value : stats) {
+            if constexpr (Weighted) {
+                fracs.push_back(stats.weighted_frac(value).value());
+            } else {
+                fracs.push_back(stats.frac(value).value());
+            }
+        }
+        return fracs;
+    }
+};
+
 Operation::
   Operation(std::string p_stat,
             std::string p_name,
             RasterSource* p_values,
-            RasterSource* p_weights,
-            std::map<std::string, std::string> options)
+            RasterSource* p_weights)
   : stat{ std::move(p_stat) }
   , name{ std::move(p_name) }
   , values{ p_values }
   , weights{ p_weights }
   , m_missing{ get_missing_value() }
 {
-    if (stat == "quantile") {
-        m_quantile = extract_arg<double>(options, "q");
-        m_field_names.push_back(make_field_name(name + "_", static_cast<int>(m_quantile * 100)));
-    } else {
-        m_field_names.push_back(name);
+}
+
+bool
+Operation::intersects(const Box& box) const
+{
+    if (!values->grid().extent().intersects(box)) {
+        return false;
     }
 
-    if (starts_with(stat, "weighted") && weights == nullptr) {
-        throw std::runtime_error("No weights provided for weighted stat: " + stat);
+    if (weighted() && !weights->grid().extent().intersects(box)) {
+        return false;
     }
 
+    return true;
+}
+
+Grid<bounded_extent>
+Operation::grid() const
+{
     if (weighted()) {
-        m_key = values->name() + "|" + weights->name();
+        return values->grid().common_grid(weights->grid());
     } else {
-        m_key = values->name();
+        return values->grid();
+    }
+}
+
+std::unique_ptr<Operation>
+Operation::create(std::string stat,
+                  std::string p_name,
+                  RasterSource* p_values,
+                  RasterSource* p_weights,
+                  std::map<std::string, std::string> options)
+{
+#define CONSTRUCT(TYP) return std::make_unique<TYP>(stat, p_name, p_values, p_weights, std::move(options))
+
+    if (stat == "cell_id") {
+        CONSTRUCT(CellId);
     }
 
-    if (!options.empty()) {
-        throw std::runtime_error("Unexpected argument(s) to stat: " + stat);
+    if (stat == "center_x") {
+        CONSTRUCT(CENTER_X);
     }
+
+    if (stat == "center_y") {
+        CONSTRUCT(CENTER_Y);
+    }
+
+    if (stat == "coefficient_of_variation") {
+        CONSTRUCT(COV);
+    }
+    if (stat == "count") {
+        CONSTRUCT(COUNT);
+    }
+    if (stat == "coverage") {
+        CONSTRUCT(COVERAGE);
+    }
+    if (stat == "frac") {
+        CONSTRUCT(Frac<false>);
+    }
+    if (stat == "majority" || stat == "mode") {
+        CONSTRUCT(MAJORITY);
+    }
+    if (stat == "max") {
+        CONSTRUCT(MAX);
+    }
+    if (stat == "max_center_x") {
+        CONSTRUCT(MAX_CENTER_X);
+    }
+    if (stat == "max_center_y") {
+        CONSTRUCT(MAX_CENTER_Y);
+    }
+    if (stat == "mean") {
+        CONSTRUCT(MEAN);
+    }
+    if (stat == "median") {
+        CONSTRUCT(MEDIAN);
+    }
+    if (stat == "min") {
+        CONSTRUCT(MIN);
+    }
+    if (stat == "minority") {
+        CONSTRUCT(MINORITY);
+    }
+    if (stat == "min_center_x") {
+        CONSTRUCT(MIN_CENTER_X);
+    }
+    if (stat == "min_center_y") {
+        CONSTRUCT(MIN_CENTER_Y);
+    }
+    if (stat == "quantile") {
+        CONSTRUCT(Quantile);
+    }
+    if (stat == "stdev") {
+        CONSTRUCT(STDEV);
+    }
+    if (stat == "sum") {
+        CONSTRUCT(SUM);
+    }
+    if (stat == "unique") {
+        CONSTRUCT(Unique);
+    }
+    if (stat == "values") {
+        CONSTRUCT(VALUES);
+    }
+    if (stat == "variance") {
+        CONSTRUCT(VARIANCE);
+    }
+    if (stat == "variety") {
+        CONSTRUCT(VARIETY);
+    }
+    if (stat == "weighted_frac") {
+        CONSTRUCT(Frac<true>);
+    }
+    if (stat == "weighted_mean") {
+        CONSTRUCT(WEIGHTED_MEAN);
+    }
+    if (stat == "weighted_stdev") {
+        CONSTRUCT(WEIGHTED_STDEV);
+    }
+    if (stat == "weighted_sum") {
+        CONSTRUCT(WEIGHTED_SUM);
+    }
+    if (stat == "weighted_variance") {
+        CONSTRUCT(WEIGHTED_VARIANCE);
+    }
+    if (stat == "weights") {
+        CONSTRUCT(WEIGHTS);
+    }
+
+    throw std::runtime_error("Unsupported stat: " + stat);
+#undef CONSTRUCT
 }
 
 Operation::missing_value_t
@@ -134,114 +529,4 @@ Operation::set_empty_result(Feature& f_out) const
 {
     set_result(empty_stats(), f_out);
 }
-
-void
-Operation::set_result(const StatsRegistry::RasterStatsVariant& stats, Feature& f_out) const
-{
-    if (stat == "mean") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.mean()); }, stats);
-    } else if (stat == "sum") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.sum()); }, stats);
-    } else if (stat == "count") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.count()); }, stats);
-    } else if (stat == "weighted_mean") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_mean()); }, stats);
-    } else if (stat == "weighted_sum") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_sum()); }, stats);
-    } else if (stat == "min") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.min().value_or(m)); },
-                   stats,
-                   m_missing);
-    } else if (stat == "min_center_x") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.min_xy().value_or(std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN())).first); },
-                   stats);
-    } else if (stat == "min_center_y") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.min_xy().value_or(std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN())).second); },
-                   stats);
-    } else if (stat == "max") {
-        std::visit([&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.max().value_or(m)); },
-                   stats,
-                   m_missing);
-    } else if (stat == "max_center_x") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.max_xy().value_or(std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN())).first); },
-                   stats);
-    } else if (stat == "max_center_y") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.max_xy().value_or(std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN())).second); },
-                   stats);
-    } else if (stat == "majority" || stat == "mode") {
-        std::visit(
-          [&f_out, this](const auto& x, const auto& m) { f_out.set(m_field_names[0], x.mode().value_or(m)); },
-          stats,
-          m_missing);
-    } else if (stat == "minority") {
-        std::visit([&f_out, this](const auto& x, const auto& m) {
-            f_out.set(m_field_names[0], x.minority().value_or(m));
-        },
-                   stats,
-                   m_missing);
-    } else if (stat == "variety") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.variety()); }, stats);
-    } else if (stat == "stdev") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.stdev()); }, stats);
-    } else if (stat == "weighted_stdev") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_stdev()); }, stats);
-    } else if (stat == "variance") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.variance()); }, stats);
-    } else if (stat == "weighted_variance") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.weighted_variance()); }, stats);
-    } else if (stat == "coefficient_of_variation") {
-        std::visit([&f_out, this](const auto& x) { f_out.set(m_field_names[0], x.coefficient_of_variation()); },
-                   stats);
-    } else if (stat == "median") {
-        std::visit([&f_out, this](const auto& x, const auto& m) {
-            f_out.set(m_field_names[0], x.quantile(0.5).value_or(m));
-        },
-                   stats,
-                   m_missing);
-    } else if (stat == "coverage") {
-        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.coverage_fractions()); }, stats);
-    } else if (stat == "values") {
-        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.values()); }, stats);
-    } else if (stat == "weights") {
-        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.weights()); }, stats);
-    } else if (stat == "center_x") {
-        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.center_x()); }, stats);
-    } else if (stat == "center_y") {
-        std::visit([&f_out, this](const auto& s) { f_out.set(m_field_names[0], s.center_y()); }, stats);
-    } else if (stat == "cell_id") {
-        std::visit([&f_out, this](const auto& s) {
-            const auto& x = s.center_x();
-            const auto& y = s.center_y();
-            std::vector<std::int64_t> cells(x.size());
-            for (std::size_t i = 0; i < x.size(); i++) {
-                cells[i] = static_cast<std::int64_t>(values->grid().get_cell(x[i], y[i]));
-            }
-            f_out.set(m_field_names[0], cells);
-        },
-                   stats);
-    } else if (stat == "quantile") {
-        std::visit([&f_out, this](const auto& x, const auto& m) {
-            f_out.set(m_field_names[0], x.quantile(m_quantile).value_or(m));
-        },
-                   stats,
-                   m_missing);
-    } else if (stat == "frac") {
-        std::visit([&f_out](const auto& s) {
-            for (const auto& value : s) {
-                f_out.set(make_field_name("frac_", value), s.frac(value).value_or(0));
-            }
-        },
-                   stats);
-    } else if (stat == "weighted_frac") {
-        std::visit([&f_out](const auto& s) {
-            for (const auto& value : s) {
-                f_out.set(make_field_name("weighted_frac_", value), s.weighted_frac(value).value_or(0));
-            }
-        },
-                   stats);
-    } else {
-        throw std::runtime_error("Unhandled stat: " + stat);
-    }
-}
-
 }

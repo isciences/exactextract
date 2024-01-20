@@ -15,6 +15,10 @@ def output_format(request):
     return request.param
 
 
+def prop_map(f, k, v):
+    return {v: f for v, f in zip(f["properties"][k], f["properties"][v])}
+
+
 def make_square_raster(n):
     values = np.arange(1, n * n + 1).reshape(n, n)
     return NumPyRasterSource(values, 0, 0, n, n)
@@ -77,6 +81,7 @@ def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
         ("min_center_y", 2.5),
         ("max_center_x", 2.5),
         ("max_center_y", 0.5),
+        ("unique", {1, 2, 3, 4, 5, 6, 7, 8, 9}),
     ],
 )
 def test_basic_stats(stat, expected, output_format):
@@ -92,6 +97,10 @@ def test_basic_stats(stat, expected, output_format):
         value = result[0]["properties"][stat]
     else:
         value = result[stat][0]
+
+    if type(expected) is set:
+        assert set(value) == expected
+        return
 
     assert value == pytest.approx(expected)
 
@@ -159,21 +168,11 @@ def test_frac():
         [make_rect(0.5, 0.5, 1.0, 1.0, "a"), make_rect(0.5, 0.5, 2.5, 2.5, "b")]
     )
 
-    results = exact_extract(rast, squares, ["count", "frac"])
+    results = exact_extract(rast, squares, ["count", "unique", "frac"])
 
-    assert results[0]["properties"] == {
-        "count": 0.25,
-        # "frac_1" : 0,
-        # "frac_2" : 0,
-        "frac_3": 1.00,
-    }
+    assert prop_map(results[0], "unique", "frac") == {3: 1.00}
 
-    assert results[1]["properties"] == {
-        "count": 4,
-        "frac_1": 0.25,
-        "frac_2": 0.5,
-        "frac_3": 0.25,
-    }
+    assert prop_map(results[1], "unique", "frac") == {1: 0.25, 2: 0.5, 3: 0.25}
 
     pytest.xfail("missing placeholder results for frac_1 and frac_2")
 
@@ -185,20 +184,20 @@ def test_weighted_frac():
         [make_rect(0.5, 0.5, 1.0, 1.0, "a"), make_rect(0.5, 0.5, 2.5, 2.5, "b")]
     )
 
-    results = exact_extract(rast, squares, ["weighted_frac", "sum"], weights=weights)
+    results = exact_extract(
+        rast, squares, ["weighted_frac", "sum", "unique"], weights=weights
+    )
 
-    assert results[0]["properties"] == {
-        # "weighted_frac_1" : 0,
-        # "weighted_frac_2" : 0,
-        "weighted_frac_3": 1,
-        "sum": 0.75,
+    assert results[0]["properties"]["sum"] == 0.75
+    assert prop_map(results[0], "unique", "weighted_frac") == {
+        3: 1,
     }
 
-    assert results[1]["properties"] == {
-        "weighted_frac_1": 0.375,
-        "weighted_frac_2": 0.5,
-        "weighted_frac_3": 0.125,
-        "sum": 8,
+    assert results[1]["properties"]["sum"] == 8
+    assert prop_map(results[1], "unique", "weighted_frac") == {
+        1: 0.375,
+        2: 0.5,
+        3: 0.125,
     }
 
     pytest.xfail("missing placeholder results for weighted_frac_1 and weighted_frac_2")
