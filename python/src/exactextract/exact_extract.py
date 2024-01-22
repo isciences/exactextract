@@ -115,7 +115,7 @@ def prep_vec(vec):
         import fiona
 
         if isinstance(vec, (str, os.PathLike)):
-            vec = fiona.Open(vec)
+            vec = fiona.open(vec)
 
         if isinstance(vec, fiona.Collection):
             return JSONFeatureSource(vec)
