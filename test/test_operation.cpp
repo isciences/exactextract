@@ -73,6 +73,45 @@ init_geos()
     return context;
 }
 
+TEST_CASE("Operations dispatch to the correct RasterStats function", "[operation]")
+{
+    auto [stat, expected] = GENERATE(table<std::string, double>({
+      { "count", 4.0 },
+      { "majority", 5.0 },
+      { "max", 9.0 },
+      { "mean", 5.0 },
+      { "min", 1.0 },
+      { "minority", 1.0 },
+      { "mode", 5.0 },
+      { "stdev", std::sqrt(5) },
+      { "variance", 5 },
+    }));
+
+    GEOSContextHandle_t context = init_geos();
+
+    Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
+    Matrix<double> values{ { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } } };
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
+
+    WKTFeatureSource ds;
+    MapFeature mf;
+    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))")));
+    ds.add_feature(std::move(mf));
+
+    TestWriter writer;
+
+    FeatureSequentialProcessor fsp(ds, writer);
+    auto op = Operation::create(stat, stat, &value_src, nullptr);
+    fsp.add_operation(*op);
+
+    fsp.process();
+
+    const MapFeature& f = writer.m_feature;
+
+    CHECK(f.get<double>(stat) == Approx(expected));
+}
+
 TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[operation]", double, std::int32_t, std::int64_t)
 {
     GEOSContextHandle_t context = init_geos();
