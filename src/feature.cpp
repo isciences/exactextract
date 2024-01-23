@@ -23,40 +23,29 @@ namespace exactextract {
 void
 Feature::set(const std::string& name, const Feature& f)
 {
-    const auto& type = f.field_type(name);
-
-    if (type == typeid(std::string)) {
-        set(name, f.get_string(name));
-    } else if (type == typeid(double)) {
-        set(name, f.get_double(name));
-    } else if (type == typeid(DoubleArray)) {
-        set(name, f.get_double_array(name));
-    } else if (type == typeid(std::int8_t)) {
-        set(name, f.get_int(name));
-    } else if (type == typeid(std::int16_t)) {
-        set(name, f.get_int(name));
-    } else if (type == typeid(std::int32_t)) {
-        set(name, f.get_int(name));
-    } else if (type == typeid(IntegerArray)) {
-        set(name, f.get_integer_array(name));
-    } else if (type == typeid(std::int64_t)) {
-        set(name, f.get_int(name));
-    } else if (type == typeid(Integer64Array)) {
-        set(name, f.get_integer64_array(name));
-    } else if (type == typeid(std::size_t)) {
-        set(name, f.get_int(name));
-    } else {
-        throw std::runtime_error("Unhandled type: " + std::string(type.name()));
+    switch (f.field_type(name)) {
+        case ValueType::STRING:
+            set(name, f.get_string(name));
+            return;
+        case ValueType::DOUBLE:
+            set(name, f.get_double(name));
+            return;
+        case ValueType::DOUBLE_ARRAY:
+            set(name, f.get_double_array(name));
+            return;
+        case ValueType::INT:
+            set(name, f.get_int(name));
+            return;
+        case ValueType::INT64:
+            set(name, f.get_int64(name));
+            return;
+        case ValueType::INT_ARRAY:
+            set(name, f.get_integer_array(name));
+            return;
+        case ValueType::INT64_ARRAY:
+            set(name, f.get_integer64_array(name));
+            return;
     }
-}
-
-void
-Feature::set(const std::string& name, std::int64_t value)
-{
-    if (value > std::numeric_limits<std::int32_t>::max() || value < std::numeric_limits<std::int32_t>::min()) {
-        throw std::runtime_error("Value is too small/large to store as 32-bit integer.");
-    }
-    set(name, static_cast<std::int32_t>(value));
 }
 
 void
@@ -135,22 +124,24 @@ Feature::set(const std::string& name, const std::vector<double>& value)
 Feature::FieldValue
 Feature::get(const std::string& name) const
 {
-    const auto& type = field_type(name);
-
-    if (type == typeid(std::string)) {
-        return get_string(name);
-    } else if (type == typeid(double)) {
-        return get_double(name);
-    } else if (type == typeid(std::int32_t)) {
-        return get_int(name);
-    } else if (type == typeid(IntegerArray)) {
-        return get_integer_array(name);
-    } else if (type == typeid(Integer64Array)) {
-        return get_integer64_array(name);
-    } else if (type == typeid(DoubleArray)) {
-        return get_double_array(name);
-    } else {
-        throw std::runtime_error("Unhandled type: " + std::string(type.name()));
+    switch (field_type(name)) {
+        case ValueType::STRING:
+            return get_string(name);
+        case ValueType::DOUBLE:
+            return get_double(name);
+        case ValueType::DOUBLE_ARRAY:
+            return get_double_array(name);
+        case ValueType::INT:
+            return get_int(name);
+        case ValueType::INT64:
+            return get_int64(name);
+        case ValueType::INT_ARRAY:
+            return get_integer_array(name);
+        case ValueType::INT64_ARRAY:
+            return get_integer64_array(name);
     }
+
+    throw std::runtime_error("Unsupported type in Feature::get");
 }
+
 }

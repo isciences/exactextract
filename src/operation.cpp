@@ -115,47 +115,74 @@ class OperationImpl : public Operation
         return std::make_unique<Derived>(static_cast<const Derived&>(*this));
     }
 
-    const std::type_info& result_type() const override
+    Feature::ValueType result_type() const override
     {
         const auto& rast = values->read_empty();
-        return std::visit([this](const auto& r) -> const std::type_info& {
+
+        return std::visit([this](const auto& r) -> Feature::ValueType {
             using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
 
             using result_type = std::decay_t<decltype(static_cast<const Derived*>(this)->get(std::declval<RasterStats<value_type>>()))>;
 
             if constexpr (is_optional<result_type>) {
-                return typeid(decltype(std::declval<result_type>().value()));
+                using inner_result_type = decltype(*std::declval<result_type>());
+
+                if constexpr (std::is_floating_point_v<std::decay_t<inner_result_type>>) {
+                    return Feature::ValueType::DOUBLE;
+                }
+
+                if constexpr (std::is_integral_v<std::decay_t<inner_result_type>>) {
+                    if constexpr (std::is_same_v<std::decay_t<inner_result_type>, std::int64_t> ||
+                                  std::is_same_v<std::decay_t<inner_result_type>, std::size_t>) {
+                        return Feature::ValueType::INT64;
+                    } else {
+                        return Feature::ValueType::INT;
+                    }
+                }
+            }
+
+            if constexpr (std::is_floating_point_v<result_type>) {
+                return Feature::ValueType::DOUBLE;
+            }
+
+            if constexpr (std::is_integral_v<result_type>) {
+                if constexpr (std::is_same_v<result_type, std::int64_t> ||
+                              std::is_same_v<result_type, std::size_t>) {
+                    return Feature::ValueType::INT64;
+                } else {
+                    return Feature::ValueType::INT;
+                }
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<float>>) {
-                return typeid(Feature::DoubleArray);
+                return Feature::ValueType::DOUBLE_ARRAY;
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<double>>) {
-                return typeid(Feature::DoubleArray);
+                return Feature::ValueType::DOUBLE_ARRAY;
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<std::int8_t>>) {
-                return typeid(Feature::IntegerArray);
+                return Feature::ValueType::INT_ARRAY;
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<std::int16_t>>) {
-                return typeid(Feature::IntegerArray);
+                return Feature::ValueType::INT_ARRAY;
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<std::int32_t>>) {
-                return typeid(Feature::IntegerArray);
+                return Feature::ValueType::INT_ARRAY;
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<std::int64_t>>) {
-                return typeid(Feature::Integer64Array);
+                return Feature::ValueType::INT64_ARRAY;
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<std::size_t>>) {
-                return typeid(Feature::Integer64Array);
+                return Feature::ValueType::INT64_ARRAY;
             }
 
-            return typeid(result_type);
+            throw std::runtime_error("Unhandled type in Operation::result_type.");
         },
                           rast);
     }

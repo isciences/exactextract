@@ -75,23 +75,26 @@ GDALWriter::copy_field(const GDALDatasetWrapper& w, const std::string& name)
 }
 
 OGRFieldType
-GDALWriter::ogr_type(const std::type_info& typ, bool unnest)
+GDALWriter::ogr_type(const Feature::ValueType& typ, bool unnest)
 {
-    if (typ == typeid(std::int8_t) || typ == typeid(std::int16_t) || typ == typeid(std::int32_t) || typ == typeid(std::size_t)) {
-        return OFTInteger;
-    } else if (typ == typeid(double) || typ == typeid(float)) {
-        return OFTReal;
-    } else if (typ == typeid(std::string)) {
-        return OFTString;
-    } else if (typ == typeid(Feature::DoubleArray)) {
-        return unnest ? OFTReal : OFTRealList;
-    } else if (typ == typeid(Feature::IntegerArray)) {
-        return unnest ? OFTInteger : OFTIntegerList;
-    } else if (typ == typeid(Feature::Integer64Array)) {
-        return unnest ? OFTInteger64 : OFTInteger64List;
-    } else {
-        throw std::runtime_error("Unhandled type in GDALWriter::add_operation: " + std::string(typ.name()));
+    switch (typ) {
+        case Feature::ValueType::INT:
+            return OFTInteger;
+        case Feature::ValueType::INT64:
+            return OFTInteger64;
+        case Feature::ValueType::DOUBLE:
+            return OFTReal;
+        case Feature::ValueType::STRING:
+            return OFTString;
+        case Feature::ValueType::DOUBLE_ARRAY:
+            return unnest ? OFTReal : OFTRealList;
+        case Feature::ValueType::INT_ARRAY:
+            return unnest ? OFTInteger : OFTIntegerList;
+        case Feature::ValueType::INT64_ARRAY:
+            return unnest ? OFTInteger64 : OFTInteger64List;
     }
+
+    throw std::runtime_error("Unhandled type in GDALWriter::ogr_type.");
 }
 
 void
@@ -102,7 +105,7 @@ GDALWriter::add_operation(const Operation& op)
 
     const auto& typ = op.result_type();
 
-    if (typ == typeid(Feature::DoubleArray) || typ == typeid(Feature::IntegerArray) || typ == typeid(Feature::Integer64Array)) {
+    if (typ == Feature::ValueType::DOUBLE_ARRAY || typ == Feature::ValueType::INT_ARRAY || typ == Feature::ValueType::INT64_ARRAY) {
         m_contains_nested_fields = true;
     }
 

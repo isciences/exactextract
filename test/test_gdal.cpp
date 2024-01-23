@@ -51,7 +51,7 @@ TEST_CASE("GDAL feature access", "[gdal]")
         CHECK(feature.get_int("int_field") == 123);
         feature.set("int_field", 456);
         CHECK(feature.get_int("int_field") == 456);
-        CHECK(feature.field_type("int_field") == typeid(std::int32_t));
+        CHECK(feature.field_type("int_field") == Feature::ValueType::INT);
     }
 
     SECTION("string field access")
@@ -60,16 +60,16 @@ TEST_CASE("GDAL feature access", "[gdal]")
         CHECK(feature.get_string("str_field") == "abc");
         feature.set("str_field", "def");
         CHECK(feature.get_string("str_field") == "def");
-        CHECK(feature.field_type("str_field") == typeid(std::string));
+        CHECK(feature.field_type("str_field") == Feature::ValueType::STRING);
     }
 
     SECTION("int64 field access")
     {
-        feature.set("int64_field", 5000000000);
-        CHECK(feature.get_int64("int64_field") == 5000000000);
-        feature.set("int64_field", 6000000000);
+        feature.set("int64_field", std::int64_t(5000000000));
+        CHECK(feature.get_int64("int64_field") == std::int64_t(5000000000));
+        feature.set("int64_field", std::int64_t(6000000000));
         CHECK(feature.get_int64("int64_field") == 6000000000);
-        CHECK(feature.field_type("int64_field") == typeid(std::int64_t));
+        CHECK(feature.field_type("int64_field") == Feature::ValueType::INT64);
         CHECK_THROWS(feature.set("int64_field", static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max()) + 100));
     }
 
@@ -77,7 +77,7 @@ TEST_CASE("GDAL feature access", "[gdal]")
     {
         feature.set("dbl_field", 123.456);
         CHECK(feature.get_double("dbl_field") == 123.456);
-        CHECK(feature.field_type("dbl_field") == typeid(double));
+        CHECK(feature.field_type("dbl_field") == Feature::ValueType::DOUBLE);
     }
 
     SECTION("int array field access")
@@ -89,7 +89,7 @@ TEST_CASE("GDAL feature access", "[gdal]")
         CHECK(x.data[0] == 1);
         CHECK(x.data[1] == 2);
         CHECK(x.data[2] == 3);
-        CHECK(feature.field_type("int_v_field") == typeid(Feature::IntegerArray));
+        CHECK(feature.field_type("int_v_field") == Feature::ValueType::INT_ARRAY);
 
         std::vector<std::int16_t> int16_v{ 4, 5, 6 };
         feature.set("int_v_field", int16_v);
@@ -98,7 +98,7 @@ TEST_CASE("GDAL feature access", "[gdal]")
         CHECK(x.data[0] == 4);
         CHECK(x.data[1] == 5);
         CHECK(x.data[2] == 6);
-        CHECK(feature.field_type("int_v_field") == typeid(Feature::IntegerArray));
+        CHECK(feature.field_type("int_v_field") == Feature::ValueType::INT_ARRAY);
 
         std::vector<std::int16_t> int8_v{ 7, 8, 9 };
         feature.set("int_v_field", int8_v);
@@ -107,7 +107,7 @@ TEST_CASE("GDAL feature access", "[gdal]")
         CHECK(x.data[0] == 7);
         CHECK(x.data[1] == 8);
         CHECK(x.data[2] == 9);
-        CHECK(feature.field_type("int_v_field") == typeid(Feature::IntegerArray));
+        CHECK(feature.field_type("int_v_field") == Feature::ValueType::INT_ARRAY);
     }
 
     SECTION("int64 array field access")
@@ -118,7 +118,7 @@ TEST_CASE("GDAL feature access", "[gdal]")
         CHECK(x.size == 2);
         CHECK(x.data[0] == 5000000000);
         CHECK(x.data[1] == 6000000000);
-        CHECK(feature.field_type("int64_v_field") == typeid(Feature::Integer64Array));
+        CHECK(feature.field_type("int64_v_field") == Feature::ValueType::INT64_ARRAY);
     }
 
     SECTION("double array field access")
@@ -130,7 +130,7 @@ TEST_CASE("GDAL feature access", "[gdal]")
         CHECK(x.data[0] == 1.1);
         CHECK(x.data[1] == 2.2);
         CHECK(x.data[2] == 3.3);
-        CHECK(feature.field_type("dbl_v_field") == typeid(Feature::DoubleArray));
+        CHECK(feature.field_type("dbl_v_field") == Feature::ValueType::DOUBLE_ARRAY);
     }
 
     CHECK_THROWS(feature.get("does_not_exist"));

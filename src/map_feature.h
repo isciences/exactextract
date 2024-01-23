@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ISciences, LLC.
+// Copyright (c) 2023-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -42,11 +42,12 @@ class MapFeature : public Feature
 
     MapFeature& operator=(MapFeature&& other) = default;
 
-    const std::type_info& field_type(const std::string& name) const override
+    ValueType field_type(const std::string& name) const override
     {
         const FieldValue& val = m_map.at(name);
-        // https://stackoverflow.com/a/53697591/2171894
-        return std::visit([](auto&& x) -> decltype(auto) { return typeid(x); }, val);
+
+        FieldTypeGetter gft;
+        return std::visit(gft, val);
     }
 
     void set(const std::string& name, double value) override
@@ -77,6 +78,11 @@ class MapFeature : public Feature
     IntegerArray get_integer_array(const std::string& name) const override
     {
         return get<IntegerArray>(name);
+    }
+
+    void set(const std::string& name, std::int64_t value) override
+    {
+        m_map[name] = value;
     }
 
     void set(const std::string& name, const Integer64Array& value) override
@@ -141,6 +147,11 @@ class MapFeature : public Feature
     std::int32_t get_int(const std::string& name) const override
     {
         return get<std::int32_t>(name);
+    }
+
+    std::int64_t get_int64(const std::string& name) const override
+    {
+        return get<std::int64_t>(name);
     }
 
   private:

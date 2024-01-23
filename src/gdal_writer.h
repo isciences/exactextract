@@ -38,7 +38,7 @@ class GDALWriter : public OutputWriter
 
     void copy_field(const GDALDatasetWrapper& w, const std::string& field_name);
 
-    static OGRFieldType ogr_type(const std::type_info&, bool unnest);
+    static OGRFieldType ogr_type(const Feature::ValueType&, bool unnest);
 
   protected:
     GDALDatasetH m_dataset;

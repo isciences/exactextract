@@ -16,7 +16,6 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
-#include <typeinfo>
 #include <variant>
 #include <vector>
 
@@ -86,20 +85,93 @@ class Feature
     using DoubleArray = Array<double>;
     using IntegerArray = Array<std::int32_t>;
     using Integer64Array = Array<std::int64_t>;
-    using FieldValue = std::variant<std::string, double, std::int32_t, DoubleArray, IntegerArray, Integer64Array>;
+    using FieldValue = std::variant<std::string, double, std::int32_t, std::int64_t, DoubleArray, IntegerArray, Integer64Array>;
+
+    enum class ValueType
+    {
+        STRING,
+        DOUBLE,
+        DOUBLE_ARRAY,
+        INT,
+        INT64,
+        INT_ARRAY,
+        INT64_ARRAY
+    };
 
     virtual ~Feature()
     {
     }
 
+    struct FieldTypeGetter
+    {
+        constexpr ValueType operator()(double) const
+        {
+            return ValueType::DOUBLE;
+        }
+        constexpr ValueType operator()(std::int32_t) const
+        {
+            return ValueType::INT;
+        }
+        constexpr ValueType operator()(std::size_t) const
+        {
+            return ValueType::INT64;
+        }
+        constexpr ValueType operator()(std::int64_t) const
+        {
+            return ValueType::INT64;
+        }
+        constexpr ValueType operator()(const std::string&) const
+        {
+            return ValueType::STRING;
+        }
+        constexpr ValueType operator()(const DoubleArray&) const
+        {
+            return ValueType::DOUBLE_ARRAY;
+        }
+        constexpr ValueType operator()(const std::vector<double>&) const
+        {
+            return ValueType::DOUBLE_ARRAY;
+        }
+        constexpr ValueType operator()(const std::vector<float>&) const
+        {
+            return ValueType::DOUBLE_ARRAY;
+        }
+        constexpr ValueType operator()(const std::vector<std::int8_t>&) const
+        {
+            return ValueType::INT_ARRAY;
+        }
+        constexpr ValueType operator()(const std::vector<std::int16_t>&) const
+        {
+            return ValueType::INT_ARRAY;
+        }
+        constexpr ValueType operator()(const std::vector<std::int32_t>&) const
+        {
+            return ValueType::INT_ARRAY;
+        }
+        constexpr ValueType operator()(const IntegerArray&) const
+        {
+            return ValueType::INT_ARRAY;
+        }
+        constexpr ValueType operator()(const Integer64Array&) const
+        {
+            return ValueType::INT64_ARRAY;
+        }
+        constexpr ValueType operator()(const std::vector<std::int64_t>&) const
+        {
+            return ValueType::INT64_ARRAY;
+        }
+    };
+
     // Interface methods
-    virtual const std::type_info& field_type(const std::string& name) const = 0;
+    virtual ValueType field_type(const std::string& name) const = 0;
 
     virtual void set(const std::string& name, std::string value) = 0;
 
     virtual void set(const std::string& name, double value) = 0;
 
     virtual void set(const std::string& name, std::int32_t value) = 0;
+
+    virtual void set(const std::string& name, std::int64_t value) = 0;
 
     virtual void set(const std::string& name, const DoubleArray& value) = 0;
 
@@ -114,6 +186,8 @@ class Feature
     virtual DoubleArray get_double_array(const std::string& name) const = 0;
 
     virtual std::int32_t get_int(const std::string& name) const = 0;
+
+    virtual std::int64_t get_int64(const std::string& name) const = 0;
 
     virtual IntegerArray get_integer_array(const std::string& name) const = 0;
 
@@ -141,8 +215,6 @@ class Feature
     virtual void set(const std::string& name, const std::vector<float>& value);
 
     virtual void set(const std::string& name, const std::vector<double>& value);
-
-    virtual void set(const std::string& name, std::int64_t value);
 
     virtual void set(const std::string& name, std::size_t value);
 

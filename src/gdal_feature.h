@@ -62,28 +62,28 @@ class GDALFeature : public Feature
     GDALFeature(const GDALFeature& other) = delete;
     GDALFeature& operator=(const GDALFeature& other) = delete;
 
-    const std::type_info& field_type(const std::string& name) const override
+    ValueType field_type(const std::string& name) const override
     {
         auto pos = field_index(name);
         OGRFieldDefnH defn = OGR_F_GetFieldDefnRef(m_feature, pos);
-        auto type = OGR_Fld_GetType(defn);
 
-        if (type == OFTString) {
-            return typeid(std::string);
-        } else if (type == OFTInteger) {
-            return typeid(std::int32_t);
-        } else if (type == OFTInteger64) {
-            return typeid(std::int64_t);
-        } else if (type == OFTReal) {
-            return typeid(double);
-        } else if (type == OFTRealList) {
-            return typeid(DoubleArray);
-        } else if (type == OFTIntegerList) {
-            return typeid(IntegerArray);
-        } else if (type == OFTInteger64List) {
-            return typeid(Integer64Array);
-        } else {
-            throw std::runtime_error("Unhandled type.");
+        switch (OGR_Fld_GetType(defn)) {
+            case OFTString:
+                return ValueType::STRING;
+            case OFTInteger:
+                return ValueType::INT;
+            case OFTIntegerList:
+                return ValueType::INT_ARRAY;
+            case OFTInteger64:
+                return ValueType::INT64;
+            case OFTInteger64List:
+                return ValueType::INT64_ARRAY;
+            case OFTReal:
+                return ValueType::DOUBLE;
+            case OFTRealList:
+                return ValueType::DOUBLE_ARRAY;
+            default:
+                throw std::runtime_error("Unhandled type.");
         }
     }
 

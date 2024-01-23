@@ -39,7 +39,7 @@ DeferredGDALWriter::finish()
             if (ogr_fields.find(field_name) == ogr_fields.end()) {
                 const auto& typ = feature.field_type(field_name);
 
-                if (typ == typeid(Feature::DoubleArray) || typ == typeid(Feature::IntegerArray) || typ == typeid(Feature::Integer64Array)) {
+                if (typ == Feature::ValueType::DOUBLE_ARRAY || typ == Feature::ValueType::INT_ARRAY || typ == Feature::ValueType::INT64_ARRAY) {
                     m_contains_nested_fields = true;
                 }
 

@@ -56,6 +56,11 @@ class PyFeatureBase : public Feature
         return get_py(name).cast<int32_t>();
     }
 
+    std::int64_t get_int64(const std::string& name) const override
+    {
+        return get_py(name).cast<int64_t>();
+    }
+
     IntegerArray get_integer_array(const std::string& name) const override
     {
         py::array_t<std::int32_t> arr = get_py(name);
@@ -76,6 +81,16 @@ class PyFeatureBase : public Feature
     void set(const std::string& name, std::string value) override
     {
         set_py(name, py::str(value));
+    }
+
+    void set(const std::string& name, std::int32_t value) override
+    {
+        set_py(name, py::int_(value));
+    }
+
+    void set(const std::string& name, std::int64_t value) override
+    {
+        set_py(name, py::int_(value));
     }
 
     void set(const std::string& name, double value) override
@@ -109,37 +124,32 @@ class PyFeatureBase : public Feature
         set_py(name, values);
     }
 
-    void set(const std::string& name, std::int32_t value) override
-    {
-        set_py(name, py::int_(value));
-    }
-
-    const std::type_info& field_type(const std::string& name) const override
+    ValueType field_type(const std::string& name) const override
     {
         py::object value = get_py(name);
 
         if (py::isinstance<py::int_>(value)) {
-            return typeid(int);
+            return ValueType::INT;
         }
 
         if (py::isinstance<py::float_>(value)) {
-            return typeid(double);
+            return ValueType::DOUBLE;
         }
 
         if (py::isinstance<py::str>(value)) {
-            return typeid(std::string);
+            return ValueType::STRING;
         }
 
         if (py::isinstance<py::array_t<double>>(value)) {
-            return typeid(DoubleArray);
+            return ValueType::DOUBLE;
         }
 
         if (py::isinstance<py::array_t<std::int32_t>>(value)) {
-            return typeid(IntegerArray);
+            return ValueType::INT_ARRAY;
         }
 
         if (py::isinstance<py::array_t<std::int64_t>>(value)) {
-            return typeid(Integer64Array);
+            return ValueType::INT64_ARRAY;
         }
 
         throw std::runtime_error("Unhandled type for field " + name + " in PyFeatureBase::field_type");

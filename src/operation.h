@@ -106,7 +106,7 @@ class Operation
     Grid<bounded_extent> grid() const;
 
     /// Returns the type of the `Operation` result
-    virtual const std::type_info& result_type() const = 0;
+    virtual Feature::ValueType result_type() const = 0;
 
     /// Returns a key for which a `StatsRegistry` can be queried to get a
     /// `RasterStats` object which can be used to populate the columns associated

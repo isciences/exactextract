@@ -112,6 +112,44 @@ TEST_CASE("Operations dispatch to the correct RasterStats function", "[operation
     CHECK(f.get<double>(stat) == Approx(expected));
 }
 
+TEMPLATE_TEST_CASE("result_type returns correct result", "[operation]", double, float, std::int8_t, std::int16_t, std::int32_t, std::int64_t)
+{
+    GEOSContextHandle_t context = init_geos();
+
+    auto stat = GENERATE(
+      "variety",      // size_t
+      "mean",         // float
+      "min_center_x", // double
+      "mode",         // std::optional<TestType>
+      "values",       // std::vector<TestType>
+      "cell_id",      // std::vector<std::int64_t>
+      "frac",         // std::vector<float>
+      "center_x"      // std::vector<double>
+    );
+
+    Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
+    Matrix<TestType> values{ { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } } };
+    auto value_rast = std::make_unique<Raster<TestType>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
+
+    WKTFeatureSource ds;
+    MapFeature mf;
+    mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))")));
+    ds.add_feature(std::move(mf));
+
+    TestWriter writer;
+
+    FeatureSequentialProcessor fsp(ds, writer);
+    auto op = Operation::create(stat, stat, &value_src, nullptr);
+    fsp.add_operation(*op);
+
+    fsp.process();
+
+    const Feature& f = writer.m_feature;
+
+    CHECK(op->result_type() == f.field_type(op->name));
+}
+
 TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[operation]", double, std::int32_t, std::int64_t)
 {
     GEOSContextHandle_t context = init_geos();
@@ -136,13 +174,15 @@ TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[op
 
     const MapFeature& f = writer.m_feature;
 
-    CHECK(op->result_type() == typeid(TestType));
+    CHECK(op->result_type() == f.field_type("mode"));
 
     const auto& pix_typ = typeid(TestType);
     if (pix_typ == typeid(float) || pix_typ == typeid(double)) {
-        CHECK(f.field_type("mode") == typeid(double));
-    } else if (pix_typ == typeid(std::int32_t) || pix_typ == typeid(std::int64_t)) {
-        CHECK(f.field_type("mode") == typeid(std::int32_t));
+        CHECK(f.field_type("mode") == Feature::ValueType::DOUBLE);
+    } else if (pix_typ == typeid(std::int32_t)) {
+        CHECK(f.field_type("mode") == Feature::ValueType::INT);
+    } else {
+        CHECK(f.field_type("mode") == Feature::ValueType::INT64);
     }
 }
 
