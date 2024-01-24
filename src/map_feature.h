@@ -42,6 +42,8 @@ class MapFeature : public Feature
 
     MapFeature& operator=(MapFeature&& other) = default;
 
+    using Feature::set;
+
     ValueType field_type(const std::string& name) const override
     {
         const FieldValue& val = m_map.at(name);

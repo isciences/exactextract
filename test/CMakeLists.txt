@@ -11,6 +11,7 @@ endif()
 set(TEST_SOURCES
 test_box.cpp
 test_cell.cpp
+test_feature.cpp
 test_geos_utils.cpp
 test_grid.cpp
 test_main.cpp
@@ -22,7 +23,8 @@ test_raster_cell_intersection.cpp
 test_raster_iterator.cpp
 test_traversal_areas.cpp
 test_stats.cpp
-test_utils.cpp)
+test_utils.cpp
+)
 
 # Create an executable to run the unit tests
 add_executable(catch_tests ${TEST_SOURCES})
