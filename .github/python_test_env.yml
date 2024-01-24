@@ -9,4 +9,5 @@ dependencies:
   - numpy
   - pybind11
   - pytest
+  - pytest-cov
   - rasterio
