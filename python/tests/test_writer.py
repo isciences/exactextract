@@ -49,7 +49,7 @@ def test_gdal_writer(point_features):
     drv = ogr.GetDriverByName("Memory")
     ds = drv.CreateDataSource("")
 
-    w = GDALWriter(ds, "out")
+    w = GDALWriter(ds, layer_name="out")
 
     features = []
     for i in range(3):

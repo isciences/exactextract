@@ -514,8 +514,11 @@ def test_types_preserved(dtype):
         assert isinstance(result, float)
 
 
-@pytest.mark.parametrize("output_type", ("filename", "DataSource"))
-def test_gdal_output(tmp_path, output_type):
+@pytest.mark.parametrize(
+    "output_type,driver",
+    (("filename", None), ("filename", "GPKG"), ("DataSource", None)),
+)
+def test_gdal_output(tmp_path, output_type, driver):
     ogr = pytest.importorskip("osgeo.ogr")
     osr = pytest.importorskip("osgeo.osr")
 
@@ -528,26 +531,29 @@ def test_gdal_output(tmp_path, output_type):
         make_rect(0, 0, 3, 3, properties={"name": "test"}), srs_wkt=srs.ExportToWkt()
     )
 
-    fname = tmp_path / "stats.dbf"
-
     if output_type == "filename":
-        output = fname
+        fname = tmp_path / "stats.gpkg"
+        output_options = {"filename": fname, "driver": driver}
     elif output_type == "DataSource":
+        fname = tmp_path / "stats.dbf"
         drv = ogr.GetDriverByName("ESRI Shapefile")
-        output = drv.CreateDataSource(str(fname))
+        ds = drv.CreateDataSource(str(fname))
+        output_options = {"dataset": ds}
 
     result = exact_extract(
         rast,
         square,
         ["mean", "count", "variety"],
         include_cols=["name"],
-        output=output,
+        output="gdal",
+        output_options=output_options,
         include_geom=True,
     )
 
     assert result is None
 
-    output = None  # flush DataSource
+    del output_options  # flush DataSource
+    ds = None  # flush DataSource
     ds = ogr.Open(str(fname))
 
     lyr = ds.GetLayer(0)
@@ -626,3 +632,15 @@ def test_masked_array():
     result = exact_extract(rast, square, ["values"])[0]["properties"]
 
     assert np.array_equal(result["values"], masked.compressed())
+
+
+def test_output_no_numpy():
+
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(
+        rast, square, "cell_id", output="geojson", output_options={"array_type": "list"}
+    )
+
+    assert type(result[0]["properties"]["cell_id"]) is list

@@ -1,17 +1,32 @@
 import copy
+import os
 
 from ._exactextract import Writer
 from .feature import GDALFeature, JSONFeature
 
 
 class JSONWriter(Writer):
-    def __init__(self):
+    def __init__(self, *, array_type="numpy"):
         super().__init__()
+
+        if array_type not in ("numpy", "list"):
+            raise ValueError("Unsupported array_type: " + array_type)
+
         self.feature_list = []
+        self.array_type = array_type
 
     def write(self, feature):
         f = JSONFeature()
         feature.copy_to(f)
+
+        if self.array_type == "list":
+            import numpy as np
+
+            props = f.feature["properties"]
+            for k in props:
+                if type(props[k]) is np.ndarray:
+                    props[k] = list(props[k])
+
         self.feature_list.append(f.feature)
 
     def features(self):
@@ -62,11 +77,31 @@ class PandasWriter(Writer):
 
 
 class GDALWriter(Writer):
-    def __init__(self, ds, name="", *, srs_wkt=None):
+    def __init__(
+        self, dataset=None, *, filename=None, driver=None, layer_name="", srs_wkt=None
+    ):
         super().__init__()
-        self.feature_list = []
-        self.ds = ds
-        self.layer_name = name
+
+        from osgeo import gdal, ogr
+
+        if dataset is not None:
+            assert isinstance(dataset, gdal.Dataset) or isinstance(
+                dataset, ogr.DataSource
+            )
+            self.ds = dataset
+        elif isinstance(filename, (str, os.PathLike)):
+
+            from osgeo_utils.auxiliary.util import GetOutputDriverFor
+
+            if driver is None:
+                driver = GetOutputDriverFor(filename, is_raster=False)
+
+            ogr_drv = ogr.GetDriverByName(driver)
+            self.ds = ogr_drv.CreateDataSource(str(filename))
+        else:
+            raise ValueError("Unhandled output type.")
+
+        self.layer_name = layer_name
         self.prototype = {"type": "Feature", "properties": {}}
         self.srs_wkt = srs_wkt
         self.lyr = None

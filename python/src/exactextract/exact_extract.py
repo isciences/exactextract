@@ -152,29 +152,19 @@ def prep_processor(strategy):
     return processors[strategy]
 
 
-def prep_writer(output, srs_wkt):
+def prep_writer(output, srs_wkt, options):
+    if options is None:
+        options = {}
+
     if isinstance(output, Writer):
+        assert not options
         return output
     elif output == "geojson":
-        return JSONWriter()
+        return JSONWriter(**options)
     elif output == "pandas":
-        return PandasWriter(srs_wkt=srs_wkt)
-
-    try:
-        from osgeo import gdal, ogr
-        from osgeo_utils.auxiliary.util import GetOutputDriverFor
-
-        if isinstance(output, (str, os.PathLike)):
-            drv_name = GetOutputDriverFor(output, is_raster=False)
-            drv = ogr.GetDriverByName(drv_name)
-            ds = drv.CreateDataSource(str(output))
-            return GDALWriter(ds, srs_wkt=srs_wkt)
-
-        if isinstance(output, gdal.Dataset) or isinstance(output, ogr.DataSource):
-            return GDALWriter(output, srs_wkt=srs_wkt)
-
-    except ImportError:
-        pass
+        return PandasWriter(srs_wkt=srs_wkt, **options)
+    elif output == "gdal":
+        return GDALWriter(srs_wkt=srs_wkt, **options)
 
     raise Exception("Unsupported value of output")
 
@@ -190,6 +180,7 @@ def exact_extract(
     strategy="feature-sequential",
     max_cells_in_memory=30000000,
     output="geojson",
+    output_options=None,
 ):
     rast = prep_raster(rast, name_root="band")
     weights = prep_raster(weights, name_root="weight")
@@ -203,7 +194,7 @@ def exact_extract(
 
     Processor = prep_processor(strategy)
 
-    writer = prep_writer(output, vec.srs_wkt())
+    writer = prep_writer(output, vec.srs_wkt(), output_options)
 
     processor = Processor(vec, writer, ops, include_cols)
     if include_geom:
