@@ -7,7 +7,22 @@ class GDALFeature(Feature):
         self.feature = f
 
     def set(self, name, value):
-        self.feature.SetField(name, value)
+        idx = self.feature.GetDefnRef().GetFieldIndex(name)
+
+        if type(value) in (int, float, str):
+            self.feature.SetField(idx, value)
+            return
+
+        import numpy as np
+
+        if value.dtype == np.int64:
+            self.feature.SetFieldInteger64List(idx, value)
+        elif value.dtype == np.int32:
+            self.feature.SetFieldIntegerList(idx, value)
+        elif value.dtype == np.float64:
+            self.feature.SetFieldDoubleList(idx, value)
+        else:
+            raise Exception("Unexpected type in GDALFeature::set")
 
     def get(self, name):
         return self.feature.GetField(name)

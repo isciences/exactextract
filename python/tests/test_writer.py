@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from exactextract import GDALWriter, JSONFeature, JSONWriter, Operation, PandasWriter
@@ -41,6 +43,7 @@ def test_json_writer(point_features):
 
 
 def test_gdal_writer(point_features):
+    np = pytest.importorskip("numpy")
     ogr = pytest.importorskip("osgeo.ogr")
 
     drv = ogr.GetDriverByName("Memory")
@@ -48,21 +51,72 @@ def test_gdal_writer(point_features):
 
     w = GDALWriter(ds, "out")
 
-    for f in point_features:
+    features = []
+    for i in range(3):
+        features.append(
+            JSONFeature(
+                {
+                    "type": "Feature",
+                    "id": i + 2,
+                    "properties": {
+                        "int_field": i + 13,
+                        "float_field": float(i) + 13.7,
+                        "str_field": "apple",
+                        "int_array_field": np.array([1, 3, i], dtype=np.int32),
+                        "int64_array_field": np.array([1, 3, i], dtype=np.int64),
+                        "float_array_field": np.array(
+                            [13.7, 26.4, i], dtype=np.float64
+                        ),
+                    },
+                    "geometry": {"type": "Point", "coordinates": [i, i + 1]},
+                }
+            )
+        )
+
+    for f in features:
         w.write(f)
     w.finish()
 
     lyr = ds.GetLayerByName("out")
     assert lyr is not None
-    assert lyr.GetFeatureCount() == len(point_features)
+    assert lyr.GetFeatureCount() == len(features)
 
-    f = lyr.GetNextFeature()
-    assert f["id"] == 3
-    assert f["type"] == "apple"
+    defn = lyr.GetLayerDefn()
+    assert (
+        defn.GetFieldDefn(defn.GetFieldIndex("int_field")).GetType() == ogr.OFTInteger
+    )
+    assert defn.GetFieldDefn(defn.GetFieldIndex("float_field")).GetType() == ogr.OFTReal
+    assert defn.GetFieldDefn(defn.GetFieldIndex("str_field")).GetType() == ogr.OFTString
+    assert (
+        defn.GetFieldDefn(defn.GetFieldIndex("int_array_field")).GetType()
+        == ogr.OFTIntegerList
+    )
+    assert (
+        defn.GetFieldDefn(defn.GetFieldIndex("int64_array_field")).GetType()
+        == ogr.OFTInteger64List
+    )
+    assert (
+        defn.GetFieldDefn(defn.GetFieldIndex("float_array_field")).GetType()
+        == ogr.OFTRealList
+    )
 
-    f = lyr.GetNextFeature()
-    assert f["id"] == 2
-    assert f["type"] == "pear"
+    for f_in in features:
+        f_out = lyr.GetNextFeature()
+        assert f_out["id"] == f_in.feature["id"]
+        for field, value in f_in.feature["properties"].items():
+            if type(value) is np.ndarray:
+                assert np.array_equal(f_out[field], value)
+                # GDAL python bindings return a list, not a np.ndarray,
+                # so we can't check the dtype of the returned value.
+                # However, we have already checked the OGR data type above.
+                # assert f_out[field].dtype == value.dtyp
+            else:
+                assert f_out[field] == value
+
+        assert (
+            json.loads(f_out.GetGeometryRef().ExportToJson())
+            == f_in.feature["geometry"]
+        )
 
 
 def test_pandas_writer(np_raster_source, point_features):

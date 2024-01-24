@@ -69,6 +69,7 @@ class GDALWriter(Writer):
         self.layer_name = name
         self.prototype = {"type": "Feature", "properties": {}}
         self.srs_wkt = srs_wkt
+        self.lyr = None
 
     def add_operation(self, op):
         # Create a prototype feature so that field names
@@ -80,50 +81,56 @@ class GDALWriter(Writer):
         self.prototype["properties"][col_name] = None
 
     def write(self, feature):
-        f = JSONFeature(copy.deepcopy(self.prototype))
-        feature.copy_to(f)
-        self.feature_list.append(f)
+        from osgeo import ogr, osr
+
+        if self.lyr is None:
+            f = JSONFeature(copy.deepcopy(self.prototype))
+            feature.copy_to(f)
+
+            fields = self._collect_fields(f)
+
+            srs = osr.SpatialReference()
+            if self.srs_wkt:
+                srs.ImportFromWkt(self.srs_wkt)
+
+            self.lyr = self.ds.CreateLayer(self.layer_name, srs)
+            for field_def in fields.values():
+                self.lyr.CreateField(field_def)
+
+        ogr_feature = ogr.Feature(self.lyr.GetLayerDefn())
+        feature.copy_to(GDALFeature(ogr_feature))
+        self.lyr.CreateFeature(ogr_feature)
 
     def features(self):
         return None
 
-    def finish(self):
-        from osgeo import ogr, osr
-
-        fields = self._collect_fields()
-
-        srs = osr.SpatialReference()
-        if self.srs_wkt:
-            srs.ImportFromWkt(self.srs_wkt)
-
-        lyr = self.ds.CreateLayer(self.layer_name, srs)
-        for field_def in fields.values():
-            lyr.CreateField(field_def)
-
-        for feature in self.feature_list:
-            ogr_feature = ogr.Feature(lyr.GetLayerDefn())
-            feature.copy_to(GDALFeature(ogr_feature))
-            lyr.CreateFeature(ogr_feature)
-
-    def _collect_fields(self):
+    @staticmethod
+    def _collect_fields(feature):
+        import numpy as np
         from osgeo import ogr
 
         ogr_fields = {}
 
-        for feature in self.feature_list:
-            for field_name in feature.fields():
-                if field_name not in ogr_fields:
-                    field_type = None
+        for field_name in feature.fields():
+            if field_name not in ogr_fields:
+                field_type = None
 
-                    value = feature.get(field_name)
+                value = feature.get(field_name)
 
-                    if type(value) is str:
-                        field_type = ogr.OFTString
-                    elif type(value) is float:
-                        field_type = ogr.OFTReal
-                    elif type(value) is int:
-                        field_type = ogr.OFTInteger
+                if type(value) is str:
+                    field_type = ogr.OFTString
+                elif type(value) is float:
+                    field_type = ogr.OFTReal
+                elif type(value) is int:
+                    field_type = ogr.OFTInteger
+                elif type(value) is np.ndarray:
+                    if value.dtype == np.int64:
+                        field_type = ogr.OFTInteger64List
+                    elif value.dtype == np.int32:
+                        field_type = ogr.OFTIntegerList
+                    elif value.dtype == np.float64:
+                        field_type = ogr.OFTRealList
 
-                    ogr_fields[field_name] = ogr.FieldDefn(field_name, field_type)
+                ogr_fields[field_name] = ogr.FieldDefn(field_name, field_type)
 
         return ogr_fields

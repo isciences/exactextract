@@ -141,7 +141,7 @@ class PyFeatureBase : public Feature
         }
 
         if (py::isinstance<py::array_t<double>>(value)) {
-            return ValueType::DOUBLE;
+            return ValueType::DOUBLE_ARRAY;
         }
 
         if (py::isinstance<py::array_t<std::int32_t>>(value)) {
