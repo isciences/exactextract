@@ -644,3 +644,28 @@ def test_output_no_numpy():
     )
 
     assert type(result[0]["properties"]["cell_id"]) is list
+
+
+def test_output_map_fields():
+
+    rast = NumPyRasterSource(np.array([[1, 1, 1], [2, 2, 2], [3, 3, 4]]))
+    weights = NumPyRasterSource(np.array([[0, 0, 0], [0, 0, 0], [1, 1, 1]]))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    result = exact_extract(
+        rast,
+        square,
+        ["unique", "frac", "weighted_frac"],
+        weights=weights,
+        output_options={
+            "map_fields": {
+                "frac": ("unique", "frac"),
+                "weighted_frac": ("unique", "weighted_frac"),
+            }
+        },
+    )
+
+    assert result[0]["properties"] == {
+        "frac": {1: 0.25, 2: 0.5, 3: 0.1875, 4: 0.0625},
+        "weighted_frac": {1: 0.0, 2: 0.0, 3: 0.75, 4: 0.25},
+    }

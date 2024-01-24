@@ -6,31 +6,53 @@ from .feature import GDALFeature, JSONFeature
 
 
 class JSONWriter(Writer):
-    def __init__(self, *, array_type="numpy"):
+    def __init__(self, *, array_type="numpy", map_fields=None):
         super().__init__()
 
         if array_type not in ("numpy", "list"):
             raise ValueError("Unsupported array_type: " + array_type)
 
-        self.feature_list = []
         self.array_type = array_type
+        self.feature_list = []
+        self.map_fields = map_fields or {}
 
     def write(self, feature):
         f = JSONFeature()
         feature.copy_to(f)
 
-        if self.array_type == "list":
-            import numpy as np
-
-            props = f.feature["properties"]
-            for k in props:
-                if type(props[k]) is np.ndarray:
-                    props[k] = list(props[k])
+        self._convert_arrays(f)
+        self._create_map_fields(f)
 
         self.feature_list.append(f.feature)
 
     def features(self):
         return self.feature_list
+
+    def _convert_arrays(self, f):
+        props = f.feature["properties"]
+
+        if self.array_type == "list":
+            import numpy as np
+
+            for k in props:
+                if type(props[k]) is np.ndarray:
+                    props[k] = list(props[k])
+
+    def _create_map_fields(self, f):
+        props = f.feature["properties"]
+
+        new_fields = {}
+        to_delete = set()
+        for field in self.map_fields:
+            key_src, val_src = self.map_fields[field]
+
+            new_fields[field] = {k: v for k, v in zip(props[key_src], props[val_src])}
+
+            to_delete.add(key_src)
+            to_delete.add(val_src)
+        for field in to_delete:
+            del props[field]
+        props.update(new_fields)
 
 
 class PandasWriter(Writer):
