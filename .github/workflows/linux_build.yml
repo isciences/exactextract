@@ -61,7 +61,8 @@ jobs:
     - name: generate coverage report
       run: |
         cd build
-        lcov --capture --directory CMakeFiles --output-file coverage.info
+        mkdir -p python/CMakeFiles
+        lcov --capture --directory CMakeFiles --directory python/CMakeFiles --output-file coverage.info
     - name: upload coverage
       uses: codecov/codecov-action@v3
       with:
