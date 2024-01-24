@@ -100,9 +100,6 @@ GDALWriter::ogr_type(const Feature::ValueType& typ, bool unnest)
 void
 GDALWriter::add_operation(const Operation& op)
 {
-    MapFeature mf;
-    op.set_empty_result(mf);
-
     const auto& typ = op.result_type();
 
     if (typ == Feature::ValueType::DOUBLE_ARRAY || typ == Feature::ValueType::INT_ARRAY || typ == Feature::ValueType::INT64_ARRAY) {
