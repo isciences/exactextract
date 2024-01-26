@@ -11,8 +11,7 @@ Python bindings can work with the GDAL Python bindings if they are available.
 
 ## Installation
 
-To install the Python bindings, run `pip install .` from the `python` directory
-of the source tree.
+To install the Python bindings, run `pip install .` from the root of the source tree.
 
 ## Basic usage
 
