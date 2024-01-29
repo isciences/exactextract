@@ -5,7 +5,24 @@ from .feature import GDALFeature, JSONFeature
 
 
 class GDALFeatureSource(FeatureSource):
+    """
+    A FeatureSource using the GDAL/OGR Python interface to provide features.
+    """
+
     def __init__(self, src):
+        """
+        Create a GDALFeatureSource.
+
+        Args:
+            src: one of the following:
+                 - string or Path to a file/datasource that can be opened with GDAL/OGR
+                 - a `gdal.Dataset`
+                 - an `ogr.DataSource`
+                 - an `ogr.Layer`
+
+            If the file has more than one layer, e.g., a GeoPackage, an `ogr.Layer` must be provided
+            directly.
+        """
         super().__init__()
 
         if isinstance(src, (str, os.PathLike)):
@@ -37,6 +54,10 @@ class GDALFeatureSource(FeatureSource):
 
 
 class JSONFeatureSource(FeatureSource):
+    """
+    A FeatureSource providing GeoJSON-like features.
+    """
+
     def __init__(self, src, *, srs_wkt=None):
         super().__init__()
         if type(src) is dict:
@@ -55,6 +76,10 @@ class JSONFeatureSource(FeatureSource):
 
 
 class GeoPandasFeatureSource(FeatureSource):
+    """
+    A FeatureSource using GeoPandas GeoDataFrame to provide features.
+    """
+
     def __init__(self, src):
         super().__init__()
         self.src = src

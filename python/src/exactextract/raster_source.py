@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import os
 
 import numpy as np
@@ -9,7 +6,18 @@ from ._exactextract import RasterSource
 
 
 class GDALRasterSource(RasterSource):
+    """
+    RasterSource backed by GDAL
+    """
+
     def __init__(self, ds, band_idx: int = 1, *, name=None):
+        """
+
+        Args:
+            ds: A ``gdal.Dataset`` or path from which one can be opened
+            band_idx: 1-based numerical index of band to read
+            name: source name, to be used in generating field names for results
+        """
         super().__init__()
         if isinstance(ds, (str, os.PathLike)):
             from osgeo import gdal
@@ -72,6 +80,10 @@ class GDALRasterSource(RasterSource):
 
 
 class NumPyRasterSource(RasterSource):
+    """
+    RasterSource backed by a NumPy array
+    """
+
     def __init__(
         self,
         mat,
@@ -84,6 +96,22 @@ class NumPyRasterSource(RasterSource):
         name=None,
         srs_wkt=None
     ):
+        """
+        Create a RasterSource that references a NumPy array.
+
+        If spatial extent arguments are not provided, the extent will be assumed to be
+        from (0,0) to (nx,ny).
+
+        Args:
+            mat: a two-dimensional NumPy array. Masked arrays are supported.
+            xmin: x coordinate of left edge
+            ymin: y coordinate of bottom edge
+            xmax: x coordinate of right edge
+            ymax: y coordinate of top edge
+            nodata: Optional value used to indicate missing data.
+            name: source name, to be used in generating field names for results
+            srs_wkt: WKT string indicating the spatial reference system.
+        """
         super().__init__()
         self.mat = mat
         self.nodata = nodata
@@ -120,7 +148,18 @@ class NumPyRasterSource(RasterSource):
 
 
 class RasterioRasterSource(RasterSource):
+    """
+    RasterSource backed by rasterio
+    """
+
     def __init__(self, ds, band_idx=1, *, name=None):
+        """
+
+        Args:
+            ds: A ``rasterio.DatasetReader`` or path from which one can be opened
+            band_idx: 1-based numerical index of band to read
+            name: source name, to be used in generating field names for results
+        """
         super().__init__()
         if isinstance(ds, (str, os.PathLike)):
             import rasterio
@@ -179,7 +218,21 @@ class RasterioRasterSource(RasterSource):
 
 
 class XArrayRasterSource(RasterSource):
+    """
+    RasterSource backed by xarray
+
+    The rio-xarray extension is used to retrieve metadata such as the
+    array extent, resolution, and spatial reference system.
+    """
+
     def __init__(self, ds, band_idx=1, *, name=None):
+        """
+
+        Args:
+            ds: An xarray ``DataArray`` or a path from which one can be read.
+            band_idx: 1-based numerical index of band to read
+            name: source name, to be used in generating field names for results
+        """
         super().__init__()
 
         if isinstance(ds, (str, os.PathLike)):

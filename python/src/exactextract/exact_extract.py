@@ -16,6 +16,8 @@ from .raster_source import (
 )
 from .writer import GDALWriter, JSONWriter, PandasWriter, Writer
 
+__all__ = ["exact_extract"]
+
 
 def prep_raster(rast, band=None, name_root=None, names=None):
     # TODO add some hooks to allow RasterSource implementations
@@ -182,6 +184,28 @@ def exact_extract(
     output="geojson",
     output_options=None,
 ):
+    """Calculate zonal statistics
+
+    Args:
+       rast: A `RasterSource` or filename that can be opened
+             by GDAL/rasterio/xarray.
+       vec: A `FeatureSource` or filename that can be opened
+             by GDAL/fiona
+       ops: A list of `Operation` objects, or strings that
+            can be used to construct them
+       weights: An optional `RasterSource` or filename for
+            weights to be used in weighted operations.
+       include_cols: An optional list of columns from the
+            input features to be included into the output.
+       include_geom: Flag indicating whether the geometry
+            should be copied from the input features into
+            the output.
+       strategy: xx
+       max_cells_in_memory=3000
+       output: format of
+       output_options:
+
+    """
     rast = prep_raster(rast, name_root="band")
     weights = prep_raster(weights, name_root="weight")
     vec = prep_vec(vec)
