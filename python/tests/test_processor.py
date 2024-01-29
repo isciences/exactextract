@@ -1,14 +1,14 @@
 import pytest
 
-from exactextract import (
-    FeatureSequentialProcessor,
-    JSONFeatureSource,
-    JSONWriter,
-    Operation,
+from exactextract import Operation
+from exactextract.feature import JSONFeatureSource
+from exactextract.processor import FeatureSequentialProcessor, RasterSequentialProcessor
+from exactextract.writer import JSONWriter
+
+
+@pytest.mark.parametrize(
+    "Processor", (FeatureSequentialProcessor, RasterSequentialProcessor)
 )
-
-
-@pytest.mark.parametrize("Processor", (FeatureSequentialProcessor,))
 def test_process(Processor, np_raster_source, square_features):
     ops = [
         Operation("count", "test", np_raster_source),

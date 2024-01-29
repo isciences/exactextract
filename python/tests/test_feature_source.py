@@ -1,4 +1,4 @@
-from exactextract import GDALFeatureSource, JSONFeatureSource
+from exactextract.feature import GDALFeatureSource, JSONFeatureSource
 
 
 def test_gdal_feature_source():

@@ -4,7 +4,9 @@ import os
 import numpy as np
 import pytest
 
-from exactextract import JSONFeatureSource, NumPyRasterSource, exact_extract
+from exactextract import exact_extract
+from exactextract.feature import JSONFeatureSource
+from exactextract.raster import NumPyRasterSource
 
 
 @pytest.fixture()

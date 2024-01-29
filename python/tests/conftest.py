@@ -1,6 +1,6 @@
 import pytest
 
-from exactextract import NumPyRasterSource
+from exactextract.raster import NumPyRasterSource
 
 
 @pytest.fixture()

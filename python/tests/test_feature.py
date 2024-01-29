@@ -1,6 +1,6 @@
 import pytest
 
-from exactextract import Feature, GDALFeature, JSONFeature
+from exactextract.feature import Feature, GDALFeature, JSONFeature
 
 
 @pytest.fixture()

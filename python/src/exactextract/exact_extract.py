@@ -1,6 +1,6 @@
 import os
 
-from .feature_source import (
+from .feature import (
     FeatureSource,
     GDALFeatureSource,
     GeoPandasFeatureSource,
@@ -8,7 +8,7 @@ from .feature_source import (
 )
 from .operation import prepare_operations
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
-from .raster_source import (
+from .raster import (
     GDALRasterSource,
     RasterioRasterSource,
     RasterSource,

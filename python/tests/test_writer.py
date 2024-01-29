@@ -2,7 +2,9 @@ import json
 
 import pytest
 
-from exactextract import GDALWriter, JSONFeature, JSONWriter, Operation, PandasWriter
+from exactextract import Operation
+from exactextract.feature import JSONFeature
+from exactextract.writer import GDALWriter, JSONWriter, PandasWriter
 
 
 @pytest.fixture()

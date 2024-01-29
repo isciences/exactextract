@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
 
-from exactextract import GDALRasterSource, RasterioRasterSource, XArrayRasterSource
+from exactextract.raster import (
+    GDALRasterSource,
+    RasterioRasterSource,
+    XArrayRasterSource,
+)
 
 
 @pytest.fixture()

@@ -1,8 +1,9 @@
 from typing import List, Optional
 
 from ._exactextract import FeatureSequentialProcessor as _FeatureSequentialProcessor
+from ._exactextract import Processor  # noqa: F401
 from ._exactextract import RasterSequentialProcessor as _RasterSequentialProcessor
-from .feature_source import FeatureSource
+from .feature import FeatureSource
 from .operation import Operation
 from .writer import Writer
 
