@@ -1,4 +1,5 @@
 import os
+from typing import Mapping, Optional
 
 from .feature import (
     FeatureSource,
@@ -179,31 +180,56 @@ def exact_extract(
     weights=None,
     include_cols=None,
     include_geom=False,
-    strategy="feature-sequential",
-    max_cells_in_memory=30000000,
-    output="geojson",
-    output_options=None,
+    strategy: str = "feature-sequential",
+    max_cells_in_memory: int = 30000000,
+    output: str = "geojson",
+    output_options: Optional[Mapping] = None,
 ):
     """Calculate zonal statistics
 
     Args:
-       rast: A `RasterSource` or filename that can be opened
+       rast: A :py:class:`RasterSource` or filename that can be opened
              by GDAL/rasterio/xarray.
-       vec: A `FeatureSource` or filename that can be opened
+       vec: A :py:class:`FeatureSource` or filename that can be opened
              by GDAL/fiona
-       ops: A list of `Operation` objects, or strings that
-            can be used to construct them
-       weights: An optional `RasterSource` or filename for
+       ops: A list of :py:class:`Operation` objects, or strings that
+            can be used to construct them (e.g., ``"mean"``, ``"quantile(q=0.33)"``)
+       weights: An optional :py:class:`RasterSource` or filename for
             weights to be used in weighted operations.
        include_cols: An optional list of columns from the
             input features to be included into the output.
        include_geom: Flag indicating whether the geometry
             should be copied from the input features into
             the output.
-       strategy: xx
-       max_cells_in_memory=3000
-       output: format of
-       output_options:
+       strategy: Specifies the strategy to use when processing features.
+                 Must be set to one of:
+
+                 - ``"feature-sequential"`` (the default):
+                   iterate over the features in ``vec``,
+                   read the corresponding pixels from ``rast``/``weights``,
+                   and compute the summary operations. This offers predictable
+                   memory consumption but may be inefficient if the order of
+                   features in ``vec`` causes the same raster blocks to be read
+                   and decompressed.
+
+                 - ``"raster-sequential"``:
+                   iterate over chunks of pixels in ``rast``, identify the intersecting
+                   features from ``vec``, and compute statistics. This performs better
+                   than ``strategy="feature-sequential"`` in some cases, but comes at
+                   a cost of higher memory usage.
+       max_cells_in_memory: Indicates the maximum number of raster cells that should be
+                            loaded into memory at a given time.
+       output: An :py:class:`OutputWriter` or one of the following strings:
+
+                 - "geojson" (the default): return a list of GeoJSON-like features
+                 - "pandas": return a ``pandas.DataFrame`` or ``geopandas.GeoDataFrame``,
+                             depending on the value of ``include_geom``
+                 - "gdal": write results to disk using GDAL/OGR as they are written. This
+                           option (with ``strategy="feature-sequential"``) avoids the need
+                           to maintain results for all features in memory at a single time,
+                           which may be significant for operations with large result sizes
+                           such as ``cell_id``, ``values``, etc.
+       output_options: an optional dictionary of options passed to the :py:class:`writer.JSONWriter`, :py:class:`writer.PandasWriter`, or :py:class:`writer.GDALWriter`.
 
     """
     rast = prep_raster(rast, name_root="band")

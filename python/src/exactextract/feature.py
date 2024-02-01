@@ -1,6 +1,22 @@
 import os
 
-from ._exactextract import Feature, FeatureSource
+from ._exactextract import Feature
+from ._exactextract import FeatureSource as _FeatureSource
+
+
+class FeatureSource(_FeatureSource):
+    """
+    Source from which polygon features can be read.
+
+    Several implementations are included in exactextract:
+
+    - :py:class:`GDALFeatureSource`
+    - :py:class:`JSONFeatureSource`
+    - :py:class:`GeoPandasFeatureSource`
+    """
+
+    def __init__(self):
+        super().__init__()
 
 
 class GDALFeatureSource(FeatureSource):

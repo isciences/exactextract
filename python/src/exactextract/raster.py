@@ -2,7 +2,24 @@ import os
 
 import numpy as np
 
-from ._exactextract import RasterSource
+from ._exactextract import RasterSource as _RasterSource
+
+
+class RasterSource(_RasterSource):
+    """
+    Source from which raster data can be read.
+
+    A RasterSource provides the ability to read subsets of a single band of
+    raster data. Several implementations are included in exactextract:
+
+    - :py:class:`GDALRasterSource`
+    - :py:class:`NumPyRasterSource`
+    - :py:class:`RasterioRasterSource`
+    - :py:class:`XArrayRasterSource`
+    """
+
+    def __init__(self):
+        super().__init__()
 
 
 class GDALRasterSource(RasterSource):

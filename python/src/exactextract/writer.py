@@ -1,12 +1,41 @@
 import copy
 import os
+from typing import Mapping, Optional, Tuple
 
-from ._exactextract import Writer
+from ._exactextract import Writer as _Writer
 from .feature import GDALFeature, JSONFeature
 
 
+class Writer(_Writer):
+    """Writes the results of summary operations to a desired format"""
+
+    def __init__(self):
+        super().__init__()
+
+
 class JSONWriter(Writer):
-    def __init__(self, *, array_type="numpy", map_fields=None):
+    """
+    Creates GeoJSON-like features
+    """
+
+    def __init__(
+        self,
+        *,
+        array_type: str = "numpy",
+        map_fields: Optional[Mapping[str, Tuple[str]]] = None
+    ):
+        """
+        Create a new JSONWriter.
+
+        Args:
+            array_type: type that should be used to represent array outputs.
+                        Either "numpy" (default) or "list".
+            map_fields: An optional dictionary of fields to be created by
+                        interpreting one field as keys and another as values, in the format
+                        ``{ dst_field : (src_keys, src_vals) }``. For example, the fields
+                        "values" and "frac" would be combined into a field called
+                        "frac_map" using ``map_fields = {"frac_map": ("values", "frac")}``.
+        """
         super().__init__()
 
         if array_type not in ("numpy", "list"):
@@ -56,6 +85,8 @@ class JSONWriter(Writer):
 
 
 class PandasWriter(Writer):
+    """Creates a (Geo)Pandas DataFrame"""
+
     def __init__(self, *, srs_wkt=None):
         super().__init__()
 
@@ -99,6 +130,8 @@ class PandasWriter(Writer):
 
 
 class GDALWriter(Writer):
+    """Writes results using GDAL/OGR"""
+
     def __init__(
         self, dataset=None, *, filename=None, driver=None, layer_name="", srs_wkt=None
     ):

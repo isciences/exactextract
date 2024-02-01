@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Mapping, Optional
 
 from ._exactextract import Operation as _Operation
 from ._exactextract import prepare_operations  # noqa: F401
@@ -8,7 +8,13 @@ from .raster import RasterSource
 
 
 class Operation(_Operation):
-    """Binding class around exactextract Operation"""
+    """
+    Summary of pixel values
+
+    Defines a summary operation to be performed on pixel values intersecting
+    a geometry. May return a scalar (e.g., ``weighted_mean``), or a
+    vector (e.g., ``coverage``).
+    """
 
     def __init__(
         self,
@@ -16,16 +22,18 @@ class Operation(_Operation):
         field_name: str,
         raster: RasterSource,
         weights: Optional[RasterSource] = None,
-        options=None,
+        options: Optional[Mapping] = None,
     ):
         """
-        Create Operation object from stat name, field name, raster, and weighted raster
+        Create an Operation
 
         Args:
             stat_name (str): Name of the stat. Refer to docs for options.
-            field_name (str): Field name to use. Output of operation will have title \'{field_name}_{stat_name}\'
+            field_name (str): Name of the result field that is assigned by this Operation.
             raster (RasterSource): Raster to compute over.
             weights (Optional[RasterSource], optional): Weight raster to use. Defaults to None.
+            options: Arguments used to control the behavior of an Operation, e.g. ``options={"q": 0.667}``
+                     with ``stat_name = "quantile"``
         """
         if raster is None:
             raise TypeError
