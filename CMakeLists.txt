@@ -260,13 +260,20 @@ if(BUILD_DOC)
         configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
         message("Doxygen build started")
 
-        # note the option ALL which allows to build the docs together with the application
-        add_custom_target( doc_doxygen ALL
+        add_custom_command(
+                OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html
+                DEPENDS ${LIB_NAME} $<$<BOOL:${BUILD_CLI}>:${BIN_NAME}>
                 COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                COMMENT "Generating API documentation with Doxygen"
-                VERBATIM )
+        )
+
+        add_custom_target(doxygen
+                ALL 
+                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html)
+
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
+
+        
+
     endif (DOXYGEN_FOUND)
 endif() #BUILD_DOC
