@@ -68,3 +68,10 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: build/coverage.info
+
+    - name: upload docs
+      if: matrix.ci.build_python == 'YES'
+      uses: actions/upload-artifact@v3
+      with:
+        name: python_html
+        path: ./build/python/html
