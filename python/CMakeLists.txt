@@ -51,19 +51,21 @@ foreach(py_path IN ITEMS ${py_paths})
     file(CREATE_LINK ${py_path} ${CMAKE_CURRENT_BINARY_DIR}/exactextract/${py_file} SYMBOLIC)
 endforeach()
 
-file(CREATE_LINK ${CMAKE_CURRENT_LIST_DIR}/doc ${CMAKE_CURRENT_BINARY_DIR}/doc SYMBOLIC)
+if(BUILD_DOC)
+    file(CREATE_LINK ${CMAKE_CURRENT_LIST_DIR}/doc ${CMAKE_CURRENT_BINARY_DIR}/doc SYMBOLIC)
 
-set(_RST_DIR ${CMAKE_CURRENT_BINARY_DIR}/doc)
-set(_HTML_DIR ${CMAKE_CURRENT_BINARY_DIR}/html)
+    set(_RST_DIR ${CMAKE_CURRENT_BINARY_DIR}/doc)
+    set(_HTML_DIR ${CMAKE_CURRENT_BINARY_DIR}/html)
 
-add_custom_command(
-    OUTPUT ${_HTML_DIR}
-    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/doc
-    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/exactextract
-    COMMAND sphinx-apidoc -f -o ${_RST_DIR} ${CMAKE_CURRENT_BINARY_DIR}/exactextract
-    COMMAND sphinx-build -b html ${_RST_DIR} ${_HTML_DIR})
+    add_custom_command(
+        OUTPUT ${_HTML_DIR}
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/doc
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/exactextract
+        COMMAND sphinx-apidoc -f -o ${_RST_DIR} ${CMAKE_CURRENT_BINARY_DIR}/exactextract
+        COMMAND sphinx-build -b html ${_RST_DIR} ${_HTML_DIR})
 
- add_custom_target(python_html ALL DEPENDS ${_HTML_DIR})
+    add_custom_target(python_html ALL DEPENDS ${_HTML_DIR})
 
- unset(_RST_DIR)
- unset(_HTML_DIR)
+    unset(_RST_DIR)
+    unset(_HTML_DIR)
+endif() #BUILD_DOC
