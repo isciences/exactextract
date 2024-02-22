@@ -51,7 +51,7 @@ Feature::set(const std::string& name, const Feature& f)
 void
 Feature::set(const std::string& name, std::size_t value)
 {
-    if (value > std::numeric_limits<std::int64_t>::max()) {
+    if (value > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max())) {
         throw std::runtime_error("Value is too large to store as 64-bit integer.");
     }
     set(name, static_cast<std::int64_t>(value));
