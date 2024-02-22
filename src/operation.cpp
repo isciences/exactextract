@@ -1,3 +1,16 @@
+// Copyright (c) 2018-2024 ISciences, LLC.
+// All rights reserved.
+//
+// This software is licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License. You may
+// obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "operation.h"
 #include "utils.h"
 
@@ -122,7 +135,16 @@ class OperationImpl : public Operation
         return std::visit([this](const auto& r) -> Feature::ValueType {
             using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
 
+            // Determine the type returned by the get() method in the Operation implementation
+            // class. The std::declval version of this doesn't work for in gcc 9
+            // (see https://github.com/isciences/exactextract/issues/82)
+#if __GNUC__ < 10
+            RasterStats<value_type> stats;
+            auto result = static_cast<const Derived*>(this)->get(stats);
+            using result_type = std::decay_t<decltype(result)>;
+#else
             using result_type = std::decay_t<decltype(static_cast<const Derived*>(this)->get(std::declval<RasterStats<value_type>>()))>;
+#endif
 
             if constexpr (is_optional<result_type>) {
                 using inner_result_type = decltype(*std::declval<result_type>());
@@ -525,7 +547,7 @@ Operation::get_missing_value()
 const StatsRegistry::RasterStatsVariant&
 Operation::empty_stats() const
 {
-    static const StatsRegistry::RasterStatsVariant ret = std::visit([this](const auto& r) {
+    static const StatsRegistry::RasterStatsVariant ret = std::visit([](const auto& r) {
         using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
 
         return StatsRegistry::RasterStatsVariant{
