@@ -201,3 +201,31 @@ class GeoPandasFeatureSource(FeatureSource):
 
     def srs_wkt(self):
         return self.src.crs.to_wkt()
+
+
+class QGISFeature(Feature):
+    def __init__(self, f=None):
+        super().__init__()
+        self.feature = f
+
+    def geometry(self):
+        return bytes(self.feature.geometry().asWkb())
+
+    def get(self, name):
+        return self.feature[name]
+
+    def fields(self):
+        return [field.name() for field in self.feature.fields()]
+
+
+class QGISFeatureSource(FeatureSource):
+    def __init__(self, src):
+        super().__init__()
+        self.src = src
+
+    def __iter__(self):
+        for f in self.src.getFeatures():
+            yield QGISFeature(f)
+
+    def srs_wkt(self):
+        return self.src.sourceCrs().toWkt()
