@@ -390,10 +390,13 @@ def open_with_lib(fname, libname):
     elif libname == "geopandas":
         gp = pytest.importorskip("geopandas")
         return gp.read_file(fname)
+    elif libname == "qgis":
+        qgis_core = pytest.importorskip("qgis.core")
+        return qgis_core.QgsVectorLayer(fname)
 
 
 @pytest.mark.parametrize("rast_lib", ("gdal", "rasterio", "xarray"))
-@pytest.mark.parametrize("vec_lib", ("ogr", "fiona", "geopandas"))
+@pytest.mark.parametrize("vec_lib", ("ogr", "fiona", "geopandas", "qgis"))
 @pytest.mark.parametrize(
     "arr,expected",
     [

@@ -6,6 +6,7 @@ from .feature import (
     GDALFeatureSource,
     GeoPandasFeatureSource,
     JSONFeatureSource,
+    QGISFeatureSource,
 )
 from .operation import prepare_operations
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
@@ -130,6 +131,15 @@ def prep_vec(vec):
 
         if isinstance(vec, geopandas.GeoDataFrame):
             return GeoPandasFeatureSource(vec)
+    except ImportError:
+        pass
+
+    try:
+        import qgis.core
+
+        if isinstance(vec, qgis.core.QgsVectorLayer):
+            return QGISFeatureSource(vec)
+
     except ImportError:
         pass
 
