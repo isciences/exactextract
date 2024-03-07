@@ -7,7 +7,6 @@ dependencies:
   - geopandas
   - geos
   - numpy
-  - pybind11
   - pytest
   - pytest-cov
   - rasterio
