@@ -8,7 +8,6 @@ if (NOT pybind11_FOUND)
     "pybind11 was not found. It is still possible to build and test libexactextract using -DBUILD_PYTHON=NO.")
 endif() #NOT pybind11_FOUND
 
-
 set(PYBIND_SOURCES
 src/pybindings/bindings.cpp
 src/pybindings/feature_bindings.cpp
@@ -35,7 +34,7 @@ set_property(TARGET ${LIB_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(_exactextract PRIVATE ${LIB_NAME} GEOS::geos_c)
 install(TARGETS _exactextract DESTINATION exactextract)
 
-add_test(NAME "pybindings" 
+add_test(NAME "pybindings"
          COMMAND ${CMAKE_COMMAND} -E env
          PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
          python3 -m pytest ${CMAKE_CURRENT_LIST_DIR}/tests)

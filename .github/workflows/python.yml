@@ -1,9 +1,12 @@
 name: Python package build
 
 on:
-  - push
-  - pull_request
-
+  push:
+    branches: [$default-branch]
+    tags:
+    - '*'
+  pull_request:
+  workflow_dispatch:
 
 defaults:
   run:
@@ -18,7 +21,7 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
-        python-version: ['3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v3
@@ -30,17 +33,17 @@ jobs:
         environment-file: .github/python_test_env.yml
 
     - name: Install
-      run: pip install . -v
+      run: python -m pip install . -v
 
     - name: Test
-      run: pytest --cov exactextract --cov-report lcov python/tests
+      run: python -m pytest --cov exactextract --cov-report lcov python/tests
 
     - name: Upload coverage report
       uses: codecov/codecov-action@v3
       with:
         files: coverage.lcov
         token: ${{ secrets.CODECOV_TOKEN }}
-      
+
     - name: Build source distribution
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: python -m build . --sdist
@@ -52,3 +55,94 @@ jobs:
         name: ${{ matrix.os }}-py${{ matrix.python-version }}
         path: ./dist/*
 
+  # Largely taken from https://github.com/shapely/shapely/blob/main/.github/workflows/release.yml
+  build_wheels:
+    name: Build ${{ matrix.arch }} wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    env:
+      GEOS_VERSION: "3.12.1"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-20.04
+          arch: x86_64
+        - os: windows-2019
+          arch: x86
+          msvc_arch: x86
+        - os: windows-2019
+          arch: AMD64
+          msvc_arch: x64
+        - os: macos-11
+          arch: x86_64
+          cmake_osx_architectures: x86_64
+        - os: macos-14
+          arch: arm64
+          cmake_osx_architectures: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache GEOS build
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
+          key: ${{ matrix.os }}-${{ matrix.arch }}-${{ env.GEOS_VERSION }}-${{ hashFiles('ci/*') }}
+
+      - name: Add GEOS LICENSE
+        run: |
+          cp ci/wheels/licenses/LICENSE_GEOS .
+        shell: bash
+
+      - name: Add MSVC LICENSE
+        run: |
+          cp ci/wheels/licenses/LICENSE_win32 .
+        shell: bash
+        if: ${{ matrix.os == 'windows-2019' }}
+
+      - name: Activate MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
+        if: ${{ matrix.msvc_arch }}
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.5
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_SKIP: cp36-* cp37-* cp38-* pp* *musllinux* *-manylinux_i686
+          CIBW_TEST_SKIP: "cp38-macosx_arm64"
+          CIBW_ENVIRONMENT_LINUX:
+            GEOS_VERSION=${{ env.GEOS_VERSION }}
+            GEOS_INSTALL=/host${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
+            GEOS_DIR=/host${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
+            GEOS_CONFIG=/host${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
+            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/host${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}/lib
+          CIBW_ENVIRONMENT_MACOS:
+            GEOS_INSTALL=${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
+            GEOS_DIR=${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
+            GEOS_CONFIG=${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
+            MACOSX_DEPLOYMENT_TARGET=10.9
+            CMAKE_OSX_ARCHITECTURES='${{ matrix.cmake_osx_architectures }}'
+          CIBW_ENVIRONMENT_WINDOWS:
+            GEOS_INSTALL='${{ runner.temp }}\geos-${{ env.GEOS_VERSION }}'
+            GEOS_DIR='${{ runner.temp }}\geos-${{ env.GEOS_VERSION }}'
+            GEOS_LIBRARY_PATH='${{ runner.temp }}\geos-${{ env.GEOS_VERSION }}\lib'
+            GEOS_INCLUDE_PATH='${{ runner.temp }}\geos-${{ env.GEOS_VERSION }}\include'
+          CIBW_BEFORE_ALL: ./ci/wheels/install_geos.sh
+          CIBW_BEFORE_ALL_WINDOWS: ci\wheels\install_geos.cmd
+          CIBW_BEFORE_BUILD_WINDOWS:
+            pip install delvewheel
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ runner.temp }}\geos-${{ env.GEOS_VERSION }}\bin -w {dest_dir} {wheel}
+          CIBW_BUILD_FRONTEND: "pip; args: -vvv"
+          CIBW_TEST_REQUIRES: pytest numpy
+          CIBW_TEST_COMMAND: >
+            python -c "import exactextract; exactextract.__version__"  &&
+            python -m pytest {package}/python/tests/test_exact_extract.py {package}/python/tests/test_operation.py {package}/python/tests/test_processor.py -s -v
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl

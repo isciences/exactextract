@@ -1,8 +1,11 @@
 name: Linux builds
 
 on:
-  - push
-  - pull_request
+  push:
+    branches: [$default-branch]
+    tags:
+    - '*'
+  pull_request:
 
 jobs:
 

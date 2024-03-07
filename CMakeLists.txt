@@ -43,6 +43,11 @@ option(BUILD_TEST "Build the exactextract tests" ON) #requires catch
 option(BUILD_PYTHON "Build the exactextract Python bindings" ON) # requires pybind11
 option(BUILD_DOC "Build documentation" ON) #requires doxygen
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    # workaround for MacOS 10.13 and below which does not fully support std::variant
+    add_compile_definitions(_LIBCPP_DISABLE_AVAILABILITY)
+endif()
+
 if(BUILD_BENCHMARKS)
     add_subdirectory("benchmark")
 endif()

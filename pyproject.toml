@@ -6,6 +6,17 @@ url = "https://github.com/isciences/exactextract"
 authors = [
   { "name" = "Daniel Baston" }
 ]
+requires-python = ">=3.9"
+classifiers = [
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dynamic = ["version"]
 
 [build-system]
