@@ -136,9 +136,9 @@ class OperationImpl : public Operation
             using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
 
             // Determine the type returned by the get() method in the Operation implementation
-            // class. The std::declval version of this doesn't work for in gcc 9
+            // class. The std::declval version of this doesn't work in gcc 9, 10
             // (see https://github.com/isciences/exactextract/issues/82)
-#if __GNUC__ < 10
+#if __GNUC__ < 11
             RasterStats<value_type> stats;
             auto result = static_cast<const Derived*>(this)->get(stats);
             using result_type = std::decay_t<decltype(result)>;
