@@ -11,11 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma once
+
+#include "feature.h"
+
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 namespace exactextract {
+
+Feature::ValueType
+get_type(const py::object&);
+
 void
 bind_feature(py::module& m);
 }

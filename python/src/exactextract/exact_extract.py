@@ -8,7 +8,7 @@ from .feature import (
     JSONFeatureSource,
     QGISFeatureSource,
 )
-from .operation import prepare_operations
+from .operation import Operation, PythonOperation, prepare_operations
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
 from .raster import (
     GDALRasterSource,
@@ -147,13 +147,59 @@ def prep_vec(vec):
 
 
 def prep_ops(stats, values, weights=None):
-    if type(stats) is str:
+    if type(stats) is str or isinstance(stats, Operation) or callable(stats):
         stats = [stats]
 
     if weights is None:
         weights = []
 
-    return prepare_operations(stats, values, weights)
+    ops = []
+
+    for stat in stats:
+        if type(stat) is str:
+            ops += prepare_operations([stat], values, weights)
+        elif callable(stat):
+            # We want to hook into the value/weight looping and column-naming
+            # functionality of prepare_operations, but we cannot create a
+            # PythonOperation from inside prepare_operations. So we create a
+            # set of dummy operations using a named stat and use properties of
+            # these operations to create a set of PythonOperations.
+            nargs = stat.__code__.co_argcount
+            if nargs == 3:
+                weighted = True
+                dummy_stat = "weighted_sum"
+            elif nargs == 2:
+                weighted = False
+                dummy_stat = "count"
+            else:
+                raise Exception(
+                    f"Summary operation {stat.__name__} must take 2 or 3 arguments"
+                )
+
+            try:
+                for op in prepare_operations([dummy_stat], values, weights):
+                    ops.append(
+                        PythonOperation(
+                            stat,
+                            op.name.replace(dummy_stat, stat.__name__),
+                            op.values,
+                            op.weights,
+                            weighted,
+                        )
+                    )
+            except RuntimeError as e:
+                if "No weights provided" in str(e):
+                    raise Exception(
+                        f"No weights provided but {stat.__name__} expects 3 arguments"
+                    )
+                else:
+                    raise
+        elif isinstance(Operation, stat):
+            ops.append(stat)
+        else:
+            raise ValueError("Don't know how to handle stat", stat)
+
+    return ops
 
 
 def prep_processor(strategy):

@@ -213,22 +213,29 @@ def test_multiband():
 
     squares = [make_rect(0.5, 0.5, 1.0, 1.0), make_rect(0.5, 0.5, 2.5, 2.5)]
 
-    results = exact_extract(rast, squares, ["count", "mean"])
+    def py_mean(values, cov):
+        return np.average(values, weights=cov)
+
+    results = exact_extract(rast, squares, ["count", "mean", py_mean])
 
     assert len(results) == len(squares)
 
     assert results[0]["properties"] == {
         "a_mean": 7.0,
         "a_count": 0.25,
+        "a_py_mean": 7.0,
         "b_mean": 14.0,
         "b_count": 0.25,
+        "b_py_mean": 14.0,
     }
 
     assert results[1]["properties"] == {
         "a_mean": 5.0,
         "a_count": 4.0,
+        "a_py_mean": 5.0,
         "b_mean": 10.0,
         "b_count": 4.0,
+        "b_py_mean": 10.0,
     }
 
 
@@ -674,3 +681,117 @@ def test_output_map_fields():
         "frac": {1: 0.25, 2: 0.5, 3: 0.1875, 4: 0.0625},
         "weighted_frac": {1: 0.0, 2: 0.0, 3: 0.75, 4: 0.25},
     }
+
+
+def test_custom_function_throws_exception():
+
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    def stat_with_error(values, coverage):
+        raise RuntimeError("errors are propagated")
+
+    with pytest.raises(RuntimeError, match="errors are propagated"):
+        exact_extract(rast, square, stat_with_error)
+
+
+def test_custom_function_missing_weights():
+
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    def my_weighted_stat(values, coverage, weights):
+        return 1
+
+    with pytest.raises(Exception, match="No weights provided"):
+        exact_extract(rast, square, my_weighted_stat)
+
+
+def test_custom_function_bad_signature():
+
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    def no_args():
+        return 1
+
+    def one_arg(a):
+        return 1
+
+    def four_args(a, b, c, d):
+        return 1
+
+    with pytest.raises(Exception, match="must take 2 or 3 argument"):
+        exact_extract(rast, square, no_args)
+
+    with pytest.raises(Exception, match="must take 2 or 3 argument"):
+        exact_extract(rast, square, one_arg)
+
+    with pytest.raises(Exception, match="must take 2 or 3 argument"):
+        exact_extract(rast, square, four_args)
+
+
+def test_custom_function_bad_return_type():
+
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    def my_stat(x, c):
+        return set()
+
+    with pytest.raises(Exception, match="Unhandled type"):
+        exact_extract(rast, square, my_stat)
+
+
+@pytest.mark.parametrize(
+    "ret",
+    [1, 2.0, "cookie", None]
+    + [
+        np.arange(3, dtype=T)
+        for T in (np.int8, np.int16, np.int32, np.int64, np.float32, np.float64)
+    ],
+    ids=lambda x: f"ndarray[{x.dtype}]" if hasattr(x, "dtype") else type(x),
+)
+def test_custom_function_return_types(ret):
+
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    def my_stat(values, coverage):
+        return ret
+
+    result = exact_extract(rast, square, my_stat)
+
+    if isinstance(ret, np.ndarray):
+        assert np.all(result[0]["properties"]["my_stat"] == ret)
+    elif ret is None:
+        pass
+    else:
+        assert result[0]["properties"]["my_stat"] == ret
+
+
+def test_custom_function():
+
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    weights = NumPyRasterSource(np.sqrt(np.arange(9).reshape(3, 3)))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    def py_mean(values, coverage):
+        return np.average(values, weights=coverage)
+
+    def py_weighted_mean(values, coverage, weights):
+        return np.average(values, weights=coverage * weights)
+
+    result = exact_extract(
+        rast,
+        square,
+        ["mean", py_mean, "weighted_mean", py_weighted_mean],
+        weights=weights,
+    )
+
+    assert result[0]["properties"]["mean"] == pytest.approx(
+        result[0]["properties"]["py_mean"]
+    )
+    assert result[0]["properties"]["weighted_mean"] == pytest.approx(
+        result[0]["properties"]["py_weighted_mean"]
+    )
