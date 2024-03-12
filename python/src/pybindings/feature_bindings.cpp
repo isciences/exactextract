@@ -128,31 +128,11 @@ class PyFeatureBase : public Feature
     {
         py::object value = get_py(name);
 
-        if (py::isinstance<py::int_>(value)) {
-            return ValueType::INT;
+        try {
+            return get_type(value);
+        } catch (const std::invalid_argument&) {
+            throw std::runtime_error("Unhandled type for field " + name + " in PyFeatureBase::field_type");
         }
-
-        if (py::isinstance<py::float_>(value)) {
-            return ValueType::DOUBLE;
-        }
-
-        if (py::isinstance<py::str>(value)) {
-            return ValueType::STRING;
-        }
-
-        if (py::isinstance<py::array_t<double>>(value)) {
-            return ValueType::DOUBLE_ARRAY;
-        }
-
-        if (py::isinstance<py::array_t<std::int32_t>>(value)) {
-            return ValueType::INT_ARRAY;
-        }
-
-        if (py::isinstance<py::array_t<std::int64_t>>(value)) {
-            return ValueType::INT64_ARRAY;
-        }
-
-        throw std::runtime_error("Unhandled type for field " + name + " in PyFeatureBase::field_type");
     }
 
     const GEOSGeometry* geometry() const override
@@ -283,6 +263,36 @@ class PyFeature : public PyFeatureBase
         PYBIND11_OVERRIDE_PURE(py::object, PyFeature, fields);
     }
 };
+
+Feature::ValueType
+get_type(const py::object& value)
+{
+    if (py::isinstance<py::int_>(value)) {
+        return Feature::ValueType::INT;
+    }
+
+    if (py::isinstance<py::float_>(value)) {
+        return Feature::ValueType::DOUBLE;
+    }
+
+    if (py::isinstance<py::str>(value)) {
+        return Feature::ValueType::STRING;
+    }
+
+    if (py::isinstance<py::array_t<double>>(value)) {
+        return Feature::ValueType::DOUBLE_ARRAY;
+    }
+
+    if (py::isinstance<py::array_t<std::int32_t>>(value)) {
+        return Feature::ValueType::INT_ARRAY;
+    }
+
+    if (py::isinstance<py::array_t<std::int64_t>>(value)) {
+        return Feature::ValueType::INT64_ARRAY;
+    }
+
+    throw std::invalid_argument("Unhandled Python type.");
+}
 
 void
 bind_feature(py::module& m)

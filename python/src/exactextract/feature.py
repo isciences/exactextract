@@ -140,7 +140,7 @@ class JSONFeature(Feature):
     def __init__(self, f=None):
         Feature.__init__(self)
         if f is None:
-            self.feature = {"type": "Feature"}
+            self.feature = {"type": "Feature", "properties": {}}
         elif hasattr(f, "__geo_interface__"):
             self.feature = f.__geo_interface__
         else:
@@ -150,8 +150,6 @@ class JSONFeature(Feature):
         if name == "id":
             self.feature["id"] = value
         else:
-            if "properties" not in self.feature:
-                self.feature["properties"] = {}
             self.feature["properties"][name] = value
 
     def get(self, name):

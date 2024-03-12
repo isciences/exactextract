@@ -99,16 +99,6 @@ class OperationImpl : public Operation
     {
         static_cast<Derived*>(this)->handle_options(options);
 
-        if (starts_with(stat, "weighted") && weights == nullptr) {
-            throw std::runtime_error("No weights provided for weighted stat: " + stat);
-        }
-
-        if (weighted()) {
-            m_key = values->name() + "|" + weights->name();
-        } else {
-            m_key = values->name();
-        }
-
         if (!options.empty()) {
             throw std::runtime_error("Unexpected argument(s) to stat: " + stat);
         }
@@ -397,6 +387,15 @@ Operation::
   , weights{ p_weights }
   , m_missing{ get_missing_value() }
 {
+    if (starts_with(stat, "weighted") && weights == nullptr) {
+        throw std::runtime_error("No weights provided for weighted stat: " + stat);
+    }
+
+    if (weighted()) {
+        m_key = values->name() + "|" + weights->name();
+    } else {
+        m_key = values->name();
+    }
 }
 
 bool
