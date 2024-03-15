@@ -384,7 +384,6 @@ class RasterStats
     /**
      * The weighted fraction of defined raster cells covered by the polygon with
      * a value that equals the specified value.
-     * Weights are not taken into account.
      */
     std::optional<float>
     weighted_frac(const T& value) const
