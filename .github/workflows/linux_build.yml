@@ -43,7 +43,7 @@ jobs:
     container: isciences/exactextract-test-env:${{ matrix.ci.tag }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: configure
       run: |
         mkdir build
@@ -65,7 +65,7 @@ jobs:
         mkdir -p python/CMakeFiles
         lcov --capture --directory CMakeFiles --directory python/CMakeFiles --output-file coverage.info
     - name: upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: build/coverage.info
