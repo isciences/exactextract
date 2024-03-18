@@ -78,12 +78,12 @@ class GDALRasterSource(RasterSource):
     def read_window(self, x0, y0, nx, ny):
         arr = self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
 
-        if self.band.GetScale() is not None:
+        if self.band.GetScale() not in (None, 1.0):
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
             arr *= self.band.GetScale()
 
-        if self.band.GetOffset() is not None:
+        if self.band.GetOffset() not in (None, 0.0):
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
             arr += self.band.GetOffset()
