@@ -683,6 +683,44 @@ def test_output_map_fields():
     }
 
 
+def test_linear_geom():
+
+    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
+    line = {
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [[0.5, 0.5], [1.5, 1.5], [2.5, 0.5]],
+        },
+    }
+
+    def frac_below_6(value, length):
+        return np.sum(length * (value < 6)) / np.sum(length)
+
+    results = exact_extract(rast, line, ["count", "mean", frac_below_6])
+
+    assert results[0]["properties"] == pytest.approx(
+        {
+            "count": 2 * math.sqrt(2),  # length of line
+            "mean": 0.5 * 5 + 0.25 * 7 + 0.25 * 9,  # length-weighted average
+            "frac_below_6": 0.5,  # custom function
+        }
+    )
+
+
+def test_point_geom():
+
+    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
+
+    point = {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [1.5, 1.5]},
+    }
+
+    with pytest.raises(Exception, match="Unsupported geometry type"):
+        exact_extract(rast, point, "mean")
+
+
 def test_custom_function_throws_exception():
 
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
