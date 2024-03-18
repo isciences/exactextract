@@ -1,4 +1,5 @@
 import os
+from itertools import chain
 from typing import Mapping, Optional
 
 from .feature import (
@@ -21,7 +22,20 @@ from .writer import GDALWriter, JSONWriter, PandasWriter, Writer
 __all__ = ["exact_extract"]
 
 
-def prep_raster(rast, band=None, name_root=None, names=None):
+def make_raster_names(root: str, nbands: int) -> list:
+    if root:
+        if nbands > 1:
+            return [f"{root}_band_{i+1}" for i in range(nbands)]
+        else:
+            return [f"{root}"]
+    else:
+        if nbands > 1:
+            return [f"band_{i+1}" for i in range(nbands)]
+        else:
+            return [""]
+
+
+def prep_raster(rast, name_root=None) -> list:
     # TODO add some hooks to allow RasterSource implementations
     # defined outside this library to handle other input types.
     if rast is None:
@@ -30,25 +44,28 @@ def prep_raster(rast, band=None, name_root=None, names=None):
     if isinstance(rast, RasterSource):
         return [rast]
 
-    if hasattr(rast, "__iter__") and all(isinstance(x, RasterSource) for x in rast):
-        return rast
+    if type(rast) in (list, tuple):
+        if all(isinstance(src, (str, os.PathLike)) for src in rast):
+            sources = [
+                prep_raster(src, name_root=os.path.splitext(os.path.basename(src))[0])
+                for src in rast
+            ]
+        else:
+            sources = [prep_raster(src) for src in rast]
+        return list(chain.from_iterable(sources))
 
     try:
         from osgeo import gdal
 
         if isinstance(rast, (str, os.PathLike)):
-            rast = gdal.Open(rast)
+            rast = gdal.Open(str(rast))
 
         if isinstance(rast, gdal.Dataset):
-            if band:
-                return [GDALRasterSource(rast, band)]
-            else:
-                if not names:
-                    names = [f"{name_root}_{i+1}" for i in range(rast.RasterCount)]
-                return [
-                    GDALRasterSource(rast, i + 1, name=names[i])
-                    for i in range(rast.RasterCount)
-                ]
+            names = make_raster_names(name_root, rast.RasterCount)
+            return [
+                GDALRasterSource(rast, i + 1, name=names[i])
+                for i in range(rast.RasterCount)
+            ]
     except ImportError:
         pass
 
@@ -59,15 +76,11 @@ def prep_raster(rast, band=None, name_root=None, names=None):
             rast = rasterio.open(rast)
 
         if isinstance(rast, rasterio.DatasetReader):
-            if band:
-                return [RasterioRasterSource(rast, band)]
-            else:
-                if not names:
-                    names = [f"{name_root}_{i+1}" for i in range(rast.count)]
-                return [
-                    RasterioRasterSource(rast, i + 1, name=names[i])
-                    for i in range(rast.count)
-                ]
+            names = make_raster_names(name_root, rast.count)
+            return [
+                RasterioRasterSource(rast, i + 1, name=names[i])
+                for i in range(rast.count)
+            ]
     except ImportError:
         pass
 
@@ -76,15 +89,11 @@ def prep_raster(rast, band=None, name_root=None, names=None):
         import xarray
 
         if isinstance(rast, xarray.core.dataarray.DataArray):
-            if band:
-                return [XArrayRasterSource(rast, band)]
-            else:
-                if not names:
-                    names = [f"{name_root}_{i+1}" for i in range(rast.rio.count)]
-                return [
-                    XArrayRasterSource(rast, i + 1, name=names[i])
-                    for i in range(rast.rio.count)
-                ]
+            names = make_raster_names(name_root, rast.rio.count)
+            return [
+                XArrayRasterSource(rast, i + 1, name=names[i])
+                for i in range(rast.rio.count)
+            ]
 
     except ImportError:
         pass
@@ -194,7 +203,7 @@ def prep_ops(stats, values, weights=None):
                     )
                 else:
                     raise
-        elif isinstance(Operation, stat):
+        elif isinstance(stat, Operation):
             ops.append(stat)
         else:
             raise ValueError("Don't know how to handle stat", stat)
@@ -288,7 +297,7 @@ def exact_extract(
        output_options: an optional dictionary of options passed to the :py:class:`writer.JSONWriter`, :py:class:`writer.PandasWriter`, or :py:class:`writer.GDALWriter`.
 
     """
-    rast = prep_raster(rast, name_root="band")
+    rast = prep_raster(rast)
     weights = prep_raster(weights, name_root="weight")
     vec = prep_vec(vec)
     # TODO: check CRS and transform if necessary/possible?
