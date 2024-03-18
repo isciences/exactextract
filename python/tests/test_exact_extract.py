@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pytest
 
-from exactextract import exact_extract
+from exactextract import Operation, exact_extract
 from exactextract.feature import JSONFeatureSource
 from exactextract.raster import NumPyRasterSource
 
@@ -205,7 +205,7 @@ def test_weighted_frac():
     pytest.xfail("missing placeholder results for weighted_frac_1 and weighted_frac_2")
 
 
-def test_multiband():
+def test_multisource():
     rast = [
         NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="a"),
         NumPyRasterSource(2 * np.arange(1, 10).reshape(3, 3), name="b"),
@@ -239,7 +239,7 @@ def test_multiband():
     }
 
 
-def test_weighted_multiband():
+def test_weighted_multisource():
     rast = [
         NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="a"),
         NumPyRasterSource(2 * np.arange(1, 10).reshape(3, 3), name="b"),
@@ -274,7 +274,60 @@ def test_weighted_multiband():
     }
 
 
-def test_weighted_multiband_values():
+def test_multifile(tmp_path):
+    rast1 = tmp_path / "rast1.tif"
+    rast2 = tmp_path / "rast2.tif"
+
+    create_gdal_raster(rast1, np.arange(1, 10).reshape(3, 3))
+    create_gdal_raster(rast2, 2 * np.arange(1, 10).reshape(3, 3))
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    results = exact_extract([rast1, rast2], square, "mean")
+
+    assert results[0]["properties"] == {"rast1_mean": 5.0, "rast2_mean": 10.0}
+
+
+def test_multiband(tmp_path):
+    rast1 = tmp_path / "rast1.tif"
+    rast2 = tmp_path / "rast2.tif"
+
+    create_gdal_raster(
+        rast1,
+        np.stack([np.arange(1, 10).reshape(3, 3), 2 * np.arange(1, 10).reshape(3, 3)]),
+    )
+
+    create_gdal_raster(
+        rast2,
+        np.stack(
+            [3 * np.arange(1, 10).reshape(3, 3), 4 * np.arange(1, 10).reshape(3, 3)]
+        ),
+    )
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    results = exact_extract(rast1, square, "mean")
+
+    assert results[0]["properties"] == {"band_1_mean": 5.0, "band_2_mean": 10.0}
+
+    results = exact_extract([rast1, rast2], square, "mean")
+
+    assert results[0]["properties"] == {
+        "rast1_band_1_mean": 5.0,
+        "rast1_band_2_mean": 10.0,
+        "rast2_band_1_mean": 15.0,
+        "rast2_band_2_mean": 20.0,
+    }
+
+    results = exact_extract(rast1, square, "weighted_mean", weights=rast2)
+
+    assert sorted(results[0]["properties"].keys()) == [
+        "band_1_weight_band_1_weighted_mean",
+        "band_2_weight_band_2_weighted_mean",
+    ]
+
+
+def test_weighted_multisource_values():
     rast = [
         NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="a"),
         NumPyRasterSource(2 * np.arange(1, 10).reshape(3, 3), name="b"),
@@ -296,7 +349,7 @@ def test_weighted_multiband_values():
     }
 
 
-def test_weighted_multiband_weights():
+def test_weighted_multisource_weights():
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="a")
 
     weights = [
@@ -795,3 +848,19 @@ def test_custom_function():
     assert result[0]["properties"]["weighted_mean"] == pytest.approx(
         result[0]["properties"]["py_weighted_mean"]
     )
+
+
+def test_explicit_operation():
+
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    op = Operation("mean", "my_op", rast)
+
+    results = exact_extract(rast, square, ["mean", op])
+
+    assert results[0]["properties"]["mean"] == results[0]["properties"]["my_op"]
+
+    results = exact_extract(None, square, op)
+
+    assert results[0]["properties"]["my_op"] == 4.0
