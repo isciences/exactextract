@@ -110,7 +110,7 @@ def prep_vec(vec):
         if isinstance(vec, (str, os.PathLike)):
             vec = ogr.Open(vec)
 
-        if isinstance(vec, gdal.Dataset) or isinstance(vec, ogr.DataSource):
+        if isinstance(vec, (gdal.Dataset, ogr.DataSource, ogr.Layer)):
             return GDALFeatureSource(vec)
     except ImportError:
         pass
