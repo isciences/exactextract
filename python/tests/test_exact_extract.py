@@ -532,7 +532,9 @@ def test_include_cols(strategy):
     assert results[1]["geometry"]["type"] == "Polygon"
 
     # include_cols may also be a string
-    results = exact_extract(rast, features, "count", include_cols="type")
+    results = exact_extract(
+        rast, features, "count", include_cols="type", strategy=strategy
+    )
 
     assert results[0]["properties"]["type"] == "apple"
 

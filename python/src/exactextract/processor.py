@@ -36,7 +36,13 @@ class FeatureSequentialProcessor(_FeatureSequentialProcessor):
 class RasterSequentialProcessor(_RasterSequentialProcessor):
     """Binding class around exactextract RasterSequentialProcessor"""
 
-    def __init__(self, ds: FeatureSource, writer: Writer, op_list: List[Operation]):
+    def __init__(
+        self,
+        ds: FeatureSource,
+        writer: Writer,
+        op_list: List[Operation],
+        include_cols: Optional[List[Operation]] = None,
+    ):
         """
         Create RasterSequentialProcessor object
 
@@ -46,5 +52,7 @@ class RasterSequentialProcessor(_RasterSequentialProcessor):
             op_list (List[Operation]): List of operations
         """
         super().__init__(ds, writer)
+        for col in include_cols or []:
+            self.add_col(col)
         for op in op_list:
             self.add_operation(op)
