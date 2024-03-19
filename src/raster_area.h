@@ -1,4 +1,4 @@
-// Copyright (c) 2021 ISciences, LLC.
+// Copyright (c) 2021-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -11,9 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_RASTER_AREA_H
-#define EXACTEXTRACT_RASTER_AREA_H
+#pragma once
 
+#include "measures.h"
 #include "raster.h"
 
 namespace exactextract {
@@ -42,7 +42,7 @@ template<typename T>
 class SphericalAreaRaster : public AbstractRaster<T>
 {
   public:
-    explicit SphericalAreaRaster(const Grid<bounded_extent>& ex)
+    explicit SphericalAreaRaster(const Grid<bounded_extent>& ex, AreaUnit unit)
       : AbstractRaster<T>(ex)
       , m_areas(ex.rows())
     {
@@ -51,12 +51,22 @@ class SphericalAreaRaster : public AbstractRaster<T>
         double dlon = g.dx();
         double dlat = g.dy();
 
+        double factor = 1;
+        switch (unit) {
+            case AreaUnit::M2:
+                factor = 1;
+                break;
+            case AreaUnit::KM2:
+                factor = 1e-6;
+                break;
+        }
+
         for (size_t i = 0; i < g.rows(); i++) {
             double y = g.y_for_row(i);
             double ymin = y - 0.5 * dlat;
             double ymax = y + 0.5 * dlat;
 
-            m_areas[i] = EARTH_RADIUS_SQ * PI_180 * std::abs(std::sin(ymin * PI_180) - std::sin(ymax * PI_180)) * dlon;
+            m_areas[i] = EARTH_RADIUS_SQ * PI_180 * std::abs(std::sin(ymin * PI_180) - std::sin(ymax * PI_180)) * dlon * factor;
         }
     }
 
@@ -74,5 +84,3 @@ class SphericalAreaRaster : public AbstractRaster<T>
     std::vector<double> m_areas;
 };
 }
-
-#endif // EXACTEXTRACT_RASTER_AREA_H

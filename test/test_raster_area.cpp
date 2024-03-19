@@ -27,7 +27,7 @@ TEST_CASE("Spherical area raster returns pixel area")
 
     Grid<bounded_extent> g{ { 0, 45, 10, 55 }, dx, dy };
 
-    SphericalAreaRaster<double> areas(g);
+    SphericalAreaRaster<double> areas(g, AreaUnit::M2);
 
     // Compare to result from PostGIS, which is more accurate because
     // it is performing a geodesic calculation using geographiclib.

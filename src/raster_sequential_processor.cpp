@@ -69,15 +69,14 @@ RasterSequentialProcessor::process()
 
         for (const Feature* f : hits) {
             std::unique_ptr<Raster<float>> coverage;
-            std::set<std::pair<RasterSource*, RasterSource*>> processed;
+            std::set<std::string> processed;
 
             for (const auto& op : m_operations) {
                 // Avoid processing same values/weights for different stats
-                auto key = std::make_pair(op->weights, op->values);
-                if (processed.find(key) != processed.end()) {
+                if (processed.find(op->key()) != processed.end()) {
                     continue;
                 } else {
-                    processed.insert(key);
+                    processed.insert(op->key());
                 }
 
                 if (!op->values->grid().extent().contains(subgrid.extent())) {
