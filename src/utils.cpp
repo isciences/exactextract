@@ -196,12 +196,12 @@ prepare_operations_implicit(
   const RasterSourceVect& values,
   const RasterSourceVect& weights)
 {
-    auto nvalues = values.size();
-    auto nweights = weights.size();
+    std::size_t nvalues = values.size();
+    std::size_t nweights = weights.size();
     if (!starts_with(sd.stat, "weighted")) {
         // Avoid looping over weights and generating duplicate Operations
         // for an unweighted stat
-        nweights = std::min(nweights, 1ul);
+        nweights = std::min(nweights, std::size_t{ 1 });
     }
 
     const bool full_names = values.size() > 1 || weights.size() > 1;

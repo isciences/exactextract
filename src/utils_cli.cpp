@@ -31,7 +31,7 @@ load_gdal_rasters(const std::vector<std::string>& descriptors)
         auto [name, dsn, band] = exactextract::parse_raster_descriptor(descriptor);
 
         if (name.empty() && descriptors.size() > 1) {
-            name = std::filesystem::path(dsn).replace_extension("").filename();
+            name = std::filesystem::path(dsn).replace_extension("").filename().string();
         }
 
         std::shared_ptr<GDALRaster>& raster = rasters[dsn];
