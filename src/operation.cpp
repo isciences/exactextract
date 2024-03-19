@@ -432,9 +432,15 @@ Operation::
     m_min_coverage = static_cast<float>(extract_arg<double>(options, "min_coverage_frac", 0.0));
     std::string coverage_type = extract_arg<std::string>(options, "coverage_weight", "fraction");
     if (coverage_type == "fraction") {
-        m_coverage_as_binary = false;
+        m_coverage_weight_type = CoverageWeightType::FRACTION;
     } else if (coverage_type == "none") {
-        m_coverage_as_binary = true;
+        m_coverage_weight_type = CoverageWeightType::NONE;
+    } else if (coverage_type == "area_spherical_m2") {
+        m_coverage_weight_type = CoverageWeightType::AREA_SPHERICAL_M2;
+    } else if (coverage_type == "area_spherical_km2") {
+        m_coverage_weight_type = CoverageWeightType::AREA_SPHERICAL_KM2;
+    } else if (coverage_type == "area_cartesian") {
+        m_coverage_weight_type = CoverageWeightType::AREA_CARTESIAN;
     } else {
         throw std::runtime_error("Unexpected coverage_weight type: " + coverage_type);
     }
@@ -447,7 +453,7 @@ Operation::
     ss << "values:" << values->name();
     ss << "|weights:" << (weights ? weights->name() : "");
     ss << "|mincov:" << m_min_coverage;
-    ss << "|fullpx:" << m_coverage_as_binary;
+    ss << "|covtyp:" << coverage_type;
     m_key = ss.str();
 }
 

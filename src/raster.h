@@ -395,6 +395,25 @@ class RasterView : public AbstractRaster<T>
 };
 
 template<typename T>
+class ConstantRaster : public AbstractRaster<T>
+{
+  public:
+    ConstantRaster(const Grid<bounded_extent>& ex, T val)
+      : AbstractRaster<T>(ex)
+      , m_val(val)
+    {
+    }
+
+    T operator()(size_t, size_t) const override
+    {
+        return m_val;
+    }
+
+  private:
+    T m_val;
+};
+
+template<typename T>
 std::ostream&
 operator<<(std::ostream& os, const AbstractRaster<T>& m)
 {

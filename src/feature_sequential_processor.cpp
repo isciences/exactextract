@@ -43,17 +43,17 @@ FeatureSequentialProcessor::process()
             for (const auto& subgrid : subdivide(cropped_grid, m_max_cells_in_memory)) {
                 std::unique_ptr<Raster<float>> coverage;
 
-                std::set<std::pair<RasterSource*, RasterSource*>> processed;
+                std::set<std::string> processed;
+
+                std::map<RasterSource*, RasterVariant> values_map;
+                std::map<RasterSource*, RasterVariant> weights_map;
 
                 for (const auto& op : m_operations) {
-                    // TODO avoid reading same values/weights multiple times. Just use a map?
-
                     // Avoid processing same values/weights for different stats
-                    auto key = std::make_pair(op->weights, op->values);
-                    if (processed.find(key) != processed.end()) {
+                    if (processed.find(op->key()) != processed.end()) {
                         continue;
                     } else {
-                        processed.insert(key);
+                        processed.insert(op->key());
                     }
 
                     if (!op->intersects(subgrid.extent())) {
@@ -66,14 +66,18 @@ FeatureSequentialProcessor::process()
                           raster_cell_intersection(subgrid, m_geos_context, geom));
                     }
 
-                    auto values = op->values->read_box(subgrid.extent().intersection(op->values->grid().extent()));
+                    if (values_map.find(op->values) == values_map.end()) {
+                        values_map[op->values] = op->values->read_box(subgrid.extent().intersection(op->values->grid().extent()));
+                    }
 
                     if (op->weighted()) {
-                        auto weights = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
+                        if (weights_map.find(op->weights) == weights_map.end()) {
+                            weights_map[op->weights] = op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent()));
+                        }
 
-                        m_reg.update_stats(f_in, *op, *coverage, values, weights);
+                        m_reg.update_stats(f_in, *op, *coverage, values_map[op->values], weights_map[op->weights]);
                     } else {
-                        m_reg.update_stats(f_in, *op, *coverage, values);
+                        m_reg.update_stats(f_in, *op, *coverage, values_map[op->values]);
                     }
 
                     progress();

@@ -157,6 +157,32 @@ def test_min_coverage_ignore_fraction():
     assert result["sum"] == np.arange(1, 10).sum()
 
 
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+def test_coverage_area(strategy):
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        [
+            "m1=mean",
+            "m2=mean(coverage_weight=area_spherical_m2)",
+            "c1=coverage",
+            "c2=coverage(coverage_weight=area_spherical_m2)",
+            "c3=coverage(coverage_weight=area_spherical_km2)",
+            "c4=coverage(coverage_weight=area_cartesian)",
+        ],
+        strategy=strategy,
+    )[0]["properties"]
+
+    assert result["m2"] > result["m1"]
+
+    assert np.all(np.isclose(result["c3"], result["c2"] * 1e-6))
+    assert np.all(result["c4"] == result["c1"])
+
+
 @pytest.mark.parametrize("output_format", ("geojson", "pandas"), indirect=True)
 def test_multiple_stats(output_format):
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))

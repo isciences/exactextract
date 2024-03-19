@@ -108,11 +108,10 @@ class Operation
         return m_min_coverage;
     }
 
-    /// Returns whether pixel covered fractions should be considered in this `Operation`,
-    /// or if calculations should equally weight all included pixels.
-    bool coverage_as_binary() const
+    /// Returns the method by which pixel coverage should be considered in this `Operation`
+    CoverageWeightType coverage_weight_type() const
     {
-        return m_coverage_as_binary;
+        return m_coverage_weight_type;
     }
 
     /// Returns a newly constructed `Grid` representing the common grid between
@@ -164,7 +163,7 @@ class Operation
     const StatsRegistry::RasterStatsVariant& empty_stats() const;
 
     float m_min_coverage;
-    bool m_coverage_as_binary;
+    CoverageWeightType m_coverage_weight_type;
 };
 
 }
