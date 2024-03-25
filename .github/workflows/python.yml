@@ -36,7 +36,7 @@ jobs:
       run: python -m pytest --cov exactextract --cov-report lcov python/tests
 
     - name: Upload coverage report
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: coverage.lcov
         token: ${{ secrets.CODECOV_TOKEN }}
@@ -47,7 +47,7 @@ jobs:
 
     - name: Upload distribution(s)
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.os }}-py${{ matrix.python-version }}
         path: ./dist/*
@@ -139,7 +139,7 @@ jobs:
             python -c "import exactextract; exactextract.__version__"  &&
             python -m pytest {package}/python/tests/test_exact_extract.py {package}/python/tests/test_operation.py {package}/python/tests/test_processor.py -s -v
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
