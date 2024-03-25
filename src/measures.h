@@ -29,6 +29,12 @@ enum class AreaMethods
     SPHERICAL
 };
 
+enum class AreaUnit
+{
+    M2,
+    KM2
+};
+
 double
 area_signed(const std::vector<Coordinate>& ring);
 

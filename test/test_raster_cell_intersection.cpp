@@ -511,6 +511,7 @@ TEST_CASE("Result indexing is correct", "[raster-cell-intersection]")
     CHECK(rci.data() == expected);
 }
 
+#ifndef _MSC_VER // error C2026: string too big
 TEST_CASE("Robustness regression test #1", "[raster-cell-intersection]")
 {
     // This test exercises some challenging behavior where a polygon follows
@@ -539,6 +540,7 @@ TEST_CASE("Robustness regression test #2", "[raster-cell-intersection]")
 
     CHECK_NOTHROW(RasterCellIntersection(ex, context, g.get()));
 }
+#endif
 
 TEST_CASE("Robustness regression test #3", "[raster-cell-intersection]")
 {
@@ -552,6 +554,7 @@ TEST_CASE("Robustness regression test #3", "[raster-cell-intersection]")
     CHECK_NOTHROW(raster_cell_intersection(ex, context, g.get()));
 }
 
+#ifndef _MSC_VER // error C2026: string too big
 TEST_CASE("Robustness regression test #4", "[raster-cell-intersection]")
 {
     GEOSContextHandle_t context = init_geos();
@@ -564,6 +567,7 @@ TEST_CASE("Robustness regression test #4", "[raster-cell-intersection]")
 
     CHECK_NOTHROW(raster_cell_intersection(ex, context, g.get()));
 }
+#endif
 
 TEST_CASE("Robustness regression test #5", "[raster-cell-intersection]")
 {

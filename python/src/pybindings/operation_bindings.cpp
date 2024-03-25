@@ -33,8 +33,9 @@ class PythonOperation : public Operation
                     std::string p_name,
                     RasterSource* p_values,
                     RasterSource* p_weights,
-                    bool call_with_weights)
-      : Operation("", p_name, p_values, p_weights)
+                    bool call_with_weights,
+                    Operation::ArgMap args = {})
+      : Operation("", p_name, p_values, p_weights, args)
       , m_function(fun)
       , m_call_with_weights(call_with_weights)
     {
