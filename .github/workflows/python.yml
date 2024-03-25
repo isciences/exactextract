@@ -58,8 +58,8 @@ jobs:
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os }}-py${{ matrix.python-version }}
-        path: ./dist/*
+        name: release-sdist
+        path: ./dist/*.tar.gz
 
   # Largely taken from https://github.com/shapely/shapely/blob/main/.github/workflows/release.yml
   build_wheels:
@@ -159,5 +159,25 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          name: release-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
+
+  upload_pypi:
+    name: Publish on PyPI
+    needs: [build_wheels, build]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+
+      - name: Upload Release Assets to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_PASSWORD }}
+          skip_existing: true
+          # To test: repository_url: https://test.pypi.org/legacy/
