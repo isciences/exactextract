@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_VERSION_H
+#pragma once
 
 #include <string>
 
@@ -21,8 +21,13 @@ version()
 {
     return { "@EXACTEXTRACT_VERSION_SOURCE@" };
 }
+
+inline std::string
+version_no_hash()
+{
+    auto v = version();
+    auto pos = v.find(' ');
+    return v.substr(0, pos);
 }
 
-#define EXACTEXTRACT_VERSION_H
-
-#endif // EXACTEXTRACT_VERSION_H
+}

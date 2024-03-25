@@ -24,9 +24,21 @@
 namespace py = pybind11;
 
 namespace exactextract {
+
+std::string
+python_version_str()
+{
+    auto v = version_no_hash();
+    auto pos = v.find("-dev");
+    if (pos != std::string::npos) {
+        v[pos] = '.';
+    }
+    return v;
+}
+
 PYBIND11_MODULE(_exactextract, m)
 {
-    m.attr("__version__") = version();
+    m.attr("__version__") = python_version_str();
 
     bind_feature(m);
     bind_feature_source(m);
