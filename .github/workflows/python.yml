@@ -190,5 +190,5 @@ jobs:
       - name: Upload Release Assets to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          skip_existing: true
-          repository_url: https://test.pypi.org/legacy/
+          skip-existing: true
+          repository-url: ${{ github.event_name == 'workflow_dispatch' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
