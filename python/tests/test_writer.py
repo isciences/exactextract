@@ -4,7 +4,7 @@ import pytest
 
 from exactextract import Operation
 from exactextract.feature import JSONFeature
-from exactextract.writer import GDALWriter, JSONWriter, PandasWriter
+from exactextract.writer import GDALWriter, JSONWriter, PandasWriter, QGISWriter
 
 
 @pytest.fixture()
@@ -150,3 +150,37 @@ def test_pandas_writer(np_raster_source, point_features):
     assert list(df.columns) == ["id", "mean_result"]
     assert list(df["id"]) == [3, 2]
     assert list(df["mean_result"]) == [9, 4]
+
+
+def test_qgis_writer(np_raster_source, point_features):
+    qgis_core = pytest.importorskip("qgis.core")
+
+    w = QGISWriter()
+
+    w.add_column("id")
+    w.add_operation(Operation("mean", "mean_result", np_raster_source))
+
+    for f in point_features:
+        f.feature["properties"]["mean_result"] = f.feature["id"] * f.feature["id"]
+
+        # we are explicitly declaring columns (add_operation has been called)
+        # but we have an unexpected column
+        with pytest.raises(KeyError, match="-1"):
+            w.write(f)
+
+    for f in point_features:
+        del f.feature["properties"]["type"]
+
+        w.write(f)
+
+    qgs_vector = w.features()
+
+    qgs_features = list(qgs_vector.getFeatures())
+
+    assert isinstance(qgs_vector, qgis_core.QgsVectorLayer)
+    assert qgs_vector.fields().count() == 2
+
+    assert qgs_vector.fields().names() == ["id", "mean_result"]
+    assert len(qgs_features) == 2
+    assert list(qgs_features[0]) == [3, 9]
+    assert list(qgs_features[1]) == [2, 4]

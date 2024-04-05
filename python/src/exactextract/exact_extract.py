@@ -17,7 +17,7 @@ from .raster import (
     RasterSource,
     XArrayRasterSource,
 )
-from .writer import GDALWriter, JSONWriter, PandasWriter, Writer
+from .writer import GDALWriter, JSONWriter, PandasWriter, QGISWriter, Writer
 
 __all__ = ["exact_extract"]
 
@@ -231,6 +231,8 @@ def prep_writer(output, srs_wkt, options):
         return JSONWriter(**options)
     elif output == "pandas":
         return PandasWriter(srs_wkt=srs_wkt, **options)
+    elif output == "qgis":
+        return QGISWriter(srs_wkt=srs_wkt, **options)
     elif output == "gdal":
         return GDALWriter(srs_wkt=srs_wkt, **options)
 

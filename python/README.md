@@ -45,6 +45,7 @@ types of inputs:
     - a path to a file that can be opened with one of the above packages
     - a list of GeoJSON-like features
     - a `FeatureSource` object
+    - a `QgsVectorLayer` object
 
 The following additional arguments are understood by `exact_extract`:
 
@@ -60,5 +61,5 @@ The following additional arguments are understood by `exact_extract`:
 that intersect each chunk)
 - `max_cells_in_memory`: used to control the number of cells that are loaded at
   one time, for large features
-- `output`: used to control the output format: either `geojson`, `pandas`, or
+- `output`: used to control the output format: either `geojson`, `pandas`, `qgis` or
   the name of an output file to write to using GDAL.

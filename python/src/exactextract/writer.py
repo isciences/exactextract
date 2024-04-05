@@ -129,6 +129,169 @@ class PandasWriter(Writer):
             return pd.DataFrame(self.fields, copy=False)
 
 
+class QGISWriter(Writer):
+    """Creates QGSVectorLayer"""
+
+    def __init__(self, *, srs_wkt=None):
+        super().__init__()
+        from qgis.core import QgsCoordinateReferenceSystem
+
+        self.fields = []
+        self.feats = []
+        self.geom_type = "unknown"
+        self.fields_set = False
+
+        self.crs = QgsCoordinateReferenceSystem()
+        self.crs.createFromWkt(srs_wkt)
+
+    def add_operation(self, op):
+        self.fields.append(op.name)
+
+    def add_column(self, col_name):
+        self.fields.append(col_name)
+
+    def write(self, feature):
+        import json
+
+        from qgis.core import QgsFeature, QgsJsonUtils
+
+        f = JSONFeature()
+        feature.copy_to(f)
+
+        if not self.fields_set:
+            # test every property vs fields type and set correct type
+            self.fields = self._set_fields_types(self.fields, f)
+            self.fields = self._convert_to_QgsFields(self.fields)
+            self.geom_type = self._get_geometry_type(f)
+            self.fields_set = True
+
+        # create a QgsFeature and set fields
+        fet = QgsFeature()
+        fet.setFields(self.fields)
+        # populate QgsFeature with values
+        for field_name, value in f.feature["properties"].items():
+            field_type = self.fields.at(
+                self.fields.indexFromName(field_name)
+            ).typeName()
+            if field_type == "Array":
+                value = str(value)
+            fet.setAttribute(field_name, value)
+        # set id if present
+        if "id" in f.feature:
+            fet.setAttribute("id", f.feature["id"])
+        # set geometry based on JSON geometry
+        fet.setGeometry(
+            QgsJsonUtils.geometryFromGeoJson(json.dumps(f.feature["geometry"]))
+        )
+
+        self.feats.append(fet)
+
+    def features(self):
+        from qgis.core import QgsVectorLayer
+
+        if self.geom_type == "unknown":
+            raise TypeError("Unknown eometry type!")
+        vl = QgsVectorLayer(
+            self.geom_type + "?crs=" + self.crs.authid(), "temporary_polygons", "memory"
+        )
+        pr = vl.dataProvider()
+
+        # add fields
+        pr.addAttributes(self.fields)
+        vl.updateFields()  # tell the vector layer to fetch changes from the provider
+
+        pr.addFeatures(self.feats)
+        vl.updateExtents()
+
+        return vl
+
+    @staticmethod
+    def _get_geometry_type(feature: JSONFeature) -> str:
+        """
+        get geometry type of an input feature geometry
+
+        Args:
+            feature (JSONFeature): feature with geometry field
+
+        Returns:
+            str: describes geometry type (point, linestring, polygon, unknown)
+        """
+        import json
+
+        from qgis.core import QgsJsonUtils, QgsWkbTypes
+
+        geom = QgsJsonUtils.geometryFromGeoJson(json.dumps(feature.feature["geometry"]))
+        geom_type = geom.type()
+        if geom_type == QgsWkbTypes.PointGeometry:
+            return "point"
+        elif geom_type == QgsWkbTypes.LineGeometry:
+            return "linestring"
+        elif geom_type == QgsWkbTypes.PolygonGeometry:
+            return "polygon"
+        else:
+            return "unknown"
+
+    @staticmethod
+    def _convert_to_QgsFields(fields_list: list):
+        """
+        Converts a list with `QgsField` into a `QgsFields` object
+
+        Args:
+            fields_list (list): list with `QgsField`
+
+        Returns:
+            QgsFields: `QgsFields` object with the same fields as in input list
+        """
+        from qgis.core import QgsFields
+
+        result_fields = QgsFields()
+
+        for qgs_field in fields_list:
+            result_fields.append(qgs_field)
+        return result_fields
+
+    @staticmethod
+    def _set_fields_types(fields_list: list[str], feature: JSONFeature) -> list:
+        """
+        Sets field types based on provided data. If no type is specified it will be set as string by default
+        with type_name set as "Unknown".
+
+        Args:
+            fields_list (list[str]): list with fields names
+            feature (JSONFeature): feature with values that will be tested
+
+        Returns:
+            list: list with `QgsField`
+        """
+        import numpy
+        from qgis.core import QgsField
+        from qgis.PyQt.QtCore import QVariant
+
+        mod_fields_list = []
+        for field_name in fields_list:
+            value = feature.get(field_name)
+
+            if type(value) is str:
+                field_type = QVariant.String
+                type_name = "String"
+            elif type(value) is float:
+                field_type = QVariant.Double
+                type_name = "Double"
+            elif type(value) is int:
+                field_type = QVariant.Int
+                type_name = "Int"
+            elif type(value) is numpy.ndarray:
+                field_type = QVariant.String
+                type_name = "Array"
+            else:
+                field_type = QVariant.String
+                type_name = "Unknown"
+
+            mod_fields_list.append(QgsField(field_name, field_type, type_name))
+
+        return mod_fields_list
+
+
 class GDALWriter(Writer):
     """Writes results using GDAL/OGR"""
 
