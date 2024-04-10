@@ -684,6 +684,44 @@ def test_geopandas_output():
     assert "Vermont" in str(result.geometry.crs)
 
 
+def test_qgis_output():
+    qgis_core = pytest.importorskip("qgis.core")
+
+    srs = qgis_core.QgsCoordinateReferenceSystem(3120)
+
+    rast = NumPyRasterSource(
+        np.arange(1, 10, dtype=np.int32).reshape(3, 3), srs_wkt=srs.toWkt()
+    )
+
+    square = JSONFeatureSource(
+        make_rect(0, 0, 3, 3, properties={"name": "test"}), srs_wkt=srs.toWkt()
+    )
+
+    result = exact_extract(
+        rast,
+        square,
+        ["mean", "count", "variety"],
+        include_cols=["name"],
+        output="qgis",
+        include_geom=True,
+    )
+
+    features = [f for f in result.getFeatures()]
+
+    assert len(features) == 1
+
+    assert features[0].attributeMap() == {
+        "count": 9.0,
+        "mean": 5.0,
+        "name": "test",
+        "variety": 9,
+    }
+
+    assert (
+        features[0].geometry().asWkt().upper() == "POLYGON ((0 0, 3 0, 3 3, 0 3, 0 0))"
+    )
+
+
 def test_masked_array():
     data = np.arange(1, 10, dtype=np.int32).reshape(3, 3)
     invalid = np.array(

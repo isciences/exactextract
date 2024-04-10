@@ -3,7 +3,7 @@ import os
 from typing import Mapping, Optional, Tuple
 
 from ._exactextract import Writer as _Writer
-from .feature import GDALFeature, JSONFeature
+from .feature import GDALFeature, JSONFeature, QGISFeature
 
 
 class Writer(_Writer):
@@ -139,10 +139,10 @@ class QGISWriter(Writer):
         self.fields = []
         self.feats = []
         self.geom_type = "unknown"
-        self.fields_set = False
 
         self.crs = QgsCoordinateReferenceSystem()
         self.crs.createFromWkt(srs_wkt)
+        self.vector_layer = None
 
     def add_operation(self, op):
         self.fields.append(op.name)
@@ -151,59 +151,39 @@ class QGISWriter(Writer):
         self.fields.append(col_name)
 
     def write(self, feature):
-        import json
-
-        from qgis.core import QgsFeature, QgsJsonUtils
-
-        f = JSONFeature()
-        feature.copy_to(f)
-
-        if not self.fields_set:
+        if not self.vector_layer:
             # test every property vs fields type and set correct type
-            self.fields = self._set_fields_types(self.fields, f)
+            tmp_feature = JSONFeature()
+            feature.copy_to(tmp_feature)
+            self.fields = self._set_fields_types(self.fields, tmp_feature)
             self.fields = self._convert_to_QgsFields(self.fields)
-            self.geom_type = self._get_geometry_type(f)
-            self.fields_set = True
+            self.geom_type = self._get_geometry_type(tmp_feature)
+            self.vector_layer, self.data_provider = self._create_vector_layer()
 
-        # create a QgsFeature and set fields
-        fet = QgsFeature()
-        fet.setFields(self.fields)
-        # populate QgsFeature with values
-        for field_name, value in f.feature["properties"].items():
-            field_type = self.fields.at(
-                self.fields.indexFromName(field_name)
-            ).typeName()
-            if field_type == "Array":
-                value = str(value)
-            fet.setAttribute(field_name, value)
-        # set id if present
-        if "id" in f.feature:
-            fet.setAttribute("id", f.feature["id"])
-        # set geometry based on JSON geometry
-        fet.setGeometry(
-            QgsJsonUtils.geometryFromGeoJson(json.dumps(f.feature["geometry"]))
-        )
+        qgis_feature = QGISFeature(fields=self.fields)
+        feature.copy_to(qgis_feature)
 
-        self.feats.append(fet)
+        self.data_provider.addFeature(qgis_feature.feature)
 
     def features(self):
+        self.vector_layer.updateExtents()
+        return self.vector_layer
+
+    def _create_vector_layer(self):
         from qgis.core import QgsVectorLayer
 
         if self.geom_type == "unknown":
-            raise TypeError("Unknown eometry type!")
-        vl = QgsVectorLayer(
+            raise TypeError("Unknown geometry type!")
+        vector_layer = QgsVectorLayer(
             self.geom_type + "?crs=" + self.crs.authid(), "temporary_polygons", "memory"
         )
-        pr = vl.dataProvider()
+        data_provider = vector_layer.dataProvider()
 
         # add fields
-        pr.addAttributes(self.fields)
-        vl.updateFields()  # tell the vector layer to fetch changes from the provider
+        data_provider.addAttributes(self.fields)
+        vector_layer.updateFields()  # tell the vector layer to fetch changes from the provider
 
-        pr.addFeatures(self.feats)
-        vl.updateExtents()
-
-        return vl
+        return vector_layer, data_provider
 
     @staticmethod
     def _get_geometry_type(feature: JSONFeature) -> str:
@@ -216,20 +196,13 @@ class QGISWriter(Writer):
         Returns:
             str: describes geometry type (point, linestring, polygon, unknown)
         """
-        import json
+        if "geometry" in feature.feature:
+            geom_type = feature.feature["geometry"]["type"].replace("Multi", "").lower()
 
-        from qgis.core import QgsJsonUtils, QgsWkbTypes
-
-        geom = QgsJsonUtils.geometryFromGeoJson(json.dumps(feature.feature["geometry"]))
-        geom_type = geom.type()
-        if geom_type == QgsWkbTypes.PointGeometry:
-            return "point"
-        elif geom_type == QgsWkbTypes.LineGeometry:
-            return "linestring"
-        elif geom_type == QgsWkbTypes.PolygonGeometry:
-            return "polygon"
-        else:
-            return "unknown"
+            if geom_type in {"point", "linestring", "polygon"}:
+                return geom_type
+            else:
+                return "unknown"
 
     @staticmethod
     def _convert_to_QgsFields(fields_list: list):

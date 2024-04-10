@@ -202,9 +202,16 @@ class GeoPandasFeatureSource(FeatureSource):
 
 
 class QGISFeature(Feature):
-    def __init__(self, f=None):
+    def __init__(self, feature=None, *, fields=None):
         super().__init__()
-        self.feature = f
+        if feature:
+            self.feature = feature
+        else:
+            from qgis.core import QgsFeature
+
+            # create a QgsFeature and set fields
+            self.feature = QgsFeature()
+            self.feature.setFields(fields)
 
     def geometry(self):
         return bytes(self.feature.geometry().asWkb())
@@ -214,6 +221,20 @@ class QGISFeature(Feature):
 
     def fields(self):
         return [field.name() for field in self.feature.fields()]
+
+    def set_geometry(self, wkb):
+        from qgis.core import QgsGeometry
+
+        geometry = QgsGeometry()
+        geometry.fromWkb(wkb)
+        self.feature.setGeometry(geometry)
+
+    def set_geometry_format(self):
+        return "wkb"
+
+    def set(self, name, value):
+        # populate QgsFeature with values
+        self.feature.setAttribute(name, value)
 
 
 class QGISFeatureSource(FeatureSource):
