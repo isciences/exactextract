@@ -234,7 +234,25 @@ class QGISFeature(Feature):
 
     def set(self, name, value):
         # populate QgsFeature with values
+        import numpy as np
+
+        if type(value) is np.ndarray:
+            value = self.convert_ndarray_to_json(name, value)
         self.feature.setAttribute(name, value)
+
+    @staticmethod
+    def convert_ndarray_to_json(name, array):
+        import json
+
+        import numpy as np
+
+        class NumpyEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                return json.JSONEncoder.default(self, obj)
+
+        return json.dumps({name: array}, cls=NumpyEncoder)
 
 
 class QGISFeatureSource(FeatureSource):

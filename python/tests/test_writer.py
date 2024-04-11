@@ -165,7 +165,7 @@ def test_qgis_writer(np_raster_source, point_features):
 
         # we are explicitly declaring columns (add_operation has been called)
         # but we have an unexpected column
-        with pytest.raises(KeyError, match="-1"):
+        with pytest.raises(KeyError, match="type"):
             w.write(f)
 
     for f in point_features:
@@ -182,5 +182,9 @@ def test_qgis_writer(np_raster_source, point_features):
 
     assert qgs_vector.fields().names() == ["id", "mean_result"]
     assert len(qgs_features) == 2
-    assert list(qgs_features[0]) == [3, 9]
-    assert list(qgs_features[1]) == [2, 4]
+    assert qgs_features[0].attributes() == [3, 9]
+    assert qgs_features[1].attributes() == [2, 4]
+    assert qgs_features[0].hasGeometry()
+    assert qgs_features[0].geometry().asWkt() == "Point (3 8)"
+    assert qgs_features[1].hasGeometry()
+    assert qgs_features[1].geometry().asWkt() == "Point (2 2)"

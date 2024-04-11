@@ -170,12 +170,19 @@ class QGISWriter(Writer):
         return self.vector_layer
 
     def _create_vector_layer(self):
+        """
+        Creates a vector layer with the defined geometry type, CRS and fields.
+        Returns the created layer as well as its data provider.
+
+        Returns:
+            Tuple[QgsVectorLayer, QgsVectorDataProvider]: initialized vector layer, data provider for created vector layer
+        """
         from qgis.core import QgsVectorLayer
 
         if self.geom_type == "unknown":
             raise TypeError("Unknown geometry type!")
         vector_layer = QgsVectorLayer(
-            self.geom_type + "?crs=" + self.crs.authid(), "temporary_polygons", "memory"
+            self.geom_type + "?crs=" + self.crs.authid(), "temporary_layer", "memory"
         )
         data_provider = vector_layer.dataProvider()
 
