@@ -11,4 +11,5 @@ dependencies:
   - pytest-cov
   - rasterio
   - rioxarray
+  - xarray=2024.2.0
   - twine
