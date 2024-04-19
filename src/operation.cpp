@@ -41,43 +41,9 @@ make_field_name(const std::string& prefix, const T& value)
     }
 }
 
-template<typename T>
-std::optional<T>
-read(const std::string& value)
-{
-    return value;
-}
-
-template<>
-std::optional<double>
-read(const std::string& value)
-{
-    char* end = nullptr;
-    double d = std::strtod(value.data(), &end);
-    if (end == value.data() + value.size()) {
-        return d;
-    }
-
-    return std::nullopt;
-}
-
-template<>
-std::optional<bool>
-read(const std::string& value)
-{
-    std::string value_lower = value;
-    for (auto& c : value_lower) {
-        c = std::tolower(c);
-    }
-    if (value == "yes" || value == "true") {
-        return true;
-    }
-    if (value == "no" || value == "false") {
-        return false;
-    }
-    return std::nullopt;
-}
-
+/// Parse and remove a single argument from an ArgMap.
+/// If a default value is provided, the option will be considered optional, otherwise it an exception is
+/// thrown if it is not present in the map.
 template<typename T>
 T
 extract_arg(Operation::ArgMap& options, const std::string& name, std::optional<T> default_value = std::nullopt)
@@ -94,13 +60,10 @@ extract_arg(Operation::ArgMap& options, const std::string& name, std::optional<T
     const std::string& raw_value = it->second;
 
     // std::from_chars not supported in clang
-    auto parsed = read<T>(raw_value);
-    if (!parsed.has_value()) {
-        throw std::runtime_error("Failed to parse value of argument: " + name);
-    }
+    auto parsed = string::read<T>(raw_value);
 
     options.erase(it);
-    return parsed.value();
+    return parsed;
 }
 
 /// The OperationImpl classes uses CRTP to make it easier to implement the `Operation` interface.
@@ -449,11 +412,25 @@ Operation::
         throw std::runtime_error("No weights provided for weighted stat: " + stat);
     }
 
+    if (options.find("default_value") != options.end()) {
+        m_default_value = extract_arg<std::string>(options, "default_value");
+    }
+
+    if (options.find("default_weight") != options.end()) {
+        m_default_weight = extract_arg<double>(options, "default_weight");
+    }
+
     std::stringstream ss;
     ss << "values:" << values->name();
     ss << "|weights:" << (weights ? weights->name() : "");
     ss << "|mincov:" << m_min_coverage;
     ss << "|covtyp:" << coverage_type;
+    if (m_default_value.has_value()) {
+        ss << "|default_value:" << m_default_value.value();
+    }
+    if (m_default_weight.has_value()) {
+        ss << "|default_weight:" << m_default_weight.value();
+    }
     m_key = ss.str();
 }
 

@@ -319,4 +319,63 @@ prepare_operations(
 
     return ops;
 }
+
+namespace string {
+
+bool
+read_bool(const std::string& value)
+{
+    std::string value_lower = value;
+    for (auto& c : value_lower) {
+        c = std::tolower(c);
+    }
+
+    if (value_lower == "yes" || value_lower == "true") {
+        return true;
+    }
+    if (value_lower == "no" || value_lower == "false") {
+        return false;
+    }
+
+    throw std::runtime_error("Failed to parse value: " + value);
+}
+
+std::int64_t
+read_int64(const std::string& value)
+{
+    char* end = nullptr;
+    double d = std::strtol(value.data(), &end, 10);
+    if (end == value.data() + value.size()) {
+        return d;
+    }
+
+    throw std::runtime_error("Failed to parse value: " + value);
+}
+
+std::uint64_t
+read_uint64(const std::string& value)
+{
+    char* end = nullptr;
+    double d = std::strtoul(value.data(), &end, 10);
+    if (end == value.data() + value.size()) {
+        return d;
+    }
+
+    throw std::runtime_error("Failed to parse value: " + value);
+}
+
+double
+read_double(const std::string& value)
+{
+    char* end = nullptr;
+    double d = std::strtod(value.data(), &end);
+    if (end == value.data() + value.size()) {
+        return d;
+    }
+
+    throw std::runtime_error("Failed to parse value: " + value);
+}
+
+}
+
 }

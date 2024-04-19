@@ -302,3 +302,50 @@ TEST_CASE("prepare_operations")
         CHECK(ops[1]->name == "adj_mean");
     }
 }
+
+TEST_CASE("parsing arguments")
+{
+    SECTION("int success")
+    {
+        CHECK(exactextract::string::read<std::uint32_t>(" 507") == 507);
+        CHECK(exactextract::string::read<std::uint32_t>("0") == 0);
+        CHECK(exactextract::string::read<std::int32_t>("-13") == -13);
+        CHECK(exactextract::string::read<std::uint64_t>("10000000000000000000") == 10000000000000000000ull);
+    }
+
+    SECTION("int failure")
+    {
+        CHECK_THROWS_WITH(exactextract::string::read<std::uint32_t>("507b"), Catch::Contains("Failed to parse"));
+    }
+
+    SECTION("int out of range")
+    {
+        CHECK_THROWS_WITH(exactextract::string::read<std::int8_t>("129"), Catch::Contains("out of range"));
+        CHECK_THROWS_WITH(exactextract::string::read<std::uint8_t>("-1"), Catch::Contains("out of range"));
+        CHECK_THROWS_WITH(exactextract::string::read<std::uint8_t>("256"), Catch::Contains("out of range"));
+    }
+
+    SECTION("float success")
+    {
+        CHECK(exactextract::string::read<float>(" 3.14e6") == 3.14e6f);
+        CHECK(exactextract::string::read<float>("0") == 0);
+    }
+
+    SECTION("float failure")
+    {
+        CHECK_THROWS_WITH(exactextract::string::read<float>(" 3.14e6g"), Catch::Contains("Failed to parse"));
+    }
+
+    SECTION("float out of range")
+    {
+        CHECK_THROWS_WITH(exactextract::string::read<float>("6.1e100"), Catch::Contains("out of range"));
+    }
+
+    SECTION("bool success")
+    {
+        CHECK(exactextract::string::read<bool>("YES"));
+        CHECK(exactextract::string::read<bool>("TRUE"));
+        CHECK(exactextract::string::read<bool>("No") == false);
+        CHECK(exactextract::string::read<bool>("False") == false);
+    }
+}

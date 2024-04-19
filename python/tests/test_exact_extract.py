@@ -466,6 +466,71 @@ def test_nodata():
     assert results[0]["properties"] == {"sum": 43.5, "mean": 58}
 
 
+def test_default_value():
+    data = np.array([[1, 2, 3], [4, -99, -99], [-99, 8, 9]])
+    rast = NumPyRasterSource(data, nodata=-99)
+
+    square = make_rect(0, 0, 3, 3)
+
+    results = exact_extract(
+        rast,
+        square,
+        [
+            "sum",
+            "sum_with_default=sum(default_value=123)",
+            "mean",
+            "mean_with_default=mean(default_value=123)",
+        ],
+    )
+
+    masked = np.ma.masked_array(data, data == -99)
+    substituted = np.where(data == -99, 123, data)
+
+    assert results[0]["properties"] == {
+        "sum": masked.sum(),
+        "sum_with_default": substituted.sum(),
+        "mean": masked.mean(),
+        "mean_with_default": substituted.mean(),
+    }
+
+
+def test_default_value_out_of_range_int():
+    data = np.array([[1, 2, 3], [4, -99, -99], [-99, 8, 9]], dtype=np.int8)
+    rast = NumPyRasterSource(data, nodata=-99)
+
+    square = make_rect(0, 0, 3, 3)
+
+    exact_extract(rast, square, "sum(default_value=127)")
+
+    with pytest.raises(RuntimeError, match="out of range"):
+        exact_extract(rast, square, "sum(default_value=128)")
+
+
+def test_default_weight():
+    values = NumPyRasterSource(np.full(9, 1).reshape(3, 3))
+    weights = NumPyRasterSource(
+        np.ma.masked_array(
+            np.full(9, 1).reshape(3, 3),
+            np.array(
+                [[False, False, False], [False, False, False], [False, False, True]]
+            ),
+        )
+    )
+
+    square = make_rect(0, 0, 3, 3)
+
+    results = exact_extract(
+        values,
+        square,
+        ["w1=weighted_mean", "w2=weighted_mean(default_weight=0)"],
+        weights=weights,
+    )
+
+    assert results[0]["properties"] == pytest.approx(
+        {"w1": float("nan"), "w2": 1.0}, nan_ok=True
+    )
+
+
 def create_gdal_raster(fname, values, *, gt=None, gdal_type=None, nodata=None):
     gdal = pytest.importorskip("osgeo.gdal")
     gdal_array = pytest.importorskip("osgeo.gdal_array")

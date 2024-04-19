@@ -21,6 +21,7 @@
 #include "raster_source.h"
 #include "raster_stats.h"
 #include "stats_registry.h"
+#include "utils.h"
 
 namespace exactextract {
 /**
@@ -108,6 +109,21 @@ class Operation
         return m_min_coverage;
     }
 
+    template<typename T>
+    std::optional<T> default_value() const
+    {
+        if (!m_default_value.has_value()) {
+            return std::nullopt;
+        }
+
+        return { string::read<T>(m_default_value.value()) };
+    }
+
+    std::optional<double> default_weight() const
+    {
+        return m_default_weight;
+    }
+
     /// Returns the method by which pixel coverage should be considered in this `Operation`
     CoverageWeightType coverage_weight_type() const
     {
@@ -157,6 +173,9 @@ class Operation
     using missing_value_t = std::variant<float, double, std::int8_t, std::uint8_t, std::int16_t, std::uint16_t, std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
 
     missing_value_t m_missing;
+
+    std::optional<std::string> m_default_value;
+    std::optional<double> m_default_weight;
 
     missing_value_t get_missing_value();
 
