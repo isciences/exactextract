@@ -34,6 +34,16 @@ TEST_CASE("exception thrown on oversize unsigned int", "[feature]")
     CHECK_THROWS_WITH(mf.set("field", x), Catch::StartsWith("Value is too large"));
 }
 
+TEST_CASE("exception thrown on oversized value in unsigned int array", "[feature]")
+{
+    auto big = static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 1;
+
+    std::vector<std::uint64_t> vec{ 1, 2, big, 4 };
+
+    MapFeature mf;
+    CHECK_THROWS_WITH(mf.set("field", vec), Catch::StartsWith("Array value too large"));
+}
+
 TEMPLATE_TEST_CASE("floating point fields", "[feature]", float, double)
 {
     TestType x = 123.456;

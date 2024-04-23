@@ -85,12 +85,20 @@ class PyRasterSourceBase : public RasterSource
 
         if (py::isinstance<py::array_t<std::int8_t>>(rast_values)) {
             return make_raster<std::int8_t>(cropped_grid, rast_values, nodata);
+        } else if (py::isinstance<py::array_t<std::uint8_t>>(rast_values)) {
+            return make_raster<std::uint8_t>(cropped_grid, rast_values, nodata);
         } else if (py::isinstance<py::array_t<std::int16_t>>(rast_values)) {
             return make_raster<std::int16_t>(cropped_grid, rast_values, nodata);
+        } else if (py::isinstance<py::array_t<std::uint16_t>>(rast_values)) {
+            return make_raster<std::uint16_t>(cropped_grid, rast_values, nodata);
         } else if (py::isinstance<py::array_t<std::int32_t>>(rast_values)) {
             return make_raster<std::int32_t>(cropped_grid, rast_values, nodata);
+        } else if (py::isinstance<py::array_t<std::uint32_t>>(rast_values)) {
+            return make_raster<std::uint32_t>(cropped_grid, rast_values, nodata);
         } else if (py::isinstance<py::array_t<std::int64_t>>(rast_values)) {
             return make_raster<std::int64_t>(cropped_grid, rast_values, nodata);
+        } else if (py::isinstance<py::array_t<std::uint64_t>>(rast_values)) {
+            return make_raster<std::uint64_t>(cropped_grid, rast_values, nodata);
         } else if (py::isinstance<py::array_t<float>>(rast_values)) {
             return make_raster<float>(cropped_grid, rast_values, nodata);
         } else {

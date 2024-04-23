@@ -260,7 +260,11 @@ using RasterVariant = std::variant<
   std::unique_ptr<AbstractRaster<std::int8_t>>,
   std::unique_ptr<AbstractRaster<std::int16_t>>,
   std::unique_ptr<AbstractRaster<std::int32_t>>,
-  std::unique_ptr<AbstractRaster<std::int64_t>>>;
+  std::unique_ptr<AbstractRaster<std::int64_t>>,
+  std::unique_ptr<AbstractRaster<std::uint8_t>>,
+  std::unique_ptr<AbstractRaster<std::uint16_t>>,
+  std::unique_ptr<AbstractRaster<std::uint32_t>>,
+  std::unique_ptr<AbstractRaster<std::uint64_t>>>;
 
 template<typename T>
 class Raster : public AbstractRaster<T>

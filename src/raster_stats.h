@@ -517,7 +517,7 @@ class RasterStats
      * The number of distinct defined raster values in cells wholly
      * or partially covered by the polygon.
      */
-    size_t
+    std::uint64_t
     variety() const
     {
         return m_freq.size();
