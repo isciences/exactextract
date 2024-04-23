@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 import subprocess
 
 import numpy as np
@@ -8,6 +9,13 @@ import pytest
 from osgeo import gdal, gdal_array, ogr, osr
 
 gdal.UseExceptions()
+
+
+@pytest.fixture(scope="module")
+def gdal_version():
+    result = subprocess.run(["./exactextract", "--version"], stdout=subprocess.PIPE)
+    match = re.search(b"GDAL (\\d+[.]\\d+[.]\\d+)", result.stdout)
+    return tuple(int(x) for x in match[1].split(b"."))
 
 
 @pytest.fixture()
@@ -674,3 +682,29 @@ def test_mask_band(run, write_raster, write_features):
     )
 
     assert json.loads(rows[0]["cell_id"]) == [3, 4, 5]
+
+
+@pytest.mark.parametrize(
+    "dtype,val",
+    [
+        (np.uint8, 200),
+        (np.uint16, 33000),
+        (np.uint32, 2200000000),
+        (np.int64, 2397083434877565865),
+        (np.uint64, 2397083434877565865),  # cannot yet output values > range of int64
+    ],
+)
+def test_gdal_types(gdal_version, dtype, val, run, write_raster, write_features):
+
+    if dtype in {np.int64, np.uint64} and gdal_version < (3, 5, 0):
+        pytest.skip("Int64 data type not supported in this version of GDAL")
+
+    data = np.array([[val]], dtype=dtype)
+
+    rows = run(
+        polygons=write_features({"geom": "POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))"}),
+        raster=write_raster(data),
+        stat="mode",
+    )
+
+    assert rows[0]["mode"] == str(val)
