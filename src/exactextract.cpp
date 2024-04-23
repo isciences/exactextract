@@ -80,6 +80,12 @@ main(int argc, char** argv)
         std::cout << app.help();
         return 0;
     }
+    if (argc == 2 && std::string(argv[1]) == "--version") {
+        std::cout << "exactextract " << exactextract::version();
+        std::cout << " (built against GDAL " << GDAL_VERSION_MAJOR << "." << GDAL_VERSION_MINOR << "." << GDAL_VERSION_REV << ")" << std::endl;
+        return 0;
+    }
+
     CLI11_PARSE(app, argc, argv)
 
     if (dst_id_name.empty() != dst_id_type.empty()) {
