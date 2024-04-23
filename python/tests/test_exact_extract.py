@@ -278,8 +278,8 @@ def test_multifile(tmp_path):
     rast1 = tmp_path / "rast1.tif"
     rast2 = tmp_path / "rast2.tif"
 
-    create_gdal_raster(rast1, np.arange(1, 10).reshape(3, 3))
-    create_gdal_raster(rast2, 2 * np.arange(1, 10).reshape(3, 3))
+    create_gdal_raster(rast1, np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    create_gdal_raster(rast2, 2 * np.arange(1, 10, dtype=np.int32).reshape(3, 3))
 
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
@@ -294,14 +294,16 @@ def test_multiband(tmp_path):
 
     create_gdal_raster(
         rast1,
-        np.stack([np.arange(1, 10).reshape(3, 3), 2 * np.arange(1, 10).reshape(3, 3)]),
+        np.stack(
+            [np.arange(1, 10).reshape(3, 3), 2 * np.arange(1, 10).reshape(3, 3)]
+        ).astype(np.int32),
     )
 
     create_gdal_raster(
         rast2,
         np.stack(
             [3 * np.arange(1, 10).reshape(3, 3), 4 * np.arange(1, 10).reshape(3, 3)]
-        ),
+        ).astype(np.int32),
     )
 
     square = make_rect(0.5, 0.5, 2.5, 2.5)
@@ -391,18 +393,32 @@ def test_nodata():
     assert results[0]["properties"] == {"sum": 43.5, "mean": 58}
 
 
-def create_gdal_raster(fname, values, *, gt=None):
+def create_gdal_raster(fname, values, *, gt=None, gdal_type=None, nodata=None):
     gdal = pytest.importorskip("osgeo.gdal")
+    gdal_array = pytest.importorskip("osgeo.gdal_array")
+
     drv = gdal.GetDriverByName("GTiff")
 
     bands = 1 if len(values.shape) == 2 else values.shape[0]
 
-    ds = drv.Create(str(fname), values.shape[-2], values.shape[-1], bands=bands)
+    if gdal_type is None:
+        gdal_type = gdal_array.NumericTypeCodeToGDALTypeCode(values.dtype)
+
+    ds = drv.Create(
+        str(fname), values.shape[-2], values.shape[-1], bands=bands, eType=gdal_type
+    )
 
     if gt is None:
         ds.SetGeoTransform((0.0, 1.0, 0.0, values.shape[-2], 0.0, -1.0))
     else:
         ds.SetGeoTransform(gt)
+
+    if nodata:
+        if type(nodata) in {list, tuple}:
+            for i, v in enumerate(nodata):
+                ds.GetRasterBand(i + 1).SetNoDataValue(v)
+        else:
+            ds.GetRasterBand(1).SetNoDataValue(nodata)
 
     if len(values.shape) == 2:
         ds.WriteArray(values)
@@ -461,12 +477,15 @@ def open_with_lib(fname, libname):
     "arr,expected",
     [
         (
-            np.arange(1, 10).reshape(3, 3),
+            np.arange(1, 10, dtype=np.float32).reshape(3, 3),
             [{"count": 0.25, "mean": 7.0}, {"count": 4.0, "mean": 5.0}],
         ),
         (
             np.stack(
-                [np.arange(1, 10).reshape(3, 3), 2 * np.arange(1, 10).reshape(3, 3)]
+                [
+                    np.arange(1, 10, dtype=np.float32).reshape(3, 3),
+                    2 * np.arange(1, 10).reshape(3, 3),
+                ]
             ),
             [
                 {
@@ -504,6 +523,40 @@ def test_library_inputs(tmp_path, vec_lib, rast_lib, arr, expected):
 
     for a, e in zip(results, expected):
         assert a["properties"] == e
+
+
+@pytest.mark.parametrize(
+    "dtype", ("Int8", "Int16", "Int32", "Int64", "Float32", "Float64")
+)
+@pytest.mark.parametrize("rast_lib", ("gdal", "rasterio"))
+def test_gdal_data_types(tmp_path, rast_lib, dtype):
+    gdal = pytest.importorskip("osgeo.gdal")
+
+    try:
+        gdal_type = gdal.__dict__[f"GDT_{dtype}"]
+    except KeyError:
+        pytest.skip(f"GDAL data type {dtype} not available")
+
+    raster_fname = str(tmp_path / "test.tif")
+
+    create_gdal_raster(
+        raster_fname,
+        np.array([[1, 1, 1], [2, 2, 2], [3, 2, 3]]),
+        gdal_type=gdal_type,
+        nodata=2,
+    )
+
+    rast = open_with_lib(raster_fname, rast_lib)
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    results = exact_extract(rast, square, "mode")[0]["properties"]
+
+    assert results["mode"] == 1
+    if "Float" in dtype:
+        assert type(results["mode"]) is float
+    else:
+        assert type(results["mode"]) is int
 
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
@@ -554,7 +607,7 @@ def test_error_rotated_inputs(tmp_path, rast_lib):
 
     create_gdal_raster(
         raster_fname,
-        np.array([[1, 2], [3, 4]]),
+        np.array([[1, 2], [3, 4]], dtype=np.int16),
         gt=(10000.0, 42.402, 26.496, 200000.0, 26.496, -42.402),
     )
 

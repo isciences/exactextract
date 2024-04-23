@@ -36,9 +36,9 @@ class GDALRasterSource(RasterSource):
             name: source name, to be used in generating field names for results
         """
         super().__init__()
-        if isinstance(ds, (str, os.PathLike)):
-            from osgeo import gdal
+        from osgeo import gdal
 
+        if isinstance(ds, (str, os.PathLike)):
             ds = gdal.Open(ds)
         self.ds = ds
 
@@ -52,6 +52,7 @@ class GDALRasterSource(RasterSource):
             raise ValueError("Rotated rasters are not supported.")
 
         self.band = self.ds.GetRasterBand(band_idx)
+        self.isfloat = self.band.DataType in {gdal.GDT_Float32, gdal.GDT_Float64}
 
         if name:
             self.set_name(name)
@@ -73,7 +74,10 @@ class GDALRasterSource(RasterSource):
         return (left, bottom, right, top)
 
     def nodata_value(self):
-        return self.band.GetNoDataValue()
+        val = self.band.GetNoDataValue()
+
+        if val is not None:
+            return val if self.isfloat else int(val)
 
     def read_window(self, x0, y0, nx, ny):
         arr = self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
@@ -185,6 +189,7 @@ class RasterioRasterSource(RasterSource):
 
         self.ds = ds
         self.band_idx = band_idx
+        self.isfloat = self.ds.dtypes[band_idx - 1].startswith("float")
 
         gt = self.ds.get_transform()
         if gt[2] != 0 or gt[4] != 0:
@@ -213,7 +218,8 @@ class RasterioRasterSource(RasterSource):
         )
 
     def nodata_value(self):
-        return self.ds.nodata
+        if self.ds.nodata is not None:
+            return self.ds.nodata if self.isfloat else int(self.ds.nodata)
 
     def read_window(self, x0, y0, nx, ny):
         from rasterio.windows import Window
