@@ -206,17 +206,27 @@ class Feature
 
     virtual void set(const std::string& name, const std::vector<std::int8_t>& value);
 
+    virtual void set(const std::string& name, const std::vector<std::uint8_t>& value);
+
     virtual void set(const std::string& name, const std::vector<std::int16_t>& value);
+
+    virtual void set(const std::string& name, const std::vector<std::uint16_t>& value);
 
     virtual void set(const std::string& name, const std::vector<std::int32_t>& value);
 
+    virtual void set(const std::string& name, const std::vector<std::uint32_t>& value);
+
     virtual void set(const std::string& name, const std::vector<std::int64_t>& value);
+
+    virtual void set(const std::string& name, const std::vector<std::uint64_t>& value);
 
     virtual void set(const std::string& name, const std::vector<float>& value);
 
     virtual void set(const std::string& name, const std::vector<double>& value);
 
-    virtual void set(const std::string& name, std::size_t value);
+    virtual void set(const std::string& name, std::uint32_t value);
+
+    virtual void set(const std::string& name, std::uint64_t value);
 
     virtual void set(const std::string& name, const Feature& other);
 

@@ -49,7 +49,13 @@ Feature::set(const std::string& name, const Feature& f)
 }
 
 void
-Feature::set(const std::string& name, std::size_t value)
+Feature::set(const std::string& name, std::uint32_t value)
+{
+    set(name, static_cast<std::int64_t>(value));
+}
+
+void
+Feature::set(const std::string& name, std::uint64_t value)
 {
     if (value > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max())) {
         throw std::runtime_error("Value is too large to store as 64-bit integer.");
@@ -65,6 +71,22 @@ Feature::set(const std::string& name, float value)
     } else {
         set(name, static_cast<double>(value));
     }
+}
+
+template<typename T_out, typename T_in>
+void
+copy_and_set_vect(Feature& f, const std::string& name, const std::vector<T_in>& value)
+{
+    std::vector<T_out> new_values(value.size());
+    for (std::size_t i = 0; i < value.size(); i++) {
+        if constexpr (std::numeric_limits<T_in>::max() > std::numeric_limits<T_out>::max()) {
+            if (value[i] > std::numeric_limits<T_out>::max()) {
+                throw std::runtime_error("Array value too large.");
+            }
+        }
+        new_values[i] = value[i];
+    }
+    f.set(name, new_values);
 }
 
 void
@@ -84,25 +106,40 @@ Feature::set(const std::string& name, const std::vector<std::int32_t>& value)
 {
     set(name, { value.data(), value.size() });
 }
+void
+Feature::set(const std::string& name, const std::vector<std::int8_t>& value)
+{
+    copy_and_set_vect<std::int32_t>(*this, name, value);
+}
+
+void
+Feature::set(const std::string& name, const std::vector<std::uint8_t>& value)
+{
+    copy_and_set_vect<std::int32_t>(*this, name, value);
+}
 
 void
 Feature::set(const std::string& name, const std::vector<std::int16_t>& value)
 {
-    std::vector<std::int32_t> int32_values(value.size());
-    for (std::size_t i = 0; i < value.size(); i++) {
-        int32_values[i] = value[i];
-    }
-    set(name, int32_values);
+    copy_and_set_vect<std::int32_t>(*this, name, value);
 }
 
 void
-Feature::set(const std::string& name, const std::vector<std::int8_t>& value)
+Feature::set(const std::string& name, const std::vector<std::uint16_t>& value)
 {
-    std::vector<std::int32_t> int32_values(value.size());
-    for (std::size_t i = 0; i < value.size(); i++) {
-        int32_values[i] = value[i];
-    }
-    set(name, int32_values);
+    copy_and_set_vect<std::int32_t>(*this, name, value);
+}
+
+void
+Feature::set(const std::string& name, const std::vector<std::uint32_t>& value)
+{
+    copy_and_set_vect<std::int64_t>(*this, name, value);
+}
+
+void
+Feature::set(const std::string& name, const std::vector<std::uint64_t>& value)
+{
+    copy_and_set_vect<std::int64_t>(*this, name, value);
 }
 
 void

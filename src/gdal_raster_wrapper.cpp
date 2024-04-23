@@ -64,6 +64,9 @@ apply_scale_and_offset(double* px, std::size_t size, double scale, double offset
     }
 }
 
+#define HAVE_GDAL_INT8 (GDAL_VERSION_MAJOR > 3 || (GDAL_VERSION_MAJOR == 3 && GDAL_VERSION_MINOR >= 7))
+#define HAVE_GDAL_INT64 (GDAL_VERSION_MAJOR > 3 || (GDAL_VERSION_MAJOR == 3 && GDAL_VERSION_MINOR >= 5))
+
 RasterVariant
 GDALRasterWrapper::read_box(const Box& box)
 {
@@ -89,20 +92,49 @@ GDALRasterWrapper::read_box(const Box& box)
         read_type = GDT_Float64;
     } else {
         if (band_type == GDT_Byte) {
-            auto rast = make_raster<std::int8_t>(cropped_grid);
+            auto rast = make_raster<std::uint8_t>(cropped_grid);
             buffer = rast->data().data();
             ret = std::move(rast);
             read_type = GDT_Byte;
+#if HAVE_GDAL_INT8
+        } else if (band_type == GDT_Int8) {
+            auto rast = make_raster<std::int8_t>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_Int8;
+#endif
         } else if (band_type == GDT_Int16) {
             auto rast = make_raster<std::int16_t>(cropped_grid);
             buffer = rast->data().data();
             ret = std::move(rast);
             read_type = GDT_Int16;
+        } else if (band_type == GDT_UInt16) {
+            auto rast = make_raster<std::uint16_t>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_UInt16;
         } else if (band_type == GDT_Int32) {
             auto rast = make_raster<std::int32_t>(cropped_grid);
             buffer = rast->data().data();
             ret = std::move(rast);
             read_type = GDT_Int32;
+        } else if (band_type == GDT_UInt32) {
+            auto rast = make_raster<std::uint32_t>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_UInt32;
+#if HAVE_GDAL_INT64
+        } else if (band_type == GDT_Int64) {
+            auto rast = make_raster<std::int64_t>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_Int64;
+        } else if (band_type == GDT_UInt64) {
+            auto rast = make_raster<std::uint64_t>(cropped_grid);
+            buffer = rast->data().data();
+            ret = std::move(rast);
+            read_type = GDT_UInt64;
+#endif
         } else if (band_type == GDT_Float32) {
             auto rast = make_raster<float>(cropped_grid);
             buffer = rast->data().data();

@@ -38,7 +38,11 @@ class StatsRegistry
       RasterStats<std::int8_t>,
       RasterStats<std::int16_t>,
       RasterStats<std::int32_t>,
-      RasterStats<std::int64_t>>;
+      RasterStats<std::int64_t>,
+      RasterStats<std::uint8_t>,
+      RasterStats<std::uint16_t>,
+      RasterStats<std::uint32_t>,
+      RasterStats<std::uint64_t>>;
 
     /**
      * @brief Get the RasterStats object for a given feature/operation, creating it if necessary.

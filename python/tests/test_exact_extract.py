@@ -526,7 +526,19 @@ def test_library_inputs(tmp_path, vec_lib, rast_lib, arr, expected):
 
 
 @pytest.mark.parametrize(
-    "dtype", ("Int8", "Int16", "Int32", "Int64", "Float32", "Float64")
+    "dtype",
+    (
+        "Byte",
+        "Int8",
+        "Int16",
+        "UInt16",
+        "Int32",
+        "UInt32",
+        "Int64",
+        "UInt64",
+        "Float32",
+        "Float64",
+    ),
 )
 @pytest.mark.parametrize("rast_lib", ("gdal", "rasterio"))
 def test_gdal_data_types(tmp_path, rast_lib, dtype):
