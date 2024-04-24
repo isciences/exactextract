@@ -178,12 +178,24 @@ class OperationImpl : public Operation
                 return Feature::ValueType::INT_ARRAY;
             }
 
+            if constexpr (std::is_same_v<result_type, std::vector<std::uint8_t>>) {
+                return Feature::ValueType::INT_ARRAY;
+            }
+
             if constexpr (std::is_same_v<result_type, std::vector<std::int16_t>>) {
+                return Feature::ValueType::INT_ARRAY;
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<std::uint16_t>>) {
                 return Feature::ValueType::INT_ARRAY;
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<std::int32_t>>) {
                 return Feature::ValueType::INT_ARRAY;
+            }
+
+            if constexpr (std::is_same_v<result_type, std::vector<std::uint32_t>>) {
+                return Feature::ValueType::INT64_ARRAY;
             }
 
             if constexpr (std::is_same_v<result_type, std::vector<std::int64_t>>) {
@@ -367,9 +379,9 @@ class Frac : public OperationImpl<Frac<Weighted>>
         fracs.reserve(stats.variety());
         for (const auto& value : stats) {
             if constexpr (Weighted) {
-                fracs.push_back(stats.weighted_frac(value).value());
+                fracs.push_back(static_cast<double>(stats.weighted_frac(value).value()));
             } else {
-                fracs.push_back(stats.frac(value).value());
+                fracs.push_back(static_cast<double>(stats.frac(value).value()));
             }
         }
         return fracs;
