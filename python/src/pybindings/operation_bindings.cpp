@@ -67,7 +67,7 @@ class PythonOperation : public Operation
         return mf.field_type(name);
     }
 
-    virtual void set_result(const StatsRegistry::RasterStatsVariant& stats_variant, Feature& f_out) const
+    virtual void set_result(const StatsRegistry::RasterStatsVariant& stats_variant, Feature& f_out) const override
     {
         py::object result = std::visit([this](const auto& stats) -> py::object {
             // TODO avoid array copies here?

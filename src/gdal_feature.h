@@ -174,7 +174,7 @@ class GDALFeature : public Feature
         return { arr, static_cast<std::size_t>(size) };
     }
 
-    std::int64_t get_int64(const std::string& name) const
+    std::int64_t get_int64(const std::string& name) const override
     {
         return OGR_F_GetFieldAsInteger64(m_feature, field_index(name));
     }

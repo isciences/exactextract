@@ -118,7 +118,7 @@ class RasterStats
                     process_location(common, i, j);
 
                     if (wv.get(i, j, weight)) {
-                        process_value(val, pct_cov, weight);
+                        process_value(val, pct_cov, static_cast<double>(weight));
                     } else {
                         // Weight is NODATA, convert to NAN
                         process_value(val, pct_cov, std::numeric_limits<double>::quiet_NaN());
@@ -146,8 +146,8 @@ class RasterStats
         m_sum_xiciwi += static_cast<double>(val) * ciwi;
 
         if (m_options.calc_variance) {
-            m_variance.process(val, coverage);
-            m_weighted_variance.process(val, ciwi);
+            m_variance.process(static_cast<double>(val), static_cast<double>(coverage));
+            m_weighted_variance.process(static_cast<double>(val), ciwi);
         }
 
         if (val < m_min) {
@@ -305,7 +305,7 @@ class RasterStats
             m_quantiles = std::make_unique<WeightedQuantiles>();
 
             for (const auto& entry : m_freq) {
-                m_quantiles->process(entry.first, entry.second.m_sum_ci);
+                m_quantiles->process(static_cast<double>(entry.first), entry.second.m_sum_ci);
             }
         }
 
