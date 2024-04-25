@@ -98,7 +98,7 @@ TEMPLATE_TEST_CASE("Unweighted stats", "[stats]", float, double, int)
             (4 * 0.50 + 5 * 1.0 + 6 * 0.50) +
             (0 * 0.25 + 0 * 0.5 + 7 * 0.25));
 
-    CHECK(stats.mean() == 13.75f / 3.5f);
+    CHECK(stats.mean() == 13.75 / 3.5);
 
     CHECK(stats.mode() == 5);
     CHECK(stats.minority() == 0);
@@ -107,6 +107,16 @@ TEMPLATE_TEST_CASE("Unweighted stats", "[stats]", float, double, int)
     CHECK(stats.max() == 7);
 
     CHECK(stats.variety() == 8);
+}
+
+TEST_CASE("Empty stats", "[stats]")
+{
+    RasterStats<double> stats;
+
+    // Check that we have a nan that will output as "nan" instead of "-nan"
+    std::stringstream ss;
+    ss << stats.mean();
+    CHECK(ss.str() == "nan");
 }
 
 TEMPLATE_TEST_CASE("Weighted multiresolution stats", "[stats]", float, double, int)
@@ -220,10 +230,10 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
         CHECK(stats.mode() == 4.0f);
         CHECK(stats.minority() == 1.0f);
         CHECK(stats.variance() == 1.25f);
-        CHECK(stats.stdev() == 1.118034f);
+        CHECK(static_cast<float>(stats.stdev()) == 1.118034f);
         CHECK(stats.weighted_variance() == stats.variance());
         CHECK(stats.weighted_stdev() == stats.stdev());
-        CHECK(stats.coefficient_of_variation() == 0.4472136f);
+        CHECK(static_cast<float>(stats.coefficient_of_variation()) == 0.4472136f);
         CHECK(stats.weighted_count() == stats.count());
         CHECK(stats.weighted_sum() == stats.sum());
         CHECK(stats.weighted_mean() == stats.mean());
@@ -315,8 +325,8 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
         CHECK(stats.max() == 4.0f);
         CHECK(stats.mean() == 2.5f);
         CHECK(stats.variance() == 1.25f);
-        CHECK(stats.stdev() == 1.118034f);
-        CHECK(stats.coefficient_of_variation() == 0.4472136f);
+        CHECK(static_cast<float>(stats.stdev()) == 1.118034f);
+        CHECK(static_cast<float>(stats.coefficient_of_variation()) == 0.4472136f);
         CHECK(std::isnan(stats.weighted_count()));
         CHECK(std::isnan(stats.weighted_sum()));
         CHECK(std::isnan(stats.weighted_mean()));
@@ -337,9 +347,9 @@ TEMPLATE_TEST_CASE("Missing data handling", "[stats]", float, double, int)
         CHECK(stats.min() == 1.0f);
         CHECK(stats.max() == 4.0f);
         CHECK(stats.mean() == 2.5f);
-        CHECK(stats.variance() == 1.25f);
-        CHECK(stats.stdev() == 1.118034f);
-        CHECK(stats.coefficient_of_variation() == 0.4472136f);
+        CHECK(static_cast<float>(stats.variance()) == 1.25f);
+        CHECK(static_cast<float>(stats.stdev()) == 1.118034f);
+        CHECK(static_cast<float>(stats.coefficient_of_variation()) == 0.4472136f);
         CHECK(std::isnan(stats.weighted_count()));
         CHECK(std::isnan(stats.weighted_sum()));
         CHECK(std::isnan(stats.weighted_mean()));

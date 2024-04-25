@@ -188,10 +188,14 @@ class RasterStats
      * The mean value of cells covered by this polygon, weighted
      * by the percent of the cell that is covered.
      */
-    float
+    double
     mean() const
     {
-        return sum() / count();
+        if (count() > 0) {
+            return sum() / count();
+        } else {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
     }
 
     /**
@@ -203,17 +207,21 @@ class RasterStats
      * caller should replace undefined weights with a suitable default
      * before computing statistics.
      */
-    float
+    double
     weighted_mean() const
     {
-        return weighted_sum() / weighted_count();
+        if (weighted_count()) {
+            return weighted_sum() / weighted_count();
+        } else {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
     }
 
     /** The fraction of weighted cells to unweighted cells.
      *  Meaningful only when the values of the weighting
      *  raster are between 0 and 1.
      */
-    float
+    double
     weighted_fraction() const
     {
         return weighted_sum() / sum();
@@ -316,10 +324,10 @@ class RasterStats
      * The sum of raster cells covered by the polygon, with each raster
      * value weighted by its coverage fraction.
      */
-    float
+    double
     sum() const
     {
-        return (float)m_sum_xici;
+        return m_sum_xici;
     }
 
     /**
@@ -330,10 +338,10 @@ class RasterStats
      * caller should replace undefined weights with a suitable default
      * before computing statistics.
      */
-    float
+    double
     weighted_sum() const
     {
-        return (float)m_sum_xiciwi;
+        return m_sum_xiciwi;
     }
 
     /**
@@ -341,10 +349,10 @@ class RasterStats
      * covered by the polygon. Weights are not taken
      * into account.
      */
-    float
+    double
     count() const
     {
-        return (float)m_sum_ci;
+        return m_sum_ci;
     }
 
     /**
@@ -352,7 +360,7 @@ class RasterStats
      * covered by the polygon. Weights are not taken
      * into account.
      */
-    std::optional<float>
+    std::optional<double>
     count(const T& value) const
     {
         const auto& entry = m_freq.find(value);
@@ -361,7 +369,7 @@ class RasterStats
             return std::nullopt;
         }
 
-        return static_cast<float>(entry->second.m_sum_ci);
+        return entry->second.m_sum_ci;
     }
 
     /**
@@ -369,7 +377,7 @@ class RasterStats
      * a value that equals the specified value.
      * Weights are not taken into account.
      */
-    std::optional<float>
+    std::optional<double>
     frac(const T& value) const
     {
         auto count_for_value = count(value);
@@ -385,7 +393,7 @@ class RasterStats
      * The weighted fraction of defined raster cells covered by the polygon with
      * a value that equals the specified value.
      */
-    std::optional<float>
+    std::optional<double>
     weighted_frac(const T& value) const
     {
         auto count_for_value = weighted_count(value);
@@ -402,10 +410,10 @@ class RasterStats
      * by the polygon. Cell coverage fractions are taken
      * into account; values of a weighting raster are not.
      */
-    float
+    double
     variance() const
     {
-        return static_cast<float>(m_variance.variance());
+        return m_variance.variance();
     }
 
     /**
@@ -413,10 +421,10 @@ class RasterStats
      * by the polygon, taking into account cell coverage
      * fractions and values of a weighting raster.
      */
-    float
+    double
     weighted_variance() const
     {
-        return static_cast<float>(m_weighted_variance.variance());
+        return m_weighted_variance.variance();
     }
 
     /**
@@ -425,10 +433,10 @@ class RasterStats
      * are taken into account; values of a weighting
      * raster are not.
      */
-    float
+    double
     stdev() const
     {
-        return static_cast<float>(m_variance.stdev());
+        return m_variance.stdev();
     }
 
     /**
@@ -436,10 +444,10 @@ class RasterStats
      * touched by the polygon, taking into account cell
      * coverage fractions and values of a weighting raster.
      */
-    float
+    double
     weighted_stdev() const
     {
-        return static_cast<float>(m_weighted_variance.stdev());
+        return m_weighted_variance.stdev();
     }
 
     /**
@@ -448,10 +456,10 @@ class RasterStats
      * are taken into account; values of a weighting
      * raster are not.
      */
-    float
+    double
     coefficient_of_variation() const
     {
-        return static_cast<float>(m_variance.coefficent_of_variation());
+        return m_variance.coefficent_of_variation();
     }
 
     /**
@@ -463,10 +471,10 @@ class RasterStats
      * caller should replace undefined weights with a suitable default
      * before computing statistics.
      */
-    float
+    double
     weighted_count() const
     {
-        return (float)m_sum_ciwi;
+        return m_sum_ciwi;
     }
 
     /**
@@ -478,7 +486,7 @@ class RasterStats
      * caller should replace undefined weights with a suitable default
      * before computing statistics.
      */
-    std::optional<float>
+    std::optional<double>
     weighted_count(const T& value) const
     {
         const auto& entry = m_freq.find(value);
@@ -487,7 +495,7 @@ class RasterStats
             return std::nullopt;
         }
 
-        return static_cast<float>(entry->second.m_sum_ciwi);
+        return entry->second.m_sum_ciwi;
     }
 
     /**
