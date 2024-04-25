@@ -571,6 +571,31 @@ def test_gdal_data_types(tmp_path, rast_lib, dtype):
         assert type(results["mode"]) is int
 
 
+@pytest.mark.parametrize("dtype", (np.uint8, np.uint16, np.uint32, np.uint64))
+def test_unsigned_values_preserved(dtype):
+    max_val = np.iinfo(dtype).max
+
+    rast = NumPyRasterSource(
+        np.array([[max_val, max_val], [max_val - 1, max_val - 1]], dtype=dtype),
+        nodata=max_val - 1,
+    )
+
+    square = make_rect(0, 0, 2, 2)
+
+    stats = ["sum"]
+    if dtype != np.uint64:
+        stats.append("mode")  # large uint64 cannot be stored as a feature attribute
+
+    results = exact_extract(rast, square, stats)[0]["properties"]
+
+    if dtype == np.uint64:
+        # sum is processed as a double, max uint64 cannot be represented exactly
+        assert results["sum"] == pytest.approx(2 * max_val)
+    else:
+        assert results["sum"] == 2 * max_val
+        assert results["mode"] == max_val
+
+
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
 def test_include_cols(strategy):
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
