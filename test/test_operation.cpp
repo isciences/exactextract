@@ -112,7 +112,7 @@ TEST_CASE("Operations dispatch to the correct RasterStats function", "[operation
     CHECK(f.get<double>(stat) == Approx(expected));
 }
 
-TEMPLATE_TEST_CASE("result_type returns correct result", "[operation]", double, float, std::int8_t, std::int16_t, std::int32_t, std::int64_t)
+TEMPLATE_TEST_CASE("result_type returns correct result", "[operation]", double, float, std::int8_t, std::uint8_t, std::int16_t, std::uint16_t, std::int32_t, std::uint32_t, std::int64_t, std::uint64_t)
 {
     GEOSContextHandle_t context = init_geos();
 
@@ -150,7 +150,7 @@ TEMPLATE_TEST_CASE("result_type returns correct result", "[operation]", double, 
     CHECK(op->result_type() == f.field_type(op->name));
 }
 
-TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[operation]", double, std::int32_t, std::int64_t)
+TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[operation]", float, double, std::int8_t, std::uint8_t, std::int16_t, std::uint16_t, std::int32_t, std::uint32_t, std::int64_t, std::uint64_t)
 {
     GEOSContextHandle_t context = init_geos();
 
@@ -176,10 +176,9 @@ TEMPLATE_TEST_CASE("raster value type is mapped to appropriate field type", "[op
 
     CHECK(op->result_type() == f.field_type("mode"));
 
-    const auto& pix_typ = typeid(TestType);
-    if (pix_typ == typeid(float) || pix_typ == typeid(double)) {
+    if constexpr (std::is_floating_point_v<TestType>) {
         CHECK(f.field_type("mode") == Feature::ValueType::DOUBLE);
-    } else if (pix_typ == typeid(std::int32_t)) {
+    } else if constexpr (sizeof(TestType) < 4 || std::is_same_v<TestType, std::int32_t>) {
         CHECK(f.field_type("mode") == Feature::ValueType::INT);
     } else {
         CHECK(f.field_type("mode") == Feature::ValueType::INT64);

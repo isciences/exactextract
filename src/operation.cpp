@@ -144,8 +144,9 @@ class OperationImpl : public Operation
                 }
 
                 if constexpr (std::is_integral_v<std::decay_t<inner_result_type>>) {
-                    if constexpr (std::is_same_v<std::decay_t<inner_result_type>, std::int64_t> ||
-                                  std::is_same_v<std::decay_t<inner_result_type>, std::size_t>) {
+                    if constexpr (std::is_same_v<std::decay_t<inner_result_type>, std::uint32_t> ||
+                                  std::is_same_v<std::decay_t<inner_result_type>, std::int64_t> ||
+                                  std::is_same_v<std::decay_t<inner_result_type>, std::uint64_t>) {
                         return Feature::ValueType::INT64;
                     } else {
                         return Feature::ValueType::INT;
@@ -158,8 +159,7 @@ class OperationImpl : public Operation
             }
 
             if constexpr (std::is_integral_v<result_type>) {
-                if constexpr (std::is_same_v<result_type, std::int64_t> ||
-                              std::is_same_v<result_type, std::size_t>) {
+                if constexpr (sizeof(result_type) > 4 || std::is_same_v<result_type, std::uint32_t>) {
                     return Feature::ValueType::INT64;
                 } else {
                     return Feature::ValueType::INT;
