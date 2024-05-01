@@ -117,7 +117,7 @@ def prep_vec(vec):
         from osgeo import gdal, ogr
 
         if isinstance(vec, (str, os.PathLike)):
-            vec = ogr.Open(vec)
+            vec = ogr.Open(str(vec))
 
         if isinstance(vec, (gdal.Dataset, ogr.DataSource, ogr.Layer)):
             return GDALFeatureSource(vec)
