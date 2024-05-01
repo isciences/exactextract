@@ -22,6 +22,7 @@ def test_gdal_feature_source():
     fs = GDALFeatureSource(lyr)
 
     assert fs.count() == 5
+    assert fs.count() == 5  # make sure we can iterate twice
 
 
 def test_python_feature_source():
@@ -38,4 +39,5 @@ def test_python_feature_source():
 
     fs = JSONFeatureSource(features)
 
+    assert fs.count() == 5
     assert fs.count() == 5

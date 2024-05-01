@@ -38,6 +38,7 @@ class PyFeatureSourceBase : public FeatureSource
 
         auto iter = py::iter(m_it);
         if (iter == py::iterator::sentinel()) {
+            m_initialized = false;
             return false;
         }
         m_feature = py::cast<py::object>(*iter);
