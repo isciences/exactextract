@@ -92,7 +92,11 @@ class OperationImpl : public Operation
         static_cast<Derived*>(this)->handle_options(options);
 
         if (!options.empty()) {
-            throw std::runtime_error("Unexpected argument(s) to stat: " + stat);
+            std::string msg = "Unexpected argument(s) to stat \"" + stat + "\": ";
+            for (const auto& [opt, _] : options) {
+                msg += opt + " ";
+            }
+            throw std::runtime_error(msg);
         }
 
         static_cast<Derived*>(this)->set_name(p_name);
