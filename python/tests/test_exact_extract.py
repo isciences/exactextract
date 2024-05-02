@@ -110,6 +110,79 @@ def test_basic_stats(stat, expected, output_format):
         assert expected.dtype == value.dtype
 
 
+def test_coverage_ignore_fraction():
+    # when coverage_weight=none, we ignore the coverage fraction and count
+    # all touched pixels equally
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 1.0, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        ["mean(coverage_weight=none)", "count(coverage_weight=none)"],
+    )[0]["properties"]
+
+    assert result == {"count": 6.0, "mean": 3.5}
+
+
+def test_min_coverage():
+    # with min_coverage_frac we can exclude pixels that are not fully covered
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        ["cell_id(min_coverage_frac=0.49)", "count(min_coverage_frac=0.49)"],
+    )[0]["properties"]
+
+    assert list(result["cell_id"]) == [1, 3, 4, 5, 7]
+    assert result["count"] == 3.0
+
+
+def test_min_coverage_ignore_fraction():
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        [
+            "cell_id(min_coverage_frac=0,coverage_weight=none)",
+            "sum(min_coverage_frac=0,coverage_weight=none)",
+        ],
+    )[0]["properties"]
+
+    assert list(result["cell_id"]) == [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    assert result["sum"] == np.arange(1, 10).sum()
+
+
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+def test_coverage_area(strategy):
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        [
+            "m1=mean",
+            "m2=mean(coverage_weight=area_spherical_m2)",
+            "c1=coverage",
+            "c2=coverage(coverage_weight=area_spherical_m2)",
+            "c3=coverage(coverage_weight=area_spherical_km2)",
+            "c4=coverage(coverage_weight=area_cartesian)",
+        ],
+        strategy=strategy,
+    )[0]["properties"]
+
+    assert result["m2"] > result["m1"]
+
+    assert np.all(np.isclose(result["c3"], result["c2"] * 1e-6))
+    assert np.all(result["c4"] == result["c1"])
+
+
 @pytest.mark.parametrize("output_format", ("geojson", "pandas"), indirect=True)
 def test_multiple_stats(output_format):
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
@@ -391,6 +464,71 @@ def test_nodata():
     results = exact_extract(rast, square, ["sum", "mean"])
 
     assert results[0]["properties"] == {"sum": 43.5, "mean": 58}
+
+
+def test_default_value():
+    data = np.array([[1, 2, 3], [4, -99, -99], [-99, 8, 9]])
+    rast = NumPyRasterSource(data, nodata=-99)
+
+    square = make_rect(0, 0, 3, 3)
+
+    results = exact_extract(
+        rast,
+        square,
+        [
+            "sum",
+            "sum_with_default=sum(default_value=123)",
+            "mean",
+            "mean_with_default=mean(default_value=123)",
+        ],
+    )
+
+    masked = np.ma.masked_array(data, data == -99)
+    substituted = np.where(data == -99, 123, data)
+
+    assert results[0]["properties"] == {
+        "sum": masked.sum(),
+        "sum_with_default": substituted.sum(),
+        "mean": masked.mean(),
+        "mean_with_default": substituted.mean(),
+    }
+
+
+def test_default_value_out_of_range_int():
+    data = np.array([[1, 2, 3], [4, -99, -99], [-99, 8, 9]], dtype=np.int8)
+    rast = NumPyRasterSource(data, nodata=-99)
+
+    square = make_rect(0, 0, 3, 3)
+
+    exact_extract(rast, square, "sum(default_value=127)")
+
+    with pytest.raises(RuntimeError, match="out of range"):
+        exact_extract(rast, square, "sum(default_value=128)")
+
+
+def test_default_weight():
+    values = NumPyRasterSource(np.full(9, 1).reshape(3, 3))
+    weights = NumPyRasterSource(
+        np.ma.masked_array(
+            np.full(9, 1).reshape(3, 3),
+            np.array(
+                [[False, False, False], [False, False, False], [False, False, True]]
+            ),
+        )
+    )
+
+    square = make_rect(0, 0, 3, 3)
+
+    results = exact_extract(
+        values,
+        square,
+        ["w1=weighted_mean", "w2=weighted_mean(default_weight=0)"],
+        weights=weights,
+    )
+
+    assert results[0]["properties"] == pytest.approx(
+        {"w1": float("nan"), "w2": 1.0}, nan_ok=True
+    )
 
 
 def create_gdal_raster(fname, values, *, gt=None, gdal_type=None, nodata=None):

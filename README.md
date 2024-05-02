@@ -196,6 +196,7 @@ The area covered by the polygon is shaded purple.
 | min_center_x   | - | Cell center x-coordinate for the cell containing the minimum value intersected by the polygon. The center of this cell may or may not be inside the polygon. | Lowest point in watershed | 0.5 |
 | min_center_y   | - | Cell center y-coordinate for the cell containing the minimum value intersected by the polygon. The center of this cell may or may not be inside the polygon. | Lowest point in watershed | 1.5 |
 | minority       | -                                                                                    | The raster value occupying the least number of cells, taking into account cell coverage fractions but not weighting raster values. | Least common land cover type | 4 |
+| quantile       | - | Specified quantile of cells that intersect the polygon, weighted by the percent of each cell that is covered. Quantile value is specified by the `q` argument, 0 to 1. | - |
 | stdev          | &Sqrt;variance                                                                       | Population standard deviation of cell values that intersect the polygon, taking into account coverage fraction. | - | 1.05 |
 | sum            | &Sigma;x<sub>i</sub>c<sub>i</sub>                                                    | Sum of values of raster cells that intersect the polygon, with each raster value weighted by its coverage fraction. | Total population | 0.5&times;1 + 0&times;2 + 1.0&times;3 + 0.25&times;4 = 4.5 |
 | unique         |                                                                                      | Array of unique raster values for cells that intersect the polygon | - | [ 1, 3, 4 ] |
@@ -208,3 +209,15 @@ The area covered by the polygon is shaded purple.
 | weighted_sum   | &Sigma;x<sub>i</sub>c<sub>i</sub>w<sub>i</sub>                                       | Sum of raster cells covered by the polygon, with each raster value weighted by its coverage fraction and weighting raster value. | Total crop production lost | 0.5&times;1&times;5 + 0&times;2&times;6 + 1.0&times;3&times;7 + 0.25&times;4&times;8 = 31.5
 | weighted_variance |                                                                                   | Weighted version of `variance` | - |
 | weights        |                                                                                      | Array of weight values for each cell that intersects the polygon | - | [ 5, 7, 8 ] |
+
+The behavior of these statistics may be modified by the following arguments:
+
+- `coverage_weight` - specifies the value to use for ci in the above formulas. The following methods are available:
+   * `fraction` - the default method, with ci ranging from 0 to 1
+   * `none` - ci is always equal to 1; all pixels are given the same weight in the above calculations regardless of their coverage fraction
+   * `area_cartesian` - ci is the fraction of the pixel multiplied by it x and y resolutions
+   * `area_spherical_m2` - ci is the fraction of the pixel that is covered multiplied by a spherical approximation of the cell's area in square meters
+   * `area_spherical_km2` - ci is the fraction of the pixel that is covered multiplied by a spherical approximation of the cell's area in square kilometers
+- `default_value` - specifies a value to be used in place of NODATA
+- `default_weight` - specifies a weighing value to be used in place of NODATA
+- `min_coverage_frac` - specifies the minimum fraction of the pixel (0 to 1) that must be covered in order for a pixel to be considered in calculations. Defaults to 0.

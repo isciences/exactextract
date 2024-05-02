@@ -21,6 +21,10 @@ namespace exactextract {
 void
 StatsRegistry::prepare(const Operation& op)
 {
+    // Prepare a set of options that will cover the requirements
+    // of all Operations returning the same value from Operation::key()
+    // Because min_coverage_fraction and weight_type are included in
+    // the key, they are set when RasterStats are constructed
     m_stats_options.store_histogram |= op.requires_histogram();
     m_stats_options.store_values |= op.requires_stored_values();
     m_stats_options.store_weights |= op.requires_stored_weights();
@@ -71,7 +75,15 @@ StatsRegistry::stats(const Feature& feature, const Operation& op)
         it = std::visit([&stats_for_feature, &op, this](const auto& r) {
                  using value_type = typename std::remove_reference_t<decltype(*r)>::value_type;
 
-                 return stats_for_feature.emplace(op.key(), RasterStats<value_type>(m_stats_options));
+                 RasterStatsOptionsWithDefault<value_type> opts{ m_stats_options };
+                 opts.min_coverage_fraction = op.min_coverage();
+                 opts.weight_type = op.coverage_weight_type();
+                 if (op.default_weight().has_value()) {
+                     opts.default_weight = op.default_weight().value();
+                 }
+                 opts.default_value = op.default_value<value_type>();
+
+                 return stats_for_feature.emplace(op.key(), RasterStats<value_type>(opts));
              },
                         rast)
                .first;

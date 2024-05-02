@@ -32,6 +32,7 @@ class AbstractRaster
       : m_grid{ ex }
       , m_nodata{ std::is_floating_point<T>::value ? std::numeric_limits<T>::quiet_NaN() : std::numeric_limits<T>::min() }
       , m_has_nodata{ false }
+      , m_mask{ nullptr }
     {
     }
 
@@ -39,6 +40,7 @@ class AbstractRaster
       : m_grid{ ex }
       , m_nodata{ nodata_val }
       , m_has_nodata{ true }
+      , m_mask{ nullptr }
     {
     }
 
@@ -390,6 +392,25 @@ class RasterView : public AbstractRaster<T>
     long m_y_off;
     size_t m_rx;
     size_t m_ry;
+};
+
+template<typename T>
+class ConstantRaster : public AbstractRaster<T>
+{
+  public:
+    ConstantRaster(const Grid<bounded_extent>& ex, T val)
+      : AbstractRaster<T>(ex)
+      , m_val(val)
+    {
+    }
+
+    T operator()(size_t, size_t) const override
+    {
+        return m_val;
+    }
+
+  private:
+    T m_val;
 };
 
 template<typename T>

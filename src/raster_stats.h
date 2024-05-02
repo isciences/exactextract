@@ -11,28 +11,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_RASTER_STATS_H
-#define EXACTEXTRACT_RASTER_STATS_H
+#pragma once
 
 #include <algorithm>
 #include <limits>
 #include <optional>
 #include <unordered_map>
 
+#include "raster_area.h"
 #include "raster_cell_intersection.h"
 #include "variance.h"
 #include "weighted_quantiles.h"
 
 namespace exactextract {
 
+enum class CoverageWeightType
+{
+    FRACTION,
+    NONE,
+    AREA_CARTESIAN,
+    AREA_SPHERICAL_M2,
+    AREA_SPHERICAL_KM2,
+};
+
 struct RasterStatsOptions
 {
+    float min_coverage_fraction = 0.0;
     bool calc_variance = false;
     bool store_histogram = false;
     bool store_values = false;
     bool store_weights = false;
     bool store_coverage_fraction = false;
     bool store_xy = false;
+    CoverageWeightType weight_type = CoverageWeightType::FRACTION;
+    double default_weight = std::numeric_limits<double>::quiet_NaN();
+};
+
+template<typename T>
+struct RasterStatsOptionsWithDefault : public RasterStatsOptions
+{
+    RasterStatsOptionsWithDefault(const RasterStatsOptions& opts)
+      : RasterStatsOptions(opts)
+    {
+    }
+
+    std::optional<T> default_value = std::nullopt;
 };
 
 template<typename T>
@@ -46,7 +69,7 @@ class RasterStats
      * a Raster representing data values, and (optionally) a Raster representing weights.
      * and a set of raster values.
      */
-    explicit RasterStats(RasterStatsOptions options = RasterStatsOptions{})
+    RasterStats(RasterStatsOptionsWithDefault<T> options = RasterStatsOptions{})
       : m_min{ std::numeric_limits<T>::max() }
       , m_max{ std::numeric_limits<T>::lowest() }
       , m_sum_ciwi{ 0 }
@@ -55,6 +78,20 @@ class RasterStats
       , m_sum_xiciwi{ 0 }
       , m_options{ options }
     {
+    }
+
+    static bool get_or_default(const AbstractRaster<T>& r, std::size_t i, std::size_t j, T& val, const std::optional<T>& default_value)
+    {
+        if (r.get(i, j, val)) {
+            return true;
+        }
+
+        if (default_value.has_value()) {
+            val = default_value.value();
+            return true;
+        }
+
+        return false;
     }
 
     void process(const Raster<float>& intersection_percentages, const AbstractRaster<T>& rast)
@@ -66,12 +103,18 @@ class RasterStats
         }
 
         const AbstractRaster<T>& rv = rvp ? *rvp : rast;
+        std::unique_ptr<AbstractRaster<float>> areas = area_raster(intersection_percentages.grid(), m_options.weight_type);
 
         for (size_t i = 0; i < rv.rows(); i++) {
             for (size_t j = 0; j < rv.cols(); j++) {
                 float pct_cov = intersection_percentages(i, j);
                 T val;
-                if (pct_cov > 0 && rv.get(i, j, val)) {
+                if (pct_cov > m_options.min_coverage_fraction && get_or_default(rv, i, j, val, m_options.default_value)) {
+
+                    if (areas) {
+                        pct_cov *= (*areas)(i, j);
+                    }
+
                     process_location(intersection_percentages.grid(), i, j);
                     process_value(val, pct_cov, 1.0);
                 }
@@ -96,6 +139,7 @@ class RasterStats
         // expensive, so we avoid doing this unless necessary.
         std::unique_ptr<AbstractRaster<ValueType>> rvp;
         std::unique_ptr<AbstractRaster<WeightType>> wvp;
+        std::unique_ptr<AbstractRaster<float>> areas = area_raster(common, m_options.weight_type);
 
         if (rast.grid() != common) {
             rvp = std::make_unique<RasterView<ValueType>>(rast, common);
@@ -114,14 +158,17 @@ class RasterStats
                 WeightType weight;
                 ValueType val;
 
-                if (pct_cov > 0 && rv.get(i, j, val)) {
+                if (pct_cov > m_options.min_coverage_fraction && get_or_default(rv, i, j, val, m_options.default_value)) {
                     process_location(common, i, j);
 
+                    if (areas) {
+                        pct_cov *= (*areas)(i, j);
+                    }
                     if (wv.get(i, j, weight)) {
                         process_value(val, pct_cov, static_cast<double>(weight));
                     } else {
-                        // Weight is NODATA, convert to NAN
-                        process_value(val, pct_cov, std::numeric_limits<double>::quiet_NaN());
+                        // Weight is NODATA
+                        process_value(val, pct_cov, m_options.default_weight);
                     }
                 }
             }
@@ -138,6 +185,14 @@ class RasterStats
 
     void process_value(const T& val, float coverage, double weight)
     {
+        if (m_options.weight_type == CoverageWeightType::NONE) {
+            coverage = 1.0f;
+        }
+
+        if (m_options.store_coverage_fraction) {
+            m_cell_cov.push_back(coverage);
+        }
+
         m_sum_ci += static_cast<double>(coverage);
         m_sum_xici += static_cast<double>(val) * static_cast<double>(coverage);
 
@@ -171,10 +226,6 @@ class RasterStats
             m_quantiles.reset();
         }
 
-        if (m_options.store_coverage_fraction) {
-            m_cell_cov.push_back(coverage);
-        }
-
         if (m_options.store_values) {
             m_cell_values.push_back(val);
         }
@@ -182,6 +233,22 @@ class RasterStats
         if (m_options.store_weights) {
             m_cell_weights.push_back(weight);
         }
+    }
+
+    static std::unique_ptr<AbstractRaster<float>> area_raster(const Grid<bounded_extent>& grid, CoverageWeightType method)
+    {
+        switch (method) {
+            case CoverageWeightType::AREA_SPHERICAL_M2:
+                return std::make_unique<SphericalAreaRaster<float>>(grid, AreaUnit::M2);
+            case CoverageWeightType::AREA_SPHERICAL_KM2:
+                return std::make_unique<SphericalAreaRaster<float>>(grid, AreaUnit::KM2);
+            case CoverageWeightType::AREA_CARTESIAN:
+                return std::make_unique<ConstantRaster<float>>(grid, grid.dx() * grid.dy());
+            case CoverageWeightType::NONE:
+            case CoverageWeightType::FRACTION:
+                return nullptr;
+        }
+        return nullptr;
     }
 
     /**
@@ -592,7 +659,7 @@ class RasterStats
     std::vector<double> m_cell_x;
     std::vector<double> m_cell_y;
 
-    RasterStatsOptions m_options;
+    const RasterStatsOptionsWithDefault<T> m_options;
 
     struct Iterator
     {
@@ -714,5 +781,3 @@ operator<<(std::ostream& os, const RasterStats<T>& stats)
     return os;
 }
 }
-
-#endif

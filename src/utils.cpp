@@ -19,6 +19,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace exactextract {
 
@@ -195,20 +196,28 @@ prepare_operations_implicit(
   const RasterSourceVect& values,
   const RasterSourceVect& weights)
 {
+    std::size_t nvalues = values.size();
+    std::size_t nweights = weights.size();
+    if (!starts_with(sd.stat, "weighted")) {
+        // Avoid looping over weights and generating duplicate Operations
+        // for an unweighted stat
+        nweights = std::min(nweights, std::size_t{ 1 });
+    }
+
     const bool full_names = values.size() > 1 || weights.size() > 1;
 
-    if (values.size() > 1 && weights.size() > 1 && values.size() != weights.size()) {
+    if (nvalues > 1 && nweights > 1 && nvalues != nweights) {
         throw std::runtime_error("Value and weight rasters must have a single band or the same number of bands.");
     }
 
-    std::size_t nops = std::max(values.size(), weights.size());
+    std::size_t nops = std::max(nvalues, nweights);
     for (std::size_t i = 0; i < nops; i++) {
         RasterSource* v = &*values[i % values.size()];
         RasterSource* w = weights.empty() ? nullptr : &*weights[i % weights.size()];
 
         ops.push_back(Operation::create(
           sd.stat,
-          make_name(v, w, sd.stat, full_names),
+          sd.name.empty() ? make_name(v, w, sd.stat, full_names) : sd.name,
           v,
           w,
           sd.args));
@@ -276,6 +285,18 @@ prepare_operations(const std::vector<std::string>& descriptors,
     return prepare_operations(descriptors, rasters, weights);
 }
 
+static void
+check_unique_names(const std::vector<std::unique_ptr<Operation>>& ops)
+{
+    std::unordered_set<std::string> op_names;
+    for (const auto& op : ops) {
+        bool inserted = op_names.insert(op->name).second;
+        if (!inserted) {
+            throw std::runtime_error("Operation name is not unique: " + op->name);
+        }
+    }
+}
+
 std::vector<std::unique_ptr<Operation>>
 prepare_operations(
   const std::vector<std::string>& descriptors,
@@ -294,6 +315,67 @@ prepare_operations(
         }
     }
 
+    check_unique_names(ops);
+
     return ops;
 }
+
+namespace string {
+
+bool
+read_bool(const std::string& value)
+{
+    std::string value_lower = value;
+    for (auto& c : value_lower) {
+        c = std::tolower(c);
+    }
+
+    if (value_lower == "yes" || value_lower == "true") {
+        return true;
+    }
+    if (value_lower == "no" || value_lower == "false") {
+        return false;
+    }
+
+    throw std::runtime_error("Failed to parse value: " + value);
+}
+
+std::int64_t
+read_int64(const std::string& value)
+{
+    char* end = nullptr;
+    double d = std::strtol(value.data(), &end, 10);
+    if (end == value.data() + value.size()) {
+        return d;
+    }
+
+    throw std::runtime_error("Failed to parse value: " + value);
+}
+
+std::uint64_t
+read_uint64(const std::string& value)
+{
+    char* end = nullptr;
+    double d = std::strtoul(value.data(), &end, 10);
+    if (end == value.data() + value.size()) {
+        return d;
+    }
+
+    throw std::runtime_error("Failed to parse value: " + value);
+}
+
+double
+read_double(const std::string& value)
+{
+    char* end = nullptr;
+    double d = std::strtod(value.data(), &end);
+    if (end == value.data() + value.size()) {
+        return d;
+    }
+
+    throw std::runtime_error("Failed to parse value: " + value);
+}
+
+}
+
 }

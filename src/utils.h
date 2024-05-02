@@ -14,8 +14,11 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -81,6 +84,58 @@ ltrim(std::string& s)
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
                 return !std::isspace(ch);
             }));
+}
+
+namespace string {
+
+bool
+read_bool(const std::string& value);
+double
+read_double(const std::string& value);
+std::int64_t
+read_int64(const std::string& value);
+std::uint64_t
+read_uint64(const std::string& value);
+
+template<typename T>
+T
+read(const std::string& value)
+{
+    if constexpr (std::is_same_v<T, bool>) {
+        return read_bool(value);
+    } else if constexpr (std::is_integral_v<T>) {
+        if (std::is_signed_v<T>) {
+            std::int64_t parsed = read_int64(value);
+            if (parsed > std::numeric_limits<T>::max() || parsed < std::numeric_limits<T>::min()) {
+                throw std::runtime_error("Value out of range");
+            } else {
+                return static_cast<T>(parsed);
+            }
+        } else {
+            for (auto& c : value) {
+                if (c == '-') {
+                    throw std::runtime_error("Value out of range");
+                }
+            }
+            std::uint64_t parsed = read_uint64(value);
+            if (parsed > std::numeric_limits<T>::max() || parsed < std::numeric_limits<T>::min()) {
+                throw std::runtime_error("Value out of range");
+            } else {
+                return static_cast<T>(parsed);
+            }
+        }
+    } else if constexpr (std::is_floating_point_v<T>) {
+        double parsed = read_double(value);
+        if (parsed > static_cast<double>(std::numeric_limits<T>::max()) || parsed < static_cast<double>(std::numeric_limits<T>::lowest())) {
+            throw std::runtime_error("Value out of range");
+        } else {
+            return static_cast<T>(parsed);
+        }
+    } else {
+        return value;
+    }
+}
+
 }
 
 }

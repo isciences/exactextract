@@ -400,4 +400,38 @@ TEST_CASE("Operation arguments", "[operation]")
         Operation::ArgMap args;
         CHECK_THROWS_WITH(Operation::create("quantile", "quantile", &mrs, nullptr, args), Catch::StartsWith("Missing required argument"));
     }
+
+    SECTION("error if default value out of range (int)")
+    {
+        Operation::ArgMap args{ { "default_value", "128" } };
+
+        auto op = Operation::create("sum", "sum", &mrs, nullptr, args);
+
+        CHECK_THROWS_WITH(op->default_value<std::int8_t>(), Catch::Contains("out of range"));
+    }
+
+    SECTION("error if default value out of range (float)")
+    {
+        Operation::ArgMap args{ { "default_value", "1e40" } };
+
+        auto op = Operation::create("sum", "sum", &mrs, nullptr, args);
+
+        CHECK_THROWS_WITH(op->default_value<float>(), Catch::Contains("out of range"));
+    }
+
+    SECTION("error if default value not parseable (int)")
+    {
+        Operation::ArgMap args{ { "default_value", "128k" } };
+
+        auto op = Operation::create("sum", "sum", &mrs, nullptr, args);
+
+        CHECK_THROWS_WITH(op->default_value<std::int32_t>(), Catch::Contains("Failed to parse value"));
+    }
+
+    SECTION("error if unknown coverage weight type")
+    {
+        Operation::ArgMap args{ { "coverage_weight", "method_that_does_not_exist" } };
+
+        CHECK_THROWS_WITH(Operation::create("sum", "sum", &mrs, nullptr, args), Catch::Contains("Unexpected coverage_weight type"));
+    }
 }
