@@ -68,7 +68,7 @@ mkdir cmake-build-release
 cd cmake-build-release
 cmake -DBUILD_CLI:=OFF -DBUILD_DOC:=OFF -DCMAKE_BUILD_TYPE=Release ..
 make
-./catch_tests && sudo make install
+./test/catch_tests && sudo make install
 ```
 
 ### Using `exactextract`
