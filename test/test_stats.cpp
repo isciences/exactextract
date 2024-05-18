@@ -1,4 +1,5 @@
 #include <cmath>
+#include <sstream>
 #include <valarray>
 
 #include "catch.hpp"
