@@ -132,7 +132,7 @@ class GDALFeature : public Feature
         OGR_F_SetFieldInteger64List(m_feature, field_index(name), static_cast<int>(value.size), reinterpret_cast<const GIntBig*>(value.data));
     }
 
-    void set(const std::string& name, std::size_t value) override
+    void set(const std::string& name, std::size_t value)
     {
         if (value > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max())) {
             throw std::runtime_error("Value too large to write");
