@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: exactextract
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Daniel
+    family-names: Baston
+    email: dbaston@isciences.com
+    orcid: 'https://orcid.org/0000-0002-2195-1716'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.11396419
+    description: Concept
+repository-code: 'https://github.com/isciences/exactextract'
+license: Apache-2.0
