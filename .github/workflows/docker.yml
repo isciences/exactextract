@@ -8,6 +8,8 @@ jobs:
   publish_image:
     name: Publish Docker image
     runs-on: ubuntu-latest
+    if: github.repository == 'isciences/exactextract'
+
     permissions:
       packages: write
       contents: read
