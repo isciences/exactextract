@@ -109,7 +109,7 @@ TEST_CASE("Operations dispatch to the correct RasterStats function", "[operation
 
     const MapFeature& f = writer.m_feature;
 
-    CHECK(f.get<double>(stat) == Approx(expected));
+    CHECK(f.get_double(stat) == Approx(expected));
 }
 
 TEMPLATE_TEST_CASE("result_type returns correct result", "[operation]", double, float, std::int8_t, std::uint8_t, std::int16_t, std::uint16_t, std::int32_t, std::uint32_t, std::int64_t, std::uint64_t)
@@ -285,8 +285,8 @@ TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]
     processor.process();
 
     const MapFeature& f = writer.m_feature;
-    CHECK(f.get<double>("count") == 0);
-    CHECK(std::isnan(f.get<double>("median")));
+    CHECK(f.get_double("count") == 0);
+    CHECK(std::isnan(f.get_double("median")));
 }
 
 TEMPLATE_TEST_CASE("correct result for feature partially intersecting raster", "[processor]", FeatureSequentialProcessor, RasterSequentialProcessor)
@@ -316,8 +316,8 @@ TEMPLATE_TEST_CASE("correct result for feature partially intersecting raster", "
     processor.process();
 
     const MapFeature& f = writer.m_feature;
-    CHECK(f.get<double>("count") == 1);
-    CHECK(f.get<double>("median") == 3);
+    CHECK(f.get_double("count") == 1);
+    CHECK(f.get_double("median") == 3);
 }
 
 TEMPLATE_TEST_CASE("include_col and include_geom work as expected", "[processor]", FeatureSequentialProcessor, RasterSequentialProcessor)
@@ -352,9 +352,9 @@ TEMPLATE_TEST_CASE("include_col and include_geom work as expected", "[processor]
     ds.next();
 
     const MapFeature& f = writer.m_feature;
-    CHECK(f.get<double>("count") == 4.0);
-    CHECK(f.get<std::string>("fid") == "15");
-    CHECK(f.get<std::int32_t>("type") == 13);
+    CHECK(f.get_double("count") == 4.0);
+    CHECK(f.get_string("fid") == "15");
+    CHECK(f.get_int("type") == 13);
     CHECK(GEOSEquals_r(context, f.geometry(), ds.feature().geometry()) == 1);
 }
 
