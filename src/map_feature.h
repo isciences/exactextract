@@ -64,7 +64,7 @@ class MapFeature : public Feature
 
     DoubleArray get_double_array(const std::string& name) const override
     {
-        return get<DoubleArray>(name);
+        return std::get<DoubleArray>(m_map.at(name));
     }
 
     void set(const std::string& name, std::int32_t value) override
@@ -79,7 +79,7 @@ class MapFeature : public Feature
 
     IntegerArray get_integer_array(const std::string& name) const override
     {
-        return get<IntegerArray>(name);
+        return std::get<IntegerArray>(m_map.at(name));
     }
 
     void set(const std::string& name, std::int64_t value) override
@@ -94,7 +94,7 @@ class MapFeature : public Feature
 
     Integer64Array get_integer64_array(const std::string& name) const override
     {
-        return get<Integer64Array>(name);
+        return std::get<Integer64Array>(m_map.at(name));
     }
 
     void set(const std::string& name, std::string value) override
@@ -130,30 +130,24 @@ class MapFeature : public Feature
         return m_map;
     }
 
-    template<typename T>
-    T get(const std::string& field) const
-    {
-        return std::get<T>(m_map.at(field));
-    }
-
     std::string get_string(const std::string& name) const override
     {
-        return get<std::string>(name);
+        return std::get<std::string>(m_map.at(name));
     }
 
     double get_double(const std::string& name) const override
     {
-        return get<double>(name);
+        return std::get<double>(m_map.at(name));
     }
 
     std::int32_t get_int(const std::string& name) const override
     {
-        return get<std::int32_t>(name);
+        return std::get<std::int32_t>(m_map.at(name));
     }
 
     std::int64_t get_int64(const std::string& name) const override
     {
-        return get<std::int64_t>(name);
+        return std::get<std::int64_t>(m_map.at(name));
     }
 
   private:
