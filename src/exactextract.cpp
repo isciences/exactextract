@@ -149,6 +149,9 @@ main(int argc, char** argv)
 
         proc->set_max_cells_in_memory(max_cells_in_memory);
         proc->show_progress(progress);
+        if (progress) {
+            proc->set_progress_fn(exactextract::cli_progress);
+        }
 
         proc->process();
         writer->finish();
