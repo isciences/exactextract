@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_FEATURE_SEQUENTIAL_PROCESSOR_H
-#define EXACTEXTRACT_FEATURE_SEQUENTIAL_PROCESSOR_H
+#pragma once
 
 #include "processor.h"
 
@@ -29,7 +28,8 @@ class FeatureSequentialProcessor : public Processor
     using Processor::Processor;
 
     void process() override;
+
+  private:
+    std::string progress_message(const Feature& f);
 };
 }
-
-#endif

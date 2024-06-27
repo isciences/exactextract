@@ -14,9 +14,14 @@
 #pragma once
 
 #include "utils.h"
+#include <string>
 
 namespace exactextract {
+
 std::vector<std::unique_ptr<RasterSource>>
 load_gdal_rasters(const std::vector<std::string>& descriptors);
+
+void
+cli_progress(std::string_view message);
 
 }

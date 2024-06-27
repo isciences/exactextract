@@ -112,12 +112,14 @@ RasterSequentialProcessor::process()
                 } else {
                     m_reg.update_stats(*f, *op, *coverage, *values);
                 }
-
-                progress();
             }
         }
 
-        progress(subgrid.extent());
+        if (m_show_progress) {
+            std::stringstream ss;
+            ss << subgrid.extent();
+            progress(ss.str());
+        }
     }
 
     for (const auto& f_in : m_features) {

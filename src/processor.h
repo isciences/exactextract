@@ -93,6 +93,11 @@ class Processor
         m_show_progress = val;
     }
 
+    void set_progress_fn(std::function<void(std::string_view)> fn)
+    {
+        m_progress_fn = fn;
+    }
+
     void write_result(const Feature& f_in)
     {
         auto f_out = m_output.create_feature();
@@ -110,38 +115,18 @@ class Processor
     }
 
   protected:
-    template<typename T>
-    void progress(const T& name) const
+    void progress(std::string_view message) const
     {
-        if (m_show_progress)
-            std::cout << std::endl
-                      << "Processing " << name << std::flush;
-    }
-
-    void progress(const Feature& f, const std::string& field) const
-    {
-        if (m_show_progress) {
-            std::cout << std::endl
-                      << "Processing ";
-            const auto& value = f.get(field);
-            if (const std::string* sval = std::get_if<std::string>(&value)) {
-                std::cout << *sval;
-            } else if (const std::int32_t* ival = std::get_if<std::int32_t>(&value)) {
-                std::cout << *ival;
-            } else if (const double* dval = std::get_if<double>(&value)) {
-                std::cout << *dval;
-            } else {
-                std::cout << ".";
-            }
-
-            std::cout << std::flush;
+        if (!m_show_progress) {
+            return;
         }
-    }
 
-    void progress() const
-    {
-        if (m_show_progress)
-            std::cout << "." << std::flush;
+        if (m_progress_fn) {
+            (m_progress_fn)(message);
+            return;
+        }
+
+        std::cout << "." << std::flush;
     }
 
     StatsRegistry m_reg;
@@ -160,5 +145,7 @@ class Processor
     std::vector<std::string> m_include_cols;
 
     size_t m_max_cells_in_memory = 1000000L;
+
+    std::function<void(std::string_view)> m_progress_fn;
 };
 }

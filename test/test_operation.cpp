@@ -289,6 +289,79 @@ TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]
     CHECK(std::isnan(f.get<double>("median")));
 }
 
+TEST_CASE("progress callback is called once for each feature", "[processor]")
+{
+    GEOSContextHandle_t context = init_geos();
+    std::size_t num_features = 3;
+
+    Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
+    Matrix<double> values{ { { 9, 1, 1 },
+                             { 2, 2, 2 },
+                             { 3, 3, 3 } } };
+
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
+
+    WKTFeatureSource ds;
+    for (std::size_t i = 0; i < num_features; i++) {
+        MapFeature mf;
+        mf.set("fid", i);
+        mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0 0, 3 0, 3 3, 0 0))")));
+        ds.add_feature(std::move(mf));
+    }
+
+    std::vector<std::string> messages;
+    auto callback = [&messages](std::string_view message) {
+        messages.emplace_back(message);
+    };
+
+    TestWriter writer;
+    auto count = Operation::create("count", "count", &value_src, nullptr);
+
+    SECTION("FeatureSequentialProcessor: no column included in output, progress is just dots")
+    {
+        FeatureSequentialProcessor processor(ds, writer);
+        processor.set_progress_fn(callback);
+        processor.show_progress(true);
+
+        processor.add_operation(*count);
+        processor.process();
+
+        CHECK(messages.size() == num_features);
+
+        for (const auto& message : messages) {
+            CHECK(message == ".");
+        }
+    }
+
+    SECTION("FeatureSequentialProcessor: first coluumn included in output is used for progress message")
+    {
+        FeatureSequentialProcessor processor(ds, writer);
+        processor.set_progress_fn(callback);
+        processor.show_progress(true);
+
+        processor.include_col("fid");
+        processor.add_operation(*count);
+        processor.process();
+
+        CHECK(messages.size() == num_features);
+        CHECK(messages.front() == "Processing 0");
+    }
+
+    SECTION("RasterSequentialProcessor")
+    {
+        RasterSequentialProcessor processor(ds, writer);
+        processor.set_progress_fn(callback);
+        processor.show_progress(true);
+        processor.set_max_cells_in_memory(3);
+
+        processor.add_operation(*count);
+        processor.process();
+
+        CHECK(messages.size() == 3);
+    }
+}
+
 TEMPLATE_TEST_CASE("correct result for feature partially intersecting raster", "[processor]", FeatureSequentialProcessor, RasterSequentialProcessor)
 {
     GEOSContextHandle_t context = init_geos();

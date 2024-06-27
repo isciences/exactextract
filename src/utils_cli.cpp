@@ -74,4 +74,12 @@ load_gdal_rasters(const std::vector<std::string>& descriptors)
 
     return raster_sources;
 }
+
+void
+cli_progress(std::string_view message)
+{
+    std::cout << message << std::endl
+              << std::flush;
+}
+
 }
