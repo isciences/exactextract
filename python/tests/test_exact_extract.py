@@ -1024,6 +1024,41 @@ def test_output_map_fields():
     }
 
 
+def test_output_map_fields_multiband():
+
+    rast = [
+        NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="landcov"),
+        NumPyRasterSource(2 * np.arange(1, 10).reshape(3, 3), name="landcat"),
+    ]
+
+    weights = [
+        NumPyRasterSource(np.array([[0, 0, 0], [0, 0, 0], [0.5, 0, 0]]), name="w1"),
+        NumPyRasterSource(np.array([[0, 0, 0], [1, 1, 1], [0, 0, 0]]), name="w2"),
+    ]
+
+    squares = [make_rect(0.5, 0.5, 1.0, 1.0), make_rect(0.5, 0.5, 2.5, 2.5)]
+
+    result = exact_extract(
+        rast,
+        squares,
+        ["unique", "frac", "weighted_frac"],
+        weights=weights,
+        output_options={
+            "map_fields": {
+                "xfrac": ("unique", "frac"),
+                "xweighted_frac": ("unique", "weighted_frac"),
+            }
+        },
+    )
+
+    assert set(result[1]["properties"].keys()) == {
+        "landcat_xfrac",
+        "landcov_xfrac",
+        "landcat_w2_xweighted_frac",
+        "landcov_w1_xweighted_frac",
+    }
+
+
 def test_linear_geom():
 
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
