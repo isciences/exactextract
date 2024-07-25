@@ -44,6 +44,11 @@ class JSONWriter(Writer):
         self.array_type = array_type
         self.feature_list = []
         self.map_fields = map_fields or {}
+        self.op_fields = {}
+        self.ops = []
+
+    def add_operation(self, op):
+        self.ops.append(op)
 
     def write(self, feature):
         f = JSONFeature()
@@ -67,18 +72,31 @@ class JSONWriter(Writer):
                 if type(props[k]) is np.ndarray:
                     props[k] = list(props[k])
 
+    def _fields_for_stat(self, stat):
+        return [o.name for o in self.ops if o.stat == stat]
+
     def _create_map_fields(self, f):
         props = f.feature["properties"]
 
         new_fields = {}
         to_delete = set()
         for field in self.map_fields:
-            key_src, val_src = self.map_fields[field]
+            key_stat, val_stat = self.map_fields[field]
 
-            new_fields[field] = {k: v for k, v in zip(props[key_src], props[val_src])}
+            key_fields = self._fields_for_stat(key_stat)
+            val_fields = self._fields_for_stat(val_stat)
 
-            to_delete.add(key_src)
-            to_delete.add(val_src)
+            assert len(key_fields) == len(val_fields)
+
+            for key_field, val_field in zip(key_fields, val_fields):
+                new_field = val_field.replace(val_stat, field)
+
+                new_fields[new_field] = {
+                    k: v for k, v in zip(props[key_field], props[val_field])
+                }
+
+                to_delete.add(key_field)
+                to_delete.add(val_field)
         for field in to_delete:
             del props[field]
         props.update(new_fields)
