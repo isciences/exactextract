@@ -58,6 +58,9 @@ class GDALFeatureSource(FeatureSource):
 
             self.src = src.GetLayer(0)
 
+    def count(self):
+        return self.src.GetFeatureCount()
+
     def __iter__(self):
         for f in self.src:
             yield GDALFeature(f)
@@ -128,6 +131,9 @@ class JSONFeatureSource(FeatureSource):
 
         self.srs_wkt_txt = srs_wkt
 
+    def count(self):
+        return len(self.src)
+
     def __iter__(self):
         for f in self.src:
             yield JSONFeature(f)
@@ -192,6 +198,9 @@ class GeoPandasFeatureSource(FeatureSource):
     def __init__(self, src):
         super().__init__()
         self.src = src
+
+    def count(self):
+        return len(self.src.index)
 
     def __iter__(self):
         for f in self.src.iterfeatures():
@@ -259,6 +268,9 @@ class QGISFeatureSource(FeatureSource):
     def __init__(self, src):
         super().__init__()
         self.src = src
+
+    def count(self):
+        return self.src.featureCount()
 
     def __iter__(self):
         for f in self.src.getFeatures():

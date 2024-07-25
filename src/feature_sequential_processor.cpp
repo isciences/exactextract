@@ -57,13 +57,15 @@ FeatureSequentialProcessor::progress_message(const Feature& f)
 void
 FeatureSequentialProcessor::process()
 {
-    while (m_shp.next()) {
+    std::size_t n = m_shp.count();
+    for (std::size_t i = 0; m_shp.next(); i++) {
         const Feature& f_in = m_shp.feature();
 
         auto geom = f_in.geometry();
 
         if (m_show_progress) {
-            progress(progress_message(f_in));
+            double frac = static_cast<double>(i + 1) / n;
+            progress(frac, progress_message(f_in));
         }
 
         Box feature_bbox = exactextract::geos_get_box(m_geos_context, geom);

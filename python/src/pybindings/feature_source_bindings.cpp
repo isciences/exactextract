@@ -29,6 +29,11 @@ class PyFeatureSourceBase : public FeatureSource
     {
     }
 
+    std::size_t count() const override
+    {
+        return py_count().cast<std::size_t>();
+    }
+
     bool next() override
     {
         if (!m_initialized) {
@@ -57,15 +62,7 @@ class PyFeatureSourceBase : public FeatureSource
         return py::none();
     }
 
-    // debug
-    std::size_t count()
-    {
-        std::size_t i = 0;
-        while (next()) {
-            i++;
-        }
-        return i;
-    }
+    virtual py::object py_count() const = 0;
 
   private:
     py::object m_src;
@@ -79,6 +76,11 @@ class PyFeatureSource : public PyFeatureSourceBase
 
   public:
     using PyFeatureSourceBase::PyFeatureSourceBase;
+
+    py::object py_count() const override
+    {
+        PYBIND11_OVERRIDE_PURE_NAME(py::object, PyFeatureSource, "count", py_count);
+    }
 
     py::object py_iter() override
     {
@@ -101,9 +103,9 @@ bind_feature_source(py::module& m)
     py::class_<PyFeatureSource, PyFeatureSourceBase, FeatureSource>(m, "FeatureSource")
       .def(py::init<>())
       .def("__iter__", &PyFeatureSourceBase::py_iter)
-      .def("srs_wkt", &PyFeatureSourceBase::py_srs_wkt)
+      .def("count", &PyFeatureSourceBase::py_count);
+    .def("srs_wkt", &PyFeatureSourceBase::py_srs_wkt)
       // debug
       .def("feature", &PyFeatureSourceBase::feature)
-      .def("count", &PyFeatureSourceBase::count);
 }
 }

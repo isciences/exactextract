@@ -76,9 +76,9 @@ load_gdal_rasters(const std::vector<std::string>& descriptors)
 }
 
 void
-cli_progress(std::string_view message)
+cli_progress(double frac, std::string_view message)
 {
-    std::cout << message << std::endl
+    std::cout << "[" << std::setw(5) << std::fixed << std::setprecision(1) << frac * 100 << "%]  " << message << std::endl
               << std::flush;
 }
 

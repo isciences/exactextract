@@ -93,7 +93,7 @@ class Processor
         m_show_progress = val;
     }
 
-    void set_progress_fn(std::function<void(std::string_view)> fn)
+    void set_progress_fn(std::function<void(double, std::string_view)> fn)
     {
         m_progress_fn = fn;
     }
@@ -115,14 +115,14 @@ class Processor
     }
 
   protected:
-    void progress(std::string_view message) const
+    void progress(double frac, std::string_view message) const
     {
         if (!m_show_progress) {
             return;
         }
 
         if (m_progress_fn) {
-            (m_progress_fn)(message);
+            (m_progress_fn)(frac, message);
             return;
         }
 
@@ -146,6 +146,6 @@ class Processor
 
     size_t m_max_cells_in_memory = 1000000L;
 
-    std::function<void(std::string_view)> m_progress_fn;
+    std::function<void(double, std::string_view)> m_progress_fn;
 };
 }
