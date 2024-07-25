@@ -1190,3 +1190,13 @@ def test_explicit_operation():
     results = exact_extract(None, square, op)
 
     assert results[0]["properties"]["my_op"] == 4.0
+
+
+def test_progress():
+
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    squares = [square] * 10
+
+    exact_extract(rast, squares, "count", progress=True)
