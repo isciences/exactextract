@@ -52,3 +52,30 @@ def test_progress(np_raster_source, square_features):
     assert len(fracs) == len(square_features)
     assert fracs == sorted(fracs)
     assert fracs[-1] == 1.0
+
+
+def test_progress_tqdm(np_raster_source, square_features):
+    tqdm = pytest.importorskip("tqdm")
+
+    ops = [
+        Operation("count", "count", np_raster_source),
+    ]
+    writer = JSONWriter()
+
+    fs = JSONFeatureSource(square_features * 100)
+
+    bar = tqdm.tqdm(total=100)
+
+    def status(frac, message):
+        pct = frac * 100
+        bar.update(pct - bar.n)
+        if pct == 100:
+            bar.close()
+
+    processor = FeatureSequentialProcessor(fs, writer, ops)
+    processor.set_progress_fn(status)
+    processor.show_progress(True)
+
+    assert bar.n == 0
+    processor.process()
+    assert bar.n == 100
