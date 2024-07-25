@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ISciences, LLC.
+// Copyright (c) 2023-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -24,6 +24,7 @@
 namespace py = pybind11;
 
 namespace exactextract {
+
 void
 bind_processor(py::module& m)
 {
@@ -33,6 +34,13 @@ bind_processor(py::module& m)
       .def("add_geom", &Processor::include_geometry)
       .def("process", &Processor::process)
       .def("set_max_cells_in_memory", &Processor::set_max_cells_in_memory, py::arg("n"))
+      .def("set_progress_fn", [](Processor& self, py::function fn) {
+          std::function<void(double, std::string_view)> wrapper = [fn](double frac, std::string_view message) {
+              fn(frac, message);
+          };
+
+          self.set_progress_fn(wrapper);
+      })
       .def("show_progress", &Processor::show_progress, py::arg("val"));
 
     py::class_<FeatureSequentialProcessor, Processor>(m, "FeatureSequentialProcessor")
