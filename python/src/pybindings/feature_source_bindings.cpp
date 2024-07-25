@@ -103,9 +103,9 @@ bind_feature_source(py::module& m)
     py::class_<PyFeatureSource, PyFeatureSourceBase, FeatureSource>(m, "FeatureSource")
       .def(py::init<>())
       .def("__iter__", &PyFeatureSourceBase::py_iter)
-      .def("count", &PyFeatureSourceBase::py_count);
-    .def("srs_wkt", &PyFeatureSourceBase::py_srs_wkt)
+      .def("count", &PyFeatureSourceBase::py_count)
+      .def("srs_wkt", &PyFeatureSourceBase::py_srs_wkt)
       // debug
-      .def("feature", &PyFeatureSourceBase::feature)
+      .def("feature", &PyFeatureSourceBase::feature);
 }
 }
