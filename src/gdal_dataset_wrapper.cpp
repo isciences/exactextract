@@ -136,4 +136,11 @@ GDALDatasetWrapper::srs() const
     return OGR_L_GetSpatialRef(m_layer);
 }
 
+std::size_t
+GDALDatasetWrapper::count() const
+{
+    constexpr int force = 0;
+    return static_cast<std::size_t>(OGR_L_GetFeatureCount(m_layer, force));
+}
+
 }

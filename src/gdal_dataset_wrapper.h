@@ -44,6 +44,8 @@ class GDALDatasetWrapper : public FeatureSource
 
     OGRSpatialReferenceH srs() const;
 
+    std::size_t count() const override;
+
   private:
     GDALDatasetH m_dataset;
     OGRLayerH m_layer;

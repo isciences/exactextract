@@ -16,13 +16,18 @@ class WKTFeatureSource : public FeatureSource
 {
   public:
     WKTFeatureSource()
-      : m_count(0)
+      : m_pos(0)
     {
     }
 
     void reset()
     {
-        m_count = 0;
+        m_pos = 0;
+    }
+
+    std::size_t count() const override
+    {
+        return m_features.size();
     }
 
     void add_feature(MapFeature m)
@@ -32,16 +37,16 @@ class WKTFeatureSource : public FeatureSource
 
     bool next() override
     {
-        return m_count++ < m_features.size();
+        return m_pos++ < m_features.size();
     }
 
     const Feature& feature() const override
     {
-        return m_features[m_count - 1];
+        return m_features[m_pos - 1];
     }
 
   private:
-    std::size_t m_count;
+    std::size_t m_pos;
     std::vector<MapFeature> m_features;
 };
 
@@ -311,7 +316,7 @@ TEST_CASE("progress callback is called once for each feature", "[processor]")
     }
 
     std::vector<std::string> messages;
-    auto callback = [&messages](std::string_view message) {
+    auto callback = [&messages](double, std::string_view message) {
         messages.emplace_back(message);
     };
 

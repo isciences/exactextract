@@ -19,6 +19,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 
 namespace exactextract {
 
@@ -51,7 +52,9 @@ RasterSequentialProcessor::process()
 
     auto grid = common_grid(m_operations.begin(), m_operations.end());
 
-    for (const auto& subgrid : subdivide(grid, m_max_cells_in_memory)) {
+    auto subgrids = subdivide(grid, m_max_cells_in_memory);
+    for (std::size_t i = 0; i < subgrids.size(); i++) {
+        const auto& subgrid = subgrids[i];
         std::vector<const Feature*> hits;
 
         auto query_rect = geos_make_box_polygon(m_geos_context, subgrid.extent());
@@ -118,7 +121,7 @@ RasterSequentialProcessor::process()
         if (m_show_progress) {
             std::stringstream ss;
             ss << subgrid.extent();
-            progress(ss.str());
+            progress(static_cast<double>(i + 1) / static_cast<double>(subgrids.size()), ss.str());
         }
     }
 

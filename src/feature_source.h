@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ISciences, LLC.
+// Copyright (c) 2023-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include <string>
+#include <cstddef>
 
 namespace exactextract {
 
@@ -27,6 +27,8 @@ class FeatureSource
     virtual const Feature& feature() const = 0;
 
     virtual bool next() = 0;
+
+    virtual std::size_t count() const = 0;
 };
 
 }

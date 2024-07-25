@@ -22,6 +22,6 @@ std::vector<std::unique_ptr<RasterSource>>
 load_gdal_rasters(const std::vector<std::string>& descriptors);
 
 void
-cli_progress(std::string_view message);
+cli_progress(double frac, std::string_view message);
 
 }
