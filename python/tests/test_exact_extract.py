@@ -1008,14 +1008,20 @@ def test_output_map_fields():
     result = exact_extract(
         rast,
         square,
-        ["unique", "frac", "weighted_frac"],
+        "frac(min_coverage_frac=0.5)",
+        output_options={"frac_as_map": True},
+    )
+
+    assert result[0]["properties"] == {
+        "frac": {1: 0.5 / 3, 2: 2 / 3, 3: 0.5 / 3},
+    }
+
+    result = exact_extract(
+        rast,
+        square,
+        ["frac", "weighted_frac"],
         weights=weights,
-        output_options={
-            "map_fields": {
-                "frac": ("unique", "frac"),
-                "weighted_frac": ("unique", "weighted_frac"),
-            }
-        },
+        output_options={"frac_as_map": True},
     )
 
     assert result[0]["properties"] == {
@@ -1041,21 +1047,16 @@ def test_output_map_fields_multiband():
     result = exact_extract(
         rast,
         squares,
-        ["unique", "frac", "weighted_frac"],
+        ["frac", "weighted_frac"],
         weights=weights,
-        output_options={
-            "map_fields": {
-                "xfrac": ("unique", "frac"),
-                "xweighted_frac": ("unique", "weighted_frac"),
-            }
-        },
+        output_options={"frac_as_map": True},
     )
 
     assert set(result[1]["properties"].keys()) == {
-        "landcat_xfrac",
-        "landcov_xfrac",
-        "landcat_w2_xweighted_frac",
-        "landcov_w1_xweighted_frac",
+        "landcat_frac",
+        "landcov_frac",
+        "landcat_w2_weighted_frac",
+        "landcov_w1_weighted_frac",
     }
 
 

@@ -123,6 +123,7 @@ bind_operation(py::module& m)
     py::class_<Operation>(m, "Operation")
       .def(py::init(&Operation::create))
       .def("grid", &Operation::grid)
+      .def("key", &Operation::key)
       .def("weighted", &Operation::weighted)
       .def_readonly("stat", &Operation::stat)
       .def_readonly("name", &Operation::name)
@@ -133,5 +134,12 @@ bind_operation(py::module& m)
       .def(py::init<py::function, std::string, RasterSource*, RasterSource*, bool>());
 
     m.def("prepare_operations", py::overload_cast<const std::vector<std::string>&, const std::vector<RasterSource*>&, const std::vector<RasterSource*>&>(&prepare_operations));
+
+    m.def("change_stat", [](const Operation& op, std::string stat) {
+        auto sd = op.descriptor();
+        sd.name = "";
+        sd.stat = stat;
+        return sd.as_string();
+    });
 }
 }
