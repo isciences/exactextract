@@ -56,7 +56,17 @@ class PyRasterSourceBase : public RasterSource
         auto rast = std::make_unique<NumPyRaster<T>>(values, grid);
 
         if (!nodata.is_none()) {
-            rast->set_nodata(nodata.cast<T>());
+            if constexpr (std::is_same_v<T, std::uint8_t>) {
+                // Avoid exception when raster is read by GDAL
+                // with type GDT_Byte (uint8) but having a negative
+                // nodata value...
+                int val = nodata.cast<int>();
+                if (val >= 0) {
+                    rast->set_nodata(static_cast<std::uint8_t>(val));
+                }
+            } else {
+                rast->set_nodata(nodata.cast<T>());
+            }
         }
 
         if (hasattr(values, "mask")) {
