@@ -709,6 +709,26 @@ def test_gdal_data_types(tmp_path, rast_lib, dtype):
         assert type(results["mode"]) is int
 
 
+# Check that a negative nodata value for a raster with type GDT_Byte is ignored rather than causing an exception
+def test_gdal_invalid_nodata_value(tmp_path):
+    gdal = pytest.importorskip("osgeo.gdal")
+
+    raster_fname = str(tmp_path / "test.tif")
+
+    create_gdal_raster(
+        raster_fname,
+        np.array([[1, 1, 1], [2, 2, 2], [3, 2, 3]]),
+        gdal_type=gdal.GDT_Byte,
+        nodata=-2,
+    )
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    results = exact_extract(raster_fname, square, "mode")[0]["properties"]
+
+    assert results["mode"] == 2
+
+
 @pytest.mark.parametrize("dtype", (np.uint8, np.uint16, np.uint32, np.uint64))
 def test_unsigned_values_preserved(dtype):
     max_val = np.iinfo(dtype).max
