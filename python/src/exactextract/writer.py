@@ -85,11 +85,15 @@ class JSONWriter(Writer):
 
             key_fields = self._fields_for_stat(key_stat)
             val_fields = self._fields_for_stat(val_stat)
+            if not val_fields:
+                continue
 
             assert len(key_fields) == len(val_fields)
 
             for key_field, val_field in zip(key_fields, val_fields):
                 new_field = val_field.replace(val_stat, field)
+
+                assert len(props[key_field]) == len(props[val_field])
 
                 new_fields[new_field] = {
                     k: v for k, v in zip(props[key_field], props[val_field])

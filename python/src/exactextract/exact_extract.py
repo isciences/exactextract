@@ -1,3 +1,4 @@
+import copy
 import os
 from itertools import chain
 from typing import Mapping, Optional
@@ -9,7 +10,7 @@ from .feature import (
     JSONFeatureSource,
     QGISFeatureSource,
 )
-from .operation import Operation, PythonOperation, prepare_operations
+from .operation import Operation, PythonOperation, change_stat, prepare_operations
 from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
 from .raster import (
     GDALRasterSource,
@@ -155,7 +156,7 @@ def prep_vec(vec):
     raise Exception("Unhandled feature datatype")
 
 
-def prep_ops(stats, values, weights=None):
+def prep_ops(stats, values, weights=None, *, add_unique=False):
     if type(stats) is str or isinstance(stats, Operation) or callable(stats):
         stats = [stats]
 
@@ -207,6 +208,17 @@ def prep_ops(stats, values, weights=None):
             ops.append(stat)
         else:
             raise ValueError("Don't know how to handle stat", stat)
+
+    if add_unique:
+        need_unique = {}
+        for op in ops:
+            if op.stat in {"frac", "weighted_frac"}:
+                need_unique[op.key()] = op
+        for op in ops:
+            if op.stat == "unique":
+                del need_unique[op.key()]
+        for op in need_unique.values():
+            ops += prepare_operations([change_stat(op, "unique")], values, weights)
 
     return ops
 
@@ -307,7 +319,20 @@ def exact_extract(
     vec = prep_vec(vec)
     # TODO: check CRS and transform if necessary/possible?
 
-    ops = prep_ops(ops, rast, weights)
+    if output_options is None:
+        output_options = {}
+
+    ops = prep_ops(
+        ops, rast, weights, add_unique=output_options.get("frac_as_map", False)
+    )
+
+    if "frac_as_map" in output_options:
+        output_options = copy.copy(output_options)
+        del output_options["frac_as_map"]
+        output_options["map_fields"] = {
+            "frac": ("unique", "frac"),
+            "weighted_frac": ("unique", "weighted_frac"),
+        }
 
     if type(include_cols) is str:
         include_cols = [include_cols]
