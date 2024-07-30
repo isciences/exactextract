@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_BOX_H
-#define EXACTEXTRACT_BOX_H
+#pragma once
 
 #include "coordinate.h"
 #include "crossing.h"
@@ -174,5 +173,3 @@ std::ostream&
 operator<<(std::ostream& os, const Box& c);
 
 }
-
-#endif

@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_CELL_CROSSING_H
-#define EXACTEXTRACT_CELL_CROSSING_H
+#pragma once
 
 #include "coordinate.h"
 #include "side.h"
@@ -50,5 +49,3 @@ class Crossing
 };
 
 }
-
-#endif

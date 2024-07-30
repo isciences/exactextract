@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_TRAVERSAL_AREAS_H
-#define EXACTEXTRACT_TRAVERSAL_AREAS_H
+#pragma once
 
 #include <vector>
 
@@ -51,5 +50,3 @@ geom_ptr_r
 left_hand_rings(GEOSContextHandle_t context, const Box& box, const std::vector<const std::vector<Coordinate>*>& coord_lists);
 
 }
-
-#endif

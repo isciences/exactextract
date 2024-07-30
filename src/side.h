@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_SIDE_H
-#define EXACTEXTRACT_SIDE_H
+#pragma once
 
 #include <iostream>
 
@@ -31,5 +30,3 @@ std::ostream&
 operator<<(std::ostream& os, const Side& s);
 
 }
-
-#endif

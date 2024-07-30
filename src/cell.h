@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_CELL_H
-#define EXACTEXTRACT_CELL_H
+#pragma once
 
 #include "box.h"
 #include "coordinate.h"
@@ -105,5 +104,3 @@ class Cell
 };
 
 }
-
-#endif

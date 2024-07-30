@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_TRAVERSAL_H
-#define EXACTEXTRACT_TRAVERSAL_H
+#pragma once
 
 #include <vector>
 
@@ -74,5 +73,3 @@ class Traversal
 };
 
 }
-
-#endif

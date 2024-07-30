@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_MATRIX_H
-#define EXACTEXTRACT_MATRIX_H
+#pragma once
 
 #include <cstring>
 #include <iomanip>
@@ -155,5 +154,3 @@ operator<<(std::ostream& os, const Matrix<T>& m)
 }
 
 }
-
-#endif

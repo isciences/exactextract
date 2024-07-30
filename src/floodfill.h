@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_FLOODFILL_H
-#define EXACTEXTRACT_FLOODFILL_H
+#pragma once
 
 #include <queue>
 
@@ -136,5 +135,3 @@ FloodFill::flood(Matrix<T>& arr) const
 }
 
 }
-
-#endif

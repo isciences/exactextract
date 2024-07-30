@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_WEIGHTED_QUANTILES_H
-#define EXACTEXTRACT_WEIGHTED_QUANTILES_H
+#pragma once
 
 #include <cmath>
 #include <stdexcept>
@@ -67,5 +66,3 @@ class WeightedQuantiles
 };
 
 }
-
-#endif // EXACTEXTRACT_WEIGHTED_QUANTILES_H

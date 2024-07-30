@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_VARIANCE_H
-#define EXACTEXTRACT_VARIANCE_H
+#pragma once
 
 #include <cmath>
 
@@ -73,5 +72,3 @@ class WestVariance
 };
 
 }
-
-#endif // EXACTEXTRACT_VARIANCE_H
