@@ -13,6 +13,7 @@
 
 #include "weighted_quantiles.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace exactextract {

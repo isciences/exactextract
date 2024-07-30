@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include <numeric>
-#include <stdexcept>
 
 #include "cell.h"
 #include "crossing.h"

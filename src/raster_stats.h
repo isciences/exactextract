@@ -19,7 +19,6 @@
 #include <unordered_map>
 
 #include "raster_area.h"
-#include "raster_cell_intersection.h"
 #include "variance.h"
 #include "weighted_quantiles.h"
 

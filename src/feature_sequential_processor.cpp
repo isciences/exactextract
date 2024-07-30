@@ -20,6 +20,7 @@
 #include "geos_utils.h"
 #include "grid.h"
 #include "operation.h"
+#include "raster_cell_intersection.h"
 
 namespace exactextract {
 

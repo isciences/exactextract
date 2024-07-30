@@ -18,8 +18,6 @@
 #include "grid.h"
 #include "raster.h"
 
-#include <variant>
-
 namespace exactextract {
 class RasterSource
 {

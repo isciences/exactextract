@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdarg>
+#include <functional>
 #include <iostream>
 #include <string>
 

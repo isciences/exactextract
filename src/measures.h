@@ -14,8 +14,6 @@
 #ifndef EXACTEXTRACT_MEASURES_H
 #define EXACTEXTRACT_MEASURES_H
 
-#include <cmath>
-#include <cstddef>
 #include <vector>
 
 #include "coordinate.h"

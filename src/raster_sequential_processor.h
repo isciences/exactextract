@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <memory>
-
 #ifndef EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
 #define EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
 

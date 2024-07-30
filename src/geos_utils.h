@@ -14,9 +14,7 @@
 #ifndef EXACTEXTRACT_GEOS_UTILS_H
 #define EXACTEXTRACT_GEOS_UTILS_H
 
-#include <algorithm>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <vector>
