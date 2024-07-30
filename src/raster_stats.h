@@ -36,7 +36,9 @@ enum class CoverageWeightType
 
 struct RasterStatsOptions
 {
-    float min_coverage_fraction = 0.0;
+    static constexpr float min_coverage_fraction_default = std::numeric_limits<float>::min(); // ~1e-38
+
+    float min_coverage_fraction = min_coverage_fraction_default;
     bool calc_variance = false;
     bool store_histogram = false;
     bool store_values = false;
@@ -109,7 +111,7 @@ class RasterStats
             for (size_t j = 0; j < rv.cols(); j++) {
                 float pct_cov = intersection_percentages(i, j);
                 T val;
-                if (pct_cov > m_options.min_coverage_fraction && get_or_default(rv, i, j, val, m_options.default_value)) {
+                if (pct_cov >= m_options.min_coverage_fraction && get_or_default(rv, i, j, val, m_options.default_value)) {
 
                     if (areas) {
                         pct_cov *= (*areas)(i, j);
@@ -158,7 +160,7 @@ class RasterStats
                 WeightType weight;
                 ValueType val;
 
-                if (pct_cov > m_options.min_coverage_fraction && get_or_default(rv, i, j, val, m_options.default_value)) {
+                if (pct_cov >= m_options.min_coverage_fraction && get_or_default(rv, i, j, val, m_options.default_value)) {
                     process_location(common, i, j);
 
                     if (areas) {

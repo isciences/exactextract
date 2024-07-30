@@ -512,4 +512,11 @@ TEST_CASE("Operation arguments", "[operation]")
 
         CHECK_THROWS_WITH(Operation::create("sum", "sum", &mrs, nullptr, args), Catch::Contains("Unexpected coverage_weight type"));
     }
+
+    SECTION("error if invalid value of min_coverage_frac")
+    {
+        Operation::ArgMap args{ { "min_coverage_frac", "-1" } };
+
+        CHECK_THROWS_WITH(Operation::create("sum", "sum", &mrs, nullptr, args), Catch::Contains("min_coverage_frac must be"));
+    }
 }

@@ -557,4 +557,22 @@ TEST_CASE("Weighted quantiles are appropriately refreshed")
     CHECK(wq.quantile(0.5) == 2.5);
 }
 
+TEST_CASE("min_coverage_frac is respected", "[stats]")
+{
+    Grid<bounded_extent> extent{ { 0, 0, 2, 2 }, 1, 1 };
+
+    Raster<int> landcov{ Matrix<int>{ { { 1, 1 }, { 1, 2 } } }, extent };
+    Raster<float> coverage{ Matrix<float>{ { { 0.99, 0.99 }, { 0.99, 1 } } }, extent };
+
+    RasterStatsOptions opt;
+    opt.store_histogram = true;
+    opt.min_coverage_fraction = 1.0;
+
+    RasterStats<int> stats(opt);
+    stats.process(coverage, landcov);
+
+    CHECK(stats.count() == 1);
+    CHECK(stats.mode().value() == 2);
+}
+
 }

@@ -396,7 +396,17 @@ Operation::
   , weights{ p_weights }
   , m_missing{ get_missing_value() }
 {
-    m_min_coverage = static_cast<float>(extract_arg<double>(options, "min_coverage_frac", 0.0));
+    m_min_coverage = static_cast<float>(extract_arg<double>(options, "min_coverage_frac", 0));
+    if (m_min_coverage == 0) {
+        // quietly override where user manually specified min_coverage_frac = 0
+        // to avoid including pixels entirely outside the polygon
+        m_min_coverage = RasterStatsOptions::min_coverage_fraction_default;
+    }
+
+    if (m_min_coverage <= 0.0f || m_min_coverage > 1.0f) {
+        throw std::runtime_error("min_coverage_frac must be > 0 and <= 1.0");
+    }
+
     std::string coverage_type = extract_arg<std::string>(options, "coverage_weight", "fraction");
     if (coverage_type == "fraction") {
         m_coverage_weight_type = CoverageWeightType::FRACTION;
