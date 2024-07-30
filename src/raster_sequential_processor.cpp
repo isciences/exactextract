@@ -13,6 +13,7 @@
 
 #include "raster_sequential_processor.h"
 #include "operation.h"
+#include "raster_cell_intersection.h"
 #include "raster_source.h"
 
 #include <cassert>

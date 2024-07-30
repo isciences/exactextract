@@ -14,11 +14,8 @@
 #ifndef EXACTEXTRACT_CELL_H
 #define EXACTEXTRACT_CELL_H
 
-#include <memory>
-
 #include "box.h"
 #include "coordinate.h"
-#include "crossing.h"
 #include "geos_utils.h"
 #include "side.h"
 #include "traversal.h"

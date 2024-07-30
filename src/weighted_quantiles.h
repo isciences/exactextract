@@ -14,7 +14,6 @@
 #ifndef EXACTEXTRACT_WEIGHTED_QUANTILES_H
 #define EXACTEXTRACT_WEIGHTED_QUANTILES_H
 
-#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <vector>
