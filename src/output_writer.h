@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_OUTPUT_WRITER_H
-#define EXACTEXTRACT_OUTPUT_WRITER_H
+#pragma once
 
 #include "feature.h"
 
@@ -51,5 +50,3 @@ class OutputWriter
 };
 
 }
-
-#endif // EXACTEXTRACT_OUTPUT_WRITER_H

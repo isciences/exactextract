@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_COORDINATE_H
-#define EXACTEXTRACT_COORDINATE_H
+#pragma once
 
 #include <cmath>
 #include <iostream>
@@ -59,5 +58,3 @@ std::ostream&
 operator<<(std::ostream& os, const Coordinate& c);
 
 }
-
-#endif

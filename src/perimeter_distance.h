@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_PERIMETERDISTANCE_H
-#define EXACTEXTRACT_PERIMETERDISTANCE_H
+#pragma once
 
 #include "box.h"
 #include "coordinate.h"
@@ -32,5 +31,3 @@ double
 perimeter_distance_ccw(double measure1, double measure2, double perimeter);
 
 }
-
-#endif

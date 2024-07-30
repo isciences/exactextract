@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_RASTER_SOURCE_H
-#define EXACTEXTRACT_RASTER_SOURCE_H
+#pragma once
 
 #include "box.h"
 #include "grid.h"
@@ -51,5 +50,3 @@ class RasterSource
     mutable std::unique_ptr<RasterVariant> m_empty;
 };
 }
-
-#endif // EXACTEXTRACT_RASTER_SOURCE_H

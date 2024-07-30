@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_MEASURES_H
-#define EXACTEXTRACT_MEASURES_H
+#pragma once
 
 #include <vector>
 
@@ -43,5 +42,3 @@ double
 length(const std::vector<Coordinate>& coords);
 
 }
-
-#endif

@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_RASTER_CELL_INTERSECTION_H
-#define EXACTEXTRACT_RASTER_CELL_INTERSECTION_H
+#pragma once
 
 #include <memory>
 
@@ -111,5 +110,3 @@ Box
 processing_region(const Box& raster_extent, const std::vector<Box>& component_boxes);
 
 }
-
-#endif

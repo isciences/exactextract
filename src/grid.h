@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_GRID_H
-#define EXACTEXTRACT_GRID_H
+#pragma once
 
 #include <numeric>
 #include <stdexcept>
@@ -386,5 +385,3 @@ common_grid(T begin, T end)
 }
 
 }
-
-#endif // EXACTEXTRACT_INFINITEGRID_H

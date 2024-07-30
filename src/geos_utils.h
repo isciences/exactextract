@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_GEOS_UTILS_H
-#define EXACTEXTRACT_GEOS_UTILS_H
+#pragma once
 
 #include <functional>
 #include <memory>
@@ -131,5 +130,3 @@ seq_ptr_r
 to_coordseq(GEOSContextHandle_t context, const std::vector<Coordinate>& coords);
 
 }
-
-#endif // RASTER_OVERLAY_CPP_GEOS_UTILS_H

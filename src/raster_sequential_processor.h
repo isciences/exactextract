@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
-#define EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
+#pragma once
 
 #include "geos_utils.h"
 #include "map_feature.h"
@@ -42,5 +41,3 @@ class RasterSequentialProcessor : public Processor
 };
 
 }
-
-#endif // EXACTEXTRACT_RASTER_SEQUENTIAL_PROCESSOR_H
