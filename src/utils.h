@@ -36,6 +36,8 @@ struct StatDescriptor
     std::string weights;
     std::string stat;
     std::map<std::string, std::string> args;
+
+    std::string as_string() const;
 };
 
 std::pair<std::string, std::string>

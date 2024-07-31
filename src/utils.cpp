@@ -171,6 +171,45 @@ parse_stat_descriptor(const std::string& p_descriptor)
     return ret;
 }
 
+std::string
+StatDescriptor::as_string() const
+{
+    std::stringstream desc;
+    if (!name.empty()) {
+        desc << name << "=";
+    }
+    desc << stat;
+
+    if (values.empty() && weights.empty() && args.empty()) {
+        return desc.str();
+    }
+
+    desc << "(";
+
+    bool comma = false;
+
+    if (!values.empty()) {
+        desc << values;
+        comma = true;
+    }
+    if (!weights.empty()) {
+        if (comma) {
+            desc << ",";
+        }
+        desc << weights;
+        comma = true;
+    }
+    for (const auto& [k, v] : args) {
+        if (comma) {
+            desc << ",";
+        }
+        desc << k << "=" << v;
+        comma = true;
+    }
+    desc << ")";
+    return desc.str();
+}
+
 static std::string
 make_name(const RasterSource* v, const RasterSource* w, const std::string& stat, bool full_names)
 {

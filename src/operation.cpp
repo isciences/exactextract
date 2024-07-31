@@ -14,7 +14,6 @@
 #include "operation.h"
 #include "utils.h"
 
-#include <charconv>
 #include <sstream>
 
 namespace exactextract {
@@ -384,6 +383,23 @@ class Frac : public OperationImpl<Frac<Weighted>>
     }
 };
 
+StatDescriptor
+Operation::descriptor() const
+{
+    StatDescriptor sd;
+    sd.name = name;
+    sd.stat = stat;
+    sd.values = values->name();
+
+    if (weights) {
+        sd.weights = weights->name();
+    }
+
+    sd.args = m_options;
+
+    return sd;
+}
+
 Operation::
   Operation(std::string p_stat,
             std::string p_name,
@@ -395,6 +411,7 @@ Operation::
   , values{ p_values }
   , weights{ p_weights }
   , m_missing{ get_missing_value() }
+  , m_options{ options }
 {
     m_min_coverage = static_cast<float>(extract_arg<double>(options, "min_coverage_frac", 0));
     if (m_min_coverage == 0) {
