@@ -156,6 +156,13 @@ class Operation
     /// Populates a field in `f_out` with a missing value
     void set_empty_result(Feature& f_out) const;
 
+    const ArgMap& options() const
+    {
+        return m_options;
+    }
+
+    StatDescriptor descriptor() const;
+
     std::string stat;
     std::string name;
     RasterSource* values;
@@ -183,6 +190,9 @@ class Operation
 
     float m_min_coverage;
     CoverageWeightType m_coverage_weight_type;
+
+  private:
+    const ArgMap m_options;
 };
 
 }

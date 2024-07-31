@@ -124,6 +124,8 @@ TEST_CASE("Parsing stat descriptor with weighting")
     CHECK(descriptor.stat == "mean");
     CHECK(descriptor.values == "deficit");
     CHECK(descriptor.weights == "population");
+
+    CHECK(descriptor.as_string() == "mean(deficit,population)");
 }
 
 TEST_CASE("Parsing stat descriptor with weighting and arguments")
@@ -135,6 +137,8 @@ TEST_CASE("Parsing stat descriptor with weighting and arguments")
     CHECK(descriptor.values == "deficit");
     CHECK(descriptor.weights == "population");
     CHECK(descriptor.args["q"] == "0.75");
+
+    CHECK(descriptor.as_string() == "quantile(deficit,population,q=0.75)");
 }
 
 TEST_CASE("Spaces allowed between arguments")
@@ -146,6 +150,8 @@ TEST_CASE("Spaces allowed between arguments")
     CHECK(descriptor.values == "deficit");
     CHECK(descriptor.weights == "population");
     CHECK(descriptor.args["q"] == "0.75");
+
+    CHECK(descriptor.as_string() == "quantile(deficit,population,q=0.75)");
 }
 
 TEST_CASE("Parsing stat descriptor with name and weighting")
@@ -156,6 +162,8 @@ TEST_CASE("Parsing stat descriptor with name and weighting")
     CHECK(descriptor.stat == "mean");
     CHECK(descriptor.values == "deficit");
     CHECK(descriptor.weights == "population");
+
+    CHECK(descriptor.as_string() == "pop_weighted_mean_deficit=mean(deficit,population)");
 }
 
 TEST_CASE("Parsing stat descriptor with no arguments")
@@ -166,6 +174,8 @@ TEST_CASE("Parsing stat descriptor with no arguments")
     CHECK(descriptor.name == "");
     CHECK(descriptor.values == "");
     CHECK(descriptor.weights == "");
+
+    CHECK(descriptor.as_string() == "mean");
 }
 
 TEST_CASE("Parsing stat descriptor with only keyword arguments")
@@ -177,6 +187,8 @@ TEST_CASE("Parsing stat descriptor with only keyword arguments")
     CHECK(descriptor.values == "");
     CHECK(descriptor.weights == "");
     CHECK(descriptor.args["ignore_nodata"] == "false");
+
+    CHECK(descriptor.as_string() == "mean(ignore_nodata=false)");
 }
 
 TEST_CASE("Parsing stat descriptor with name and no arguments")
@@ -187,6 +199,8 @@ TEST_CASE("Parsing stat descriptor with name and no arguments")
     CHECK(descriptor.name == "pop_mean");
     CHECK(descriptor.values == "");
     CHECK(descriptor.weights == "");
+
+    CHECK(descriptor.as_string() == "pop_mean=mean");
 }
 
 TEST_CASE("Parsing degenerate stat descriptors")
