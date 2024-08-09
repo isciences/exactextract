@@ -218,7 +218,11 @@ def prep_ops(stats, values, weights=None, *, add_unique=False):
             if op.stat == "unique":
                 del need_unique[op.key()]
         for op in need_unique.values():
-            ops += prepare_operations([change_stat(op, "unique")], values, weights)
+            for unique_op in prepare_operations(
+                [change_stat(op, "unique")], values, weights
+            ):
+                unique_op.name = "@delete@" + unique_op.name
+                ops.append(unique_op)
 
     return ops
 
