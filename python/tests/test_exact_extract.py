@@ -1019,14 +1019,15 @@ def test_output_map_fields():
     result = exact_extract(
         rast,
         square,
-        ["frac", "weighted_frac"],
+        ["frac", "weighted_frac", "unique"],
         weights=weights,
-        output_options={"frac_as_map": True},
+        output_options={"frac_as_map": True, "array_type": "set"},
     )
 
     assert result[0]["properties"] == {
         "frac": {1: 0.25, 2: 0.5, 3: 0.1875, 4: 0.0625},
         "weighted_frac": {1: 0.0, 2: 0.0, 3: 0.75, 4: 0.25},
+        "unique": {1, 2, 3, 4},
     }
 
 

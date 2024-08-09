@@ -29,7 +29,7 @@ class JSONWriter(Writer):
 
         Args:
             array_type: type that should be used to represent array outputs.
-                        Either "numpy" (default) or "list".
+                        Either "numpy" (default), "list", or "set"
             map_fields: An optional dictionary of fields to be created by
                         interpreting one field as keys and another as values, in the format
                         ``{ dst_field : (src_keys, src_vals) }``. For example, the fields
@@ -38,7 +38,7 @@ class JSONWriter(Writer):
         """
         super().__init__()
 
-        if array_type not in ("numpy", "list"):
+        if array_type not in ("numpy", "list", "set"):
             raise ValueError("Unsupported array_type: " + array_type)
 
         self.array_type = array_type
@@ -46,16 +46,20 @@ class JSONWriter(Writer):
         self.map_fields = map_fields or {}
         self.op_fields = {}
         self.ops = []
+        self.remove_temporary_fields = False
 
     def add_operation(self, op):
         self.ops.append(op)
+        if op.name.startswith("@delete@"):
+            self.remove_temporary_fields = True
 
     def write(self, feature):
         f = JSONFeature()
         feature.copy_to(f)
 
-        self._convert_arrays(f)
         self._create_map_fields(f)
+        self._convert_arrays(f)
+        self._remove_temporary_fields(f)
 
         self.feature_list.append(f.feature)
 
@@ -71,6 +75,12 @@ class JSONWriter(Writer):
             for k in props:
                 if type(props[k]) is np.ndarray:
                     props[k] = list(props[k])
+        elif self.array_type == "set":
+            import numpy as np
+
+            for k in props:
+                if type(props[k]) is np.ndarray:
+                    props[k] = set(props[k])
 
     def _fields_for_stat(self, stat):
         return [o.name for o in self.ops if o.stat == stat]
@@ -79,7 +89,6 @@ class JSONWriter(Writer):
         props = f.feature["properties"]
 
         new_fields = {}
-        to_delete = set()
         for field in self.map_fields:
             key_stat, val_stat = self.map_fields[field]
 
@@ -99,11 +108,13 @@ class JSONWriter(Writer):
                     k: v for k, v in zip(props[key_field], props[val_field])
                 }
 
-                to_delete.add(key_field)
-                to_delete.add(val_field)
-        for field in to_delete:
-            del props[field]
         props.update(new_fields)
+
+    def _remove_temporary_fields(self, f):
+        if self.remove_temporary_fields:
+            for field in list(f.feature["properties"]):
+                if field.startswith("@delete@"):
+                    del f.feature["properties"][field]
 
 
 class PandasWriter(Writer):
