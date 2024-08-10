@@ -36,11 +36,14 @@ jobs:
     - name: install python dependencies
       run: pip3 install --break-system-packages --upgrade -r python/doc/requirements.txt
 
+    - name: install exactextract
+      run: pip3 install --break-system-packages .
+
     - name: configure
       run: |
         mkdir build
         cd build
-        cmake -DBUILD_CLI=NO -DBUILD_PYTHON=YES ..
+        cmake -DBUILD_CLI=NO -DBUILD_PYTHON=YES -DBUILD_TEST=NO ..
 
     - name: build
       run: |
