@@ -1,0 +1,9 @@
+geopandas
+matplotlib
+ipython
+ipykernel
+nbsphinx
+rasterio
+sphinx
+sphinx-autoapi
+sphinx-rtd-theme

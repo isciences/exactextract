@@ -30,6 +30,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: install system dependencies
+      run: |
+        apt-get update
+        apt-get install -y pandoc
+
+    - name: install python dependencies
+      run: pip3 install --upgrade -r python/doc/requirements.txt
+
     - name: configure
       run: |
         mkdir build
