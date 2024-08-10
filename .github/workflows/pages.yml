@@ -39,6 +39,9 @@ jobs:
     - name: install exactextract
       run: pip3 install --break-system-packages .
 
+    - name: download data files
+      run: ci/download_sample_data.sh python/doc
+
     - name: configure
       run: |
         mkdir build

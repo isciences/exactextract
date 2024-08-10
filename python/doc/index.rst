@@ -32,7 +32,8 @@ can be used.
    :maxdepth: 2
    :caption: Contents:
 
-
+   About <self>
+   examples
 
 Indices and tables
 ==================
