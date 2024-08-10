@@ -63,7 +63,7 @@ napoleon_attr_annotations = True
 
 # -- AutoAPI configuration ----------------------------------------------------
 
-autoapi_dirs = ["../exactextract"]
+autoapi_dirs = ["../src/exactextract"]
 autoapi_keep_files = False
 
 
