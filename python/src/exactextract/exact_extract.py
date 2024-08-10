@@ -56,7 +56,8 @@ def prep_raster(rast, name_root=None) -> list:
         return list(chain.from_iterable(sources))
 
     try:
-        from osgeo import gdal
+        # eagerly import gdal_array to avoid possible ImportError when reading raster data
+        from osgeo import gdal, gdal_array  # noqa: F401
 
         if isinstance(rast, (str, os.PathLike)):
             rast = gdal.Open(str(rast))
