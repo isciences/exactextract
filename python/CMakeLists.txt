@@ -57,13 +57,13 @@ if(BUILD_DOC)
     set(_HTML_DIR ${CMAKE_CURRENT_BINARY_DIR}/html)
 
     add_custom_command(
-        OUTPUT ${_HTML_DIR}
+        OUTPUT ${_HTML_DIR}/index.html
         DEPENDS ${CMAKE_CURRENT_LIST_DIR}/doc
         DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/exactextract
         COMMAND sphinx-apidoc -f -o ${_RST_DIR} ${CMAKE_CURRENT_BINARY_DIR}/exactextract
         COMMAND sphinx-build -b html ${_RST_DIR} ${_HTML_DIR})
 
-    add_custom_target(python_html ALL DEPENDS ${_HTML_DIR})
+    add_custom_target(python_html ALL DEPENDS ${_HTML_DIR}/index.html)
 
     unset(_RST_DIR)
     unset(_HTML_DIR)
