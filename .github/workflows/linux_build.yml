@@ -48,7 +48,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=${{ matrix.ci.build_cli }} -DBUILD_PYTHON=${{ matrix.ci.build_python }} ..
+        cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_CLI=${{ matrix.ci.build_cli }} -DBUILD_PYTHON=${{ matrix.ci.build_python }} -DBUILD_DOC=NO ..
     - name: build
       run: |
         cd build
