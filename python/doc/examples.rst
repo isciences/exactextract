@@ -6,3 +6,4 @@ Usage examples
    :caption: Contents:
 
    basic_usage
+   noise_average_udf
