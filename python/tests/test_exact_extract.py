@@ -476,6 +476,8 @@ def test_default_value():
         rast,
         square,
         [
+            "count",
+            "count_with_default=count(default_value=0)",
             "sum",
             "sum_with_default=sum(default_value=123)",
             "mean",
@@ -487,6 +489,8 @@ def test_default_value():
     substituted = np.where(data == -99, 123, data)
 
     assert results[0]["properties"] == {
+        "count": (~masked.mask).sum(),
+        "count_with_default": substituted.size,
         "sum": masked.sum(),
         "sum_with_default": substituted.sum(),
         "mean": masked.mean(),
