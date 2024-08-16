@@ -66,6 +66,7 @@ napoleon_attr_annotations = True
 
 autoapi_dirs = ["../src/exactextract"]
 autoapi_keep_files = False
+autoapi_add_toctree_entry = False
 
 
 def autoapi_skip_member(app, what, name, obj, skip, options):
