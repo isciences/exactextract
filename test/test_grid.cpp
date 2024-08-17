@@ -252,6 +252,30 @@ TEST_CASE("Grid compatibility with reduced tolerance")
 
     CHECK(a.compatible_with(b, tol));
     CHECK(b.compatible_with(a, tol));
+
+    CHECK_NOTHROW(a.common_grid(b, tol));
+
+    struct DummyOp
+    {
+      public:
+        DummyOp(const Grid<bounded_extent>& grid)
+          : g(grid)
+        {
+        }
+
+        const Grid<bounded_extent>& grid(double) const
+        {
+            return g;
+        }
+
+      private:
+        const Grid<bounded_extent>& g;
+    };
+
+    std::vector<std::unique_ptr<DummyOp>> grids;
+    grids.push_back(std::make_unique<DummyOp>(a));
+    grids.push_back(std::make_unique<DummyOp>(b));
+    CHECK_NOTHROW(common_grid(grids.begin(), grids.end(), tol));
 }
 
 TEST_CASE("Grid compatibility (empty grid)", "[grid]")

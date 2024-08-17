@@ -51,7 +51,7 @@ RasterSequentialProcessor::process()
     read_features();
     populate_index();
 
-    auto grid = common_grid(m_operations.begin(), m_operations.end());
+    auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
 
     auto subgrids = subdivide(grid, m_max_cells_in_memory);
     for (std::size_t i = 0; i < subgrids.size(); i++) {

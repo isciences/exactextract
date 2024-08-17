@@ -266,6 +266,7 @@ def exact_extract(
     include_geom=False,
     strategy: str = "feature-sequential",
     max_cells_in_memory: int = 30000000,
+    grid_compat_tol: float = 1e-3,
     output: str = "geojson",
     output_options: Optional[Mapping] = None,
     progress=False,
@@ -304,6 +305,7 @@ def exact_extract(
                    a cost of higher memory usage.
        max_cells_in_memory: Indicates the maximum number of raster cells that should be
                             loaded into memory at a given time.
+       grid_compat_tol: require value and weight grids to align within ``grid_compat_tol`` times the smaller of the two grid resolutions
        output: An :py:class:`OutputWriter` or one of the following strings:
 
                  - "geojson" (the default): return a list of GeoJSON-like features
@@ -350,6 +352,7 @@ def exact_extract(
     if include_geom:
         processor.add_geom()
     processor.set_max_cells_in_memory(max_cells_in_memory)
+    processor.set_grid_compat_tol(grid_compat_tol)
 
     if progress:
         processor.show_progress(True)

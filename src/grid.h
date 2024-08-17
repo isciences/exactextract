@@ -19,6 +19,8 @@
 
 #include "box.h"
 
+constexpr double DEFAULT_GRID_COMPAT_TOL = 1e-6;
+
 namespace exactextract {
 struct infinite_extent
 {
@@ -274,7 +276,7 @@ class Grid
     }
 
     template<typename extent_tag2>
-    Grid<extent_tag> common_grid(const Grid<extent_tag2>& b, double tol = 1e-6) const
+    Grid<extent_tag> common_grid(const Grid<extent_tag2>& b, double tol = DEFAULT_GRID_COMPAT_TOL) const
     {
         if (!compatible_with(b, tol)) {
             throw std::runtime_error("Incompatible extents.");
@@ -303,7 +305,7 @@ class Grid
     }
 
     template<typename extent_tag2>
-    Grid<extent_tag> overlapping_grid(const Grid<extent_tag2>& b, double tol = 1e-6) const
+    Grid<extent_tag> overlapping_grid(const Grid<extent_tag2>& b, double tol = DEFAULT_GRID_COMPAT_TOL) const
     {
         if (!compatible_with(b, tol)) {
             throw std::runtime_error("Incompatible extents.");
@@ -368,19 +370,19 @@ subdivide(const Grid<bounded_extent>& grid, size_t max_size);
 
 template<typename T>
 Grid<bounded_extent>
-common_grid(T begin, T end)
+common_grid(T begin, T end, double tol = DEFAULT_GRID_COMPAT_TOL)
 {
     if (begin == end) {
         return Grid<bounded_extent>::make_empty();
     } else if (std::next(begin) == end) {
-        return (*begin)->grid();
+        return (*begin)->grid(tol);
     }
     return std::accumulate(
       std::next(begin),
       end,
-      (*begin)->grid(),
-      [](auto& acc, auto& op) {
-          return acc.common_grid(op->grid());
+      (*begin)->grid(tol),
+      [tol](auto& acc, auto& op) {
+          return acc.common_grid(op->grid(tol), tol);
       });
 }
 
