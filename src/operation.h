@@ -132,7 +132,7 @@ class Operation
 
     /// Returns a newly constructed `Grid` representing the common grid between
     /// the value and weighting rasters
-    Grid<bounded_extent> grid() const;
+    Grid<bounded_extent> grid(double ncompat_tol) const;
 
     /// Returns the type of the `Operation` result
     virtual Feature::ValueType result_type() const = 0;

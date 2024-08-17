@@ -71,7 +71,7 @@ FeatureSequentialProcessor::process()
 
         Box feature_bbox = exactextract::geos_get_box(m_geos_context, geom);
 
-        auto grid = common_grid(m_operations.begin(), m_operations.end());
+        auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
 
         if (feature_bbox.intersects(grid.extent())) {
             // Crop grid to portion overlapping feature

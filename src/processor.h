@@ -89,6 +89,11 @@ class Processor
         m_max_cells_in_memory = n;
     }
 
+    void set_grid_compat_tol(double tol)
+    {
+        m_grid_compat_tol = tol;
+    }
+
     void show_progress(bool val)
     {
         m_show_progress = val;
@@ -145,6 +150,7 @@ class Processor
 
     std::vector<std::string> m_include_cols;
 
+    double m_grid_compat_tol = DEFAULT_GRID_COMPAT_TOL;
     size_t m_max_cells_in_memory = 1000000L;
 
     std::function<void(double, std::string_view)> m_progress_fn;

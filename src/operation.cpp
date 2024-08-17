@@ -480,10 +480,10 @@ Operation::intersects(const Box& box) const
 }
 
 Grid<bounded_extent>
-Operation::grid() const
+Operation::grid(double compat_tol) const
 {
     if (weighted()) {
-        return values->grid().common_grid(weights->grid());
+        return values->grid().common_grid(weights->grid(), compat_tol);
     } else {
         return values->grid();
     }

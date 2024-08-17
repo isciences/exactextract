@@ -33,6 +33,7 @@ bind_processor(py::module& m)
       .def("add_col", &Processor::include_col)
       .def("add_geom", &Processor::include_geometry)
       .def("process", &Processor::process)
+      .def("set_grid_compat_tol", &Processor::set_grid_compat_tol)
       .def("set_max_cells_in_memory", &Processor::set_max_cells_in_memory, py::arg("n"))
       .def("set_progress_fn", [](Processor& self, py::function fn) {
           std::function<void(double, std::string_view)> wrapper = [fn](double frac, std::string_view message) {

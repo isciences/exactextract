@@ -1241,3 +1241,22 @@ def test_progress():
     squares = [square] * 10
 
     exact_extract(rast, squares, "count", progress=True)
+
+
+def test_grid_compat_tol():
+
+    values = NumPyRasterSource(
+        np.arange(9).reshape(3, 3), xmin=0, xmax=1, ymin=0, ymax=1
+    )
+    weights = NumPyRasterSource(
+        np.arange(9).reshape(3, 3), xmin=1e-3, xmax=1 + 1e-3, ymin=0, ymax=1
+    )
+
+    square = make_rect(0.1, 0.1, 0.9, 0.9)
+
+    with pytest.raises(RuntimeError, match="Incompatible extents"):
+        exact_extract(values, square, "weighted_mean", weights=weights)
+
+    exact_extract(
+        values, square, "weighted_mean", weights=weights, grid_compat_tol=1e-2
+    )

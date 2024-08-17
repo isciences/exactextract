@@ -58,6 +58,7 @@ main(int argc, char** argv)
     bool progress = false;
     bool nested_output = false;
     bool include_geom = false;
+    double grid_compat_tol = std::numeric_limits<double>::quiet_NaN();
 
     app.add_option("-p,--polygons", poly_descriptor, "polygon dataset")->required(true);
     app.add_option("-r,--raster", raster_descriptors, "raster dataset")->required(true);
@@ -72,6 +73,7 @@ main(int argc, char** argv)
     app.add_flag("--nested-output", nested_output, "nested output");
     app.add_option("--include-col", include_cols, "columns from input to include in output");
     app.add_flag("--include-geom", include_geom, "include geometry in output");
+    app.add_flag("--grid-compat-tol", grid_compat_tol, "grid compatibility tolerance");
 
     app.add_flag("--progress", progress);
     app.set_config("--config");
@@ -145,6 +147,10 @@ main(int argc, char** argv)
 
         if (include_geom) {
             proc->include_geometry();
+        }
+
+        if (!std::isnan(grid_compat_tol)) {
+            proc->set_grid_compat_tol(grid_compat_tol);
         }
 
         proc->set_max_cells_in_memory(max_cells_in_memory);
