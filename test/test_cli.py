@@ -435,7 +435,7 @@ def test_feature_intersecting_nodata(
         "id": "1",
         "metric_count": "0",
         "metric_mean": "nan",
-        "metric_mode": str(nodata) if nodata else "nan",
+        "metric_mode": "",
     }
 
 

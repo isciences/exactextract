@@ -44,7 +44,6 @@ class JSONWriter(Writer):
         self.array_type = array_type
         self.feature_list = []
         self.map_fields = map_fields or {}
-        self.op_fields = {}
         self.ops = []
         self.remove_temporary_fields = False
 
@@ -56,6 +55,9 @@ class JSONWriter(Writer):
     def write(self, feature):
         f = JSONFeature()
         feature.copy_to(f)
+        for op in self.ops:
+            if op.name not in f.feature["properties"]:
+                f.feature["properties"][op.name] = None
 
         self._create_map_fields(f)
         self._convert_arrays(f)
@@ -140,16 +142,21 @@ class PandasWriter(Writer):
         f = JSONFeature()
         feature.copy_to(f)
 
-        for field_name, value in f.feature["properties"].items():
-            self.fields[field_name].append(value)
-        if "id" in f.feature:
-            self.fields["id"].append(f.feature["id"])
-        if "geometry" in self.fields and "geometry" in f.feature:
-            import shapely
+        props = f.feature["properties"]
 
-            self.fields["geometry"].append(
-                shapely.geometry.shape(f.feature["geometry"])
-            )
+        for field in self.fields:
+            if field == "geometry" and "geometry" in f.feature:
+                import shapely
+
+                self.fields["geometry"].append(
+                    shapely.geometry.shape(f.feature["geometry"])
+                )
+            elif field == "id" and "id" in f.feature:
+                self.fields["id"].append(f.feature["id"])
+            elif field in props:
+                self.fields[field].append(props[field])
+            else:
+                self.fields[field].append(None)
 
     def features(self):
         if "geometry" in self.fields:
@@ -282,7 +289,10 @@ class QGISWriter(Writer):
 
         mod_fields_list = []
         for field_name in fields_list:
-            value = feature.get(field_name)
+            try:
+                value = feature.get(field_name)
+            except KeyError:
+                value = None
 
             if type(value) is str:
                 field_type = QVariant.String
@@ -383,9 +393,7 @@ class GDALWriter(Writer):
 
                 value = feature.get(field_name)
 
-                if type(value) is str:
-                    field_type = ogr.OFTString
-                elif type(value) is float:
+                if type(value) is float:
                     field_type = ogr.OFTReal
                 elif type(value) is int:
                     field_type = ogr.OFTInteger
@@ -396,6 +404,8 @@ class GDALWriter(Writer):
                         field_type = ogr.OFTIntegerList
                     elif value.dtype == np.float64:
                         field_type = ogr.OFTRealList
+                else:
+                    field_type = ogr.OFTString
 
                 ogr_fields[field_name] = ogr.FieldDefn(field_name, field_type)
 

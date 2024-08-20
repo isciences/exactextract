@@ -31,7 +31,8 @@ class OutputWriter
     /// by the `write` method.
     virtual std::unique_ptr<Feature> create_feature();
 
-    /// Write the provided feature
+    /// Write the provided feature. The feature may not contain
+    /// fields for the results of all Operations.
     virtual void write(const Feature&) = 0;
 
     /// Method to be called for each `Operation` whose results will

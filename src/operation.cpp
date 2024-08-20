@@ -1,4 +1,3 @@
-// Copyright (c) 2018-2024 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -213,10 +212,11 @@ class OperationImpl : public Operation
             auto&& value = static_cast<const Derived*>(this)->get(s);
 
             if constexpr (is_optional<decltype(value)>) {
-                std::visit([this, &f_out, &value](const auto& m) {
-                    f_out.set(name, value.value_or(m));
-                },
-                           m_missing);
+                if (value.has_value()) {
+                    f_out.set(name, value.value());
+                }
+                // TODO: set result to NaN if this is a floating point type?
+
             } else {
                 f_out.set(name, value);
             }
@@ -410,7 +410,6 @@ Operation::
   , name{ std::move(p_name) }
   , values{ p_values }
   , weights{ p_weights }
-  , m_missing{ get_missing_value() }
   , m_options{ options }
 {
     m_min_coverage = static_cast<float>(extract_arg<double>(options, "min_coverage_frac", 0));
@@ -594,20 +593,6 @@ Operation::create(std::string stat,
 
     throw std::runtime_error("Unsupported stat: " + stat);
 #undef CONSTRUCT
-}
-
-Operation::missing_value_t
-Operation::get_missing_value()
-{
-    const auto& empty_rast = values->read_empty();
-
-    return std::visit([](const auto& r) -> missing_value_t {
-        if (r->has_nodata()) {
-            return r->nodata();
-        }
-        return std::numeric_limits<double>::quiet_NaN();
-    },
-                      empty_rast);
 }
 
 const StatsRegistry::RasterStatsVariant&
