@@ -3,8 +3,16 @@ exactextract
 
 ``exactextract`` is a library for extracting and summarizing the values
 in the portion of a raster dataset that is covered by a polygon, often referred
-to as `zonal statistics`. The library is developed in C++, with bindings for
-Python and R. It also includes a command-line interface.
+to as `zonal statistics`. 
+The goals of ``exactextract`` are to be:
+
+- fast - the :ref:`algorithm <algorithm>` used by ``exactextract`` outperforms many other implementations by avoiding point-in-polygon tests used to determine whether pixels are inside or outside the raster.
+- accurate - ``exactextract`` considers partially-covered pixels by computing the fraction of each pixel that is covered by a polygon and weighting computations using this coverage fraction
+- scalable - ``exactextract`` avoids the need to load polygon or raster datasets into memory at a single time, allowing it to be used on arbitrarily large datasets with fixed system resources.
+- convenient - ``exactextract`` provides efficient implementations of many common :doc:`summary functions <operations>` and allows the user to define their own functions in R or Python.
+
+The library is developed in C++, with bindings for Python and R.
+It also includes a command-line interface.
 
 Python
 ^^^^^^
@@ -80,7 +88,10 @@ For more information, see :doc:`examples_cli`.
    :caption: Contents:
 
    About <self>
+   background
    operations
+   installation
+   faq
    CLI usage examples <examples_cli>
    Python usage examples <examples_python>
    Python API documentation <autoapi/exactextract/index>
