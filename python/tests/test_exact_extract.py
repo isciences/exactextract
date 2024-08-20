@@ -510,6 +510,79 @@ def test_gdal_mask_band(tmp_path, libname):
     np.testing.assert_array_equal(values, [1, 2, 3, 4, 5, 6])
 
 
+def test_all_nodata_geojson():
+    data = np.full((3, 3), -999, dtype=np.int32)
+    rast = NumPyRasterSource(data, nodata=-999)
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+    results = exact_extract(rast, square, ["mean", "mode", "variety"], output="geojson")
+
+    props = results[0]["properties"]
+
+    assert math.isnan(props["mean"])
+    assert props["variety"] == 0
+    assert props["mode"] is None
+
+
+def test_all_nodata_pandas():
+    pytest.importorskip("pandas")
+
+    data = np.full((3, 3), -999, dtype=np.int32)
+    rast = NumPyRasterSource(data, nodata=-999)
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+    results = exact_extract(rast, square, ["mean", "mode", "variety"], output="pandas")
+
+    assert math.isnan(results["mean"][0])
+    assert results["variety"][0] == 0
+    assert results["mode"][0] is None
+
+
+def test_all_nodata_qgis():
+
+    pytest.importorskip("qgis.core")
+
+    data = np.full((3, 3), -999, dtype=np.int32)
+    rast = NumPyRasterSource(data, nodata=-999)
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+    results = exact_extract(
+        rast, square, ["mean", "mode", "variety"], output="qgis", include_geom=True
+    )
+
+    props = next(results.getFeatures()).attributeMap()
+
+    assert math.isnan(props["mean"])
+    assert props["variety"] == 0
+    assert props["mode"] is None
+
+
+def test_all_nodata_gdal():
+
+    ogr = pytest.importorskip("osgeo.ogr")
+
+    data = np.array([[1, 1, 1], [-999, -999, -999], [-999, -999, -999]], dtype=np.int32)
+    rast = NumPyRasterSource(data, nodata=-999)
+
+    ds = ogr.GetDriverByName("Memory").CreateDataSource("")
+
+    squares = [make_rect(0.5, 0.5, 2.5, 2.5), make_rect(0.5, 0.5, 1.5, 1.5)]
+    exact_extract(
+        rast,
+        squares,
+        ["mean", "mode", "variety"],
+        output="gdal",
+        include_geom=True,
+        output_options={"dataset": ds},
+    )
+
+    features = [f for f in ds.GetLayer(0)]
+
+    assert math.isnan(features[1]["mean"])
+    assert features[1]["variety"] == 0
+    assert features[1]["mode"] is None
+
+
 def test_default_value():
     data = np.array([[1, 2, 3], [4, -99, -99], [-99, 8, 9]])
     rast = NumPyRasterSource(data, nodata=-99)

@@ -177,14 +177,8 @@ class Operation
 
     std::string m_key;
 
-    using missing_value_t = std::variant<float, double, std::int8_t, std::uint8_t, std::int16_t, std::uint16_t, std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
-
-    missing_value_t m_missing;
-
     std::optional<std::string> m_default_value;
     std::optional<double> m_default_weight;
-
-    missing_value_t get_missing_value();
 
     const StatsRegistry::RasterStatsVariant& empty_stats() const;
 

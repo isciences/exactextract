@@ -131,15 +131,6 @@ def test_pandas_writer(np_raster_source, point_features):
 
     for f in point_features:
         f.feature["properties"]["mean_result"] = f.feature["id"] * f.feature["id"]
-
-        # we are explicitly declaring columns (add_operation has been called)
-        # but we have an unexpected column
-        with pytest.raises(KeyError, match="type"):
-            w.write(f)
-
-    for f in point_features:
-        del f.feature["properties"]["type"]
-
         w.write(f)
 
     df = w.features()

@@ -291,7 +291,7 @@ TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]
 
     const MapFeature& f = writer.m_feature;
     CHECK(f.get_double("count") == 0);
-    CHECK(std::isnan(f.get_double("median")));
+    CHECK_THROWS(f.get_double("median"));
 }
 
 TEST_CASE("progress callback is called once for each feature", "[processor]")
