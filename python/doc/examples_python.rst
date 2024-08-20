@@ -9,3 +9,4 @@ Usage examples
 
    basic_usage
    noise_average_udf
+   landcov
