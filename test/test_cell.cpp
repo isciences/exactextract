@@ -6,6 +6,8 @@ using namespace exactextract;
 
 TEST_CASE("Test multi-traversal area calculations", "[cell]")
 {
+    GEOSContextHandle_t context = initGEOS_r(nullptr, nullptr);
+
     Cell c{ 0, 0, 20, 20 };
 
     // Grab lower-left hand corner
@@ -15,7 +17,7 @@ TEST_CASE("Test multi-traversal area calculations", "[cell]")
     c.force_exit();
 
     CHECK(c.last_traversal().traversed());
-    CHECK(c.covered_fraction() == 25 / 400.0);
+    CHECK(c.covered_fraction(context) == 25 / 400.0);
 
     // Grab right-hand side
     c.take({ 13, 20 });
@@ -23,7 +25,7 @@ TEST_CASE("Test multi-traversal area calculations", "[cell]")
     c.force_exit();
 
     CHECK(c.last_traversal().traversed());
-    CHECK(c.covered_fraction() == (25 + 140) / 400.0);
+    CHECK(c.covered_fraction(context) == (25 + 140) / 400.0);
 
     // Carve out a piece from right-hand side
     c.take({ 20, 5 });
@@ -33,5 +35,7 @@ TEST_CASE("Test multi-traversal area calculations", "[cell]")
     c.force_exit();
 
     CHECK(c.last_traversal().traversed());
-    CHECK(c.covered_fraction() == (25 + 140 - 10) / 400.0);
+    CHECK(c.covered_fraction(context) == (25 + 140 - 10) / 400.0);
+
+    finishGEOS_r(context);
 }

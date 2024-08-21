@@ -304,7 +304,7 @@ RasterCellIntersection::collect_areas(const Matrix<std::unique_ptr<Cell>>& cells
                 if (!cells(i, j)->determined()) {
                     areas(i - 1, j - 1) = ff.cell_is_inside(i - 1, j - 1) ? fill_values<float>::INTERIOR : fill_values<float>::EXTERIOR;
                 } else {
-                    areas(i - 1, j - 1) = cells(i, j)->covered_fraction();
+                    areas(i - 1, j - 1) = cells(i, j)->covered_fraction(context);
                 }
             }
         }
