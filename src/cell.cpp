@@ -164,6 +164,7 @@ std::vector<const std::vector<Coordinate>*>
 Cell::get_coord_lists() const
 {
     std::vector<const std::vector<Coordinate>*> coord_lists;
+    coord_lists.reserve(m_traversals.size());
 
     for (const auto& t : m_traversals) {
         if (t.traversed() || t.is_closed_ring()) {
@@ -175,10 +176,10 @@ Cell::get_coord_lists() const
 }
 
 double
-Cell::covered_fraction() const
+Cell::covered_fraction(GEOSContextHandle_t context) const
 {
     auto coord_lists = get_coord_lists();
-    return left_hand_area(m_box, coord_lists) / area();
+    return left_hand_area(context, m_box, coord_lists) / area();
 }
 
 geom_ptr_r

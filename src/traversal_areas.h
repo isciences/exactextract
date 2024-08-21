@@ -25,6 +25,7 @@ namespace exactextract {
 /**
  * @brief Return the total area of counter-clockwise closed rings formed by this box and the provided Coordinate sequences
  *
+ * @param context GEOS context handle
  * @param box boundary of the area to consider (Cell)
  * @param coord_lists vector of Coordinate vectors representing points that traverse `box`. Either the first and
  *                    last coordinate of each vector must lie on the boundary of `box`, or the coordinates
@@ -33,7 +34,7 @@ namespace exactextract {
  * @return total area
  */
 double
-left_hand_area(const Box& box, const std::vector<const std::vector<Coordinate>*>& coord_lists);
+left_hand_area(GEOSContextHandle_t context, const Box& box, const std::vector<const std::vector<Coordinate>*>& coord_lists);
 
 /**
  * @brief Return an areal geometry representing the closed rings formed by this box and the provided Coordinate sequences

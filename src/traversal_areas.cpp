@@ -97,6 +97,7 @@ void
 visit_rings(GEOSContextHandle_t context, const Box& box, const std::vector<const std::vector<Coordinate>*>& coord_lists, F&& visitor)
 {
     std::vector<CoordinateChain> chains;
+    chains.reserve(coord_lists.size() + 4);
 
     for (const auto& coords : coord_lists) {
         if (!has_multiple_unique_coordinates(*coords)) {
@@ -133,12 +134,14 @@ visit_rings(GEOSContextHandle_t context, const Box& box, const std::vector<const
     chains.emplace_back(height + width, height + width, &top_right);
     chains.emplace_back(2 * height + width, 2 * height + width, &bottom_right);
 
+    std::vector<Coordinate> coords;
     for (auto& chain_ref : chains) {
         if (chain_ref.visited || chain_ref.coordinates->size() == 1) {
             continue;
         }
 
-        std::vector<Coordinate> coords;
+        coords.clear();
+
         CoordinateChain* chain = std::addressof(chain_ref);
         CoordinateChain* first_chain = chain;
         do {
@@ -156,11 +159,8 @@ visit_rings(GEOSContextHandle_t context, const Box& box, const std::vector<const
 }
 
 double
-left_hand_area(const Box& box, const std::vector<const std::vector<Coordinate>*>& coord_lists)
+left_hand_area(GEOSContextHandle_t context, const Box& box, const std::vector<const std::vector<Coordinate>*>& coord_lists)
 {
-
-    GEOSContextHandle_t context = GEOS_init_r();
-
     double ccw_sum = 0;
     double cw_sum = 0;
     bool found_a_ring = false;
@@ -174,8 +174,6 @@ left_hand_area(const Box& box, const std::vector<const std::vector<Coordinate>*>
             cw_sum += area(coords);
         }
     });
-
-    GEOS_finish_r(context);
 
     if (!found_a_ring) {
         throw std::runtime_error("Cannot determine coverage fraction (it is either 0 or 100%)");

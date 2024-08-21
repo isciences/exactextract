@@ -59,7 +59,7 @@ class Cell
     double traversal_length() const;
 
     /// Return the fraction of this Cell that is covered by a polygon
-    double covered_fraction() const;
+    double covered_fraction(GEOSContextHandle_t context) const;
 
     /// Return a newly constructed geometry representing the portion of this Cell
     /// that is covered by a polygon
