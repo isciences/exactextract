@@ -116,10 +116,11 @@ class PyFeatureBase : public Feature
     template<typename T>
     void set_array(const std::string& name, const T& value)
     {
-        py::array_t<typename T::value_type> values(value.size);
+        std::size_t shape[1]{ value.size };
+        py::array_t<typename T::value_type> values(shape);
         auto x = values.template mutable_unchecked<1>();
         for (std::size_t i = 0; i < value.size; i++) {
-            x[i] = value.data[i];
+            x(i) = value.data[i];
         }
         set_py(name, values);
     }
