@@ -82,17 +82,28 @@ class GDALRasterSource(RasterSource):
     def read_window(self, x0, y0, nx, ny):
         arr = self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
 
+        mask = None
+
         if self.band.GetScale() not in (None, 1.0):
+            if mask is None and self.band.GetNoDataValue() is not None:
+                mask = arr == self.band.GetNoDataValue()
+
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
             arr *= self.band.GetScale()
 
         if self.band.GetOffset() not in (None, 0.0):
+            if mask is None and self.band.GetNoDataValue() is not None:
+                mask = arr != self.band.GetNoDataValue()
+
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
             arr += self.band.GetOffset()
 
-        return arr
+        if mask is not None:
+            return np.ma.masked_array(arr, mask)
+        else:
+            return arr
 
     def srs_wkt(self):
         crs = self.ds.GetSpatialRef()
@@ -231,13 +242,21 @@ class RasterioRasterSource(RasterSource):
 
         scaled = scale != 1.0 or offset != 0.0
 
+        mask = None
+
         if scaled:
+            if self.ds.nodata:
+                mask = arr == self.ds.nodata
+
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
 
             arr = arr * scale + offset
 
-        return arr
+        if mask is not None:
+            return np.ma.masked_array(arr, mask)
+        else:
+            return arr
 
 
 class XArrayRasterSource(RasterSource):
