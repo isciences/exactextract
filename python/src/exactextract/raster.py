@@ -80,22 +80,24 @@ class GDALRasterSource(RasterSource):
             return val if self.isfloat else int(val)
 
     def read_window(self, x0, y0, nx, ny):
+        from osgeo import gdal
+
         arr = self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
 
         mask = None
+        if self.band.GetMaskFlags() != gdal.GMF_ALL_VALID:
+            mask = ~(
+                self.band.GetMaskBand()
+                .ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
+                .astype(bool)
+            )
 
         if self.band.GetScale() not in (None, 1.0):
-            if mask is None and self.band.GetNoDataValue() is not None:
-                mask = arr == self.band.GetNoDataValue()
-
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
             arr *= self.band.GetScale()
 
         if self.band.GetOffset() not in (None, 0.0):
-            if mask is None and self.band.GetNoDataValue() is not None:
-                mask = arr != self.band.GetNoDataValue()
-
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
             arr += self.band.GetOffset()
@@ -235,28 +237,23 @@ class RasterioRasterSource(RasterSource):
     def read_window(self, x0, y0, nx, ny):
         from rasterio.windows import Window
 
-        arr = self.ds.read(self.band_idx, window=Window(x0, y0, nx, ny))
+        arr = self.ds.read(self.band_idx, window=Window(x0, y0, nx, ny), masked=True)
 
         scale = self.ds.scales[self.band_idx - 1]
         offset = self.ds.offsets[self.band_idx - 1]
 
         scaled = scale != 1.0 or offset != 0.0
 
-        mask = None
-
         if scaled:
-            if self.ds.nodata:
-                mask = arr == self.ds.nodata
-
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
 
             arr = arr * scale + offset
 
-        if mask is not None:
-            return np.ma.masked_array(arr, mask)
-        else:
+        if len(arr.mask.shape):
             return arr
+        else:
+            return arr.data
 
 
 class XArrayRasterSource(RasterSource):

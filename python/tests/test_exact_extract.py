@@ -489,6 +489,27 @@ def test_nodata_scale_offset(tmp_path, libname):
     np.testing.assert_array_equal(values, [4, 6, 8, 10, 12, 14])
 
 
+@pytest.mark.parametrize("libname", ("gdal", "rasterio", "xarray"))
+def test_gdal_mask_band(tmp_path, libname):
+    gdal = pytest.importorskip("osgeo.gdal")
+
+    data = np.array([[1, 2, 3], [0, 0, 0], [4, 5, 6]])
+    data = np.ma.masked_array(data, data == 0)
+
+    raster_fname = tmp_path / "test.tif"
+
+    create_gdal_raster(raster_fname, data, gdal_type=gdal.GDT_Int16)
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    rast = open_with_lib(raster_fname, libname)
+    results = exact_extract(rast, square, "values")
+
+    values = results[0]["properties"]["values"]
+
+    np.testing.assert_array_equal(values, [1, 2, 3, 4, 5, 6])
+
+
 def test_default_value():
     data = np.array([[1, 2, 3], [4, -99, -99], [-99, 8, 9]])
     rast = NumPyRasterSource(data, nodata=-99)
@@ -606,6 +627,10 @@ def create_gdal_raster(
     else:
         for i in range(bands):
             ds.GetRasterBand(i + 1).WriteArray(values[i, :, :])
+
+    if hasattr(values, "mask"):
+        ds.GetRasterBand(1).CreateMaskBand(gdal.GMF_PER_DATASET)
+        ds.GetRasterBand(1).GetMaskBand().WriteArray(~values.mask)
 
 
 def create_gdal_features(fname, features, name="test"):
