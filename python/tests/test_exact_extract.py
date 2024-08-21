@@ -466,6 +466,29 @@ def test_nodata():
     assert results[0]["properties"] == {"sum": 43.5, "mean": 58}
 
 
+@pytest.mark.parametrize("libname", ("gdal", "rasterio", "xarray"))
+def test_nodata_scale_offset(tmp_path, libname):
+    gdal = pytest.importorskip("osgeo.gdal")
+
+    data = np.array([[1, 2, 3], [-999, -999, -999], [4, 5, 6]])
+
+    raster_fname = tmp_path / "test.tif"
+
+    create_gdal_raster(
+        raster_fname, data, gdal_type=gdal.GDT_Int16, nodata=-999, scale=2, offset=-1
+    )
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    rast = open_with_lib(raster_fname, libname)
+    results = exact_extract(rast, square, "values")
+
+    values = results[0]["properties"]["values"]
+
+    assert values.dtype == np.float64
+    np.testing.assert_array_equal(values, [4, 6, 8, 10, 12, 14])
+
+
 def test_default_value():
     data = np.array([[1, 2, 3], [4, -99, -99], [-99, 8, 9]])
     rast = NumPyRasterSource(data, nodata=-99)
@@ -535,7 +558,9 @@ def test_default_weight():
     )
 
 
-def create_gdal_raster(fname, values, *, gt=None, gdal_type=None, nodata=None):
+def create_gdal_raster(
+    fname, values, *, gt=None, gdal_type=None, nodata=None, scale=None, offset=None
+):
     gdal = pytest.importorskip("osgeo.gdal")
     gdal_array = pytest.importorskip("osgeo.gdal_array")
 
@@ -555,12 +580,26 @@ def create_gdal_raster(fname, values, *, gt=None, gdal_type=None, nodata=None):
     else:
         ds.SetGeoTransform(gt)
 
-    if nodata:
+    if nodata is not None:
         if type(nodata) in {list, tuple}:
             for i, v in enumerate(nodata):
                 ds.GetRasterBand(i + 1).SetNoDataValue(v)
         else:
             ds.GetRasterBand(1).SetNoDataValue(nodata)
+
+    if scale is not None:
+        if type(scale) in {list, tuple}:
+            for i, v in enumerate(scale):
+                ds.GetRasterBand(i + 1).SetScale(v)
+        else:
+            ds.GetRasterBand(1).SetScale(scale)
+
+    if offset is not None:
+        if type(offset) in {list, tuple}:
+            for i, v in enumerate(scale):
+                ds.GetRasterBand(i + 1).SetOffset(v)
+        else:
+            ds.GetRasterBand(1).SetOffset(scale)
 
     if len(values.shape) == 2:
         ds.WriteArray(values)
@@ -591,7 +630,7 @@ def create_gdal_features(fname, features, name="test"):
 def open_with_lib(fname, libname):
     if libname == "gdal":
         gdal = pytest.importorskip("osgeo.gdal")
-        return gdal.Open(fname)
+        return gdal.Open(str(fname))
     elif libname == "rasterio":
         rasterio = pytest.importorskip("rasterio")
         return rasterio.open(fname)
