@@ -91,6 +91,7 @@ For more information, see :doc:`examples_cli`.
    background
    operations
    installation
+   performance
    faq
    CLI usage examples <examples_cli>
    Python usage examples <examples_python>
