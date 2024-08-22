@@ -44,6 +44,7 @@ struct RasterStatsOptions
     bool store_weights = false;
     bool store_coverage_fraction = false;
     bool store_xy = false;
+    bool include_nodata = false;
     CoverageWeightType weight_type = CoverageWeightType::FRACTION;
     double default_weight = std::numeric_limits<double>::quiet_NaN();
 };
@@ -110,14 +111,21 @@ class RasterStats
             for (size_t j = 0; j < rv.cols(); j++) {
                 float pct_cov = intersection_percentages(i, j);
                 T val;
-                if (pct_cov >= m_options.min_coverage_fraction && get_or_default(rv, i, j, val, m_options.default_value)) {
+                if (pct_cov >= m_options.min_coverage_fraction) {
+                    bool nodata = !get_or_default(rv, i, j, val, m_options.default_value);
 
-                    if (areas) {
-                        pct_cov *= (*areas)(i, j);
+                    if (!nodata || m_options.include_nodata) {
+                        if (areas) {
+                            pct_cov *= (*areas)(i, j);
+                        }
+
+                        process_location(intersection_percentages.grid(), i, j);
+                        process_value(val, pct_cov, 1.0);
                     }
 
-                    process_location(intersection_percentages.grid(), i, j);
-                    process_value(val, pct_cov, 1.0);
+                    if (m_options.include_nodata && m_options.store_values) {
+                        m_cell_values_defined.push_back(!nodata);
+                    }
                 }
             }
         }
@@ -159,17 +167,27 @@ class RasterStats
                 WeightType weight;
                 ValueType val;
 
-                if (pct_cov >= m_options.min_coverage_fraction && get_or_default(rv, i, j, val, m_options.default_value)) {
-                    process_location(common, i, j);
+                if (pct_cov >= m_options.min_coverage_fraction) {
+                    bool nodata = !get_or_default(rv, i, j, val, m_options.default_value);
 
-                    if (areas) {
-                        pct_cov *= (*areas)(i, j);
-                    }
-                    if (wv.get(i, j, weight)) {
-                        process_value(val, pct_cov, static_cast<double>(weight));
-                    } else {
-                        // Weight is NODATA
-                        process_value(val, pct_cov, m_options.default_weight);
+                    if (!nodata || m_options.include_nodata) {
+                        process_location(common, i, j);
+
+                        if (areas) {
+                            pct_cov *= (*areas)(i, j);
+                        }
+
+                        bool weight_nodata = !wv.get(i, j, weight);
+                        if (weight_nodata) {
+                            process_value(val, pct_cov, m_options.default_weight);
+                        } else {
+                            process_value(val, pct_cov, static_cast<double>(weight));
+                        }
+
+                        if (m_options.include_nodata && m_options.store_values) {
+                            m_cell_values_defined.push_back(!nodata);
+                            m_cell_weights_defined.push_back(!weight_nodata);
+                        }
                     }
                 }
             }
@@ -605,6 +623,12 @@ class RasterStats
         return m_cell_values;
     }
 
+    const std::vector<bool>&
+    values_defined() const
+    {
+        return m_cell_values_defined;
+    }
+
     const std::vector<float>&
     coverage_fractions() const
     {
@@ -615,6 +639,12 @@ class RasterStats
     weights() const
     {
         return m_cell_weights;
+    }
+
+    const std::vector<bool>&
+    weights_defined() const
+    {
+        return m_cell_weights_defined;
     }
 
     const std::vector<double>&
@@ -659,6 +689,8 @@ class RasterStats
     std::vector<double> m_cell_weights;
     std::vector<double> m_cell_x;
     std::vector<double> m_cell_y;
+    std::vector<bool> m_cell_values_defined;
+    std::vector<bool> m_cell_weights_defined;
 
     const RasterStatsOptionsWithDefault<T> m_options;
 

@@ -82,6 +82,7 @@ StatsRegistry::stats(const Feature& feature, const Operation& op)
                      opts.default_weight = op.default_weight().value();
                  }
                  opts.default_value = op.default_value<value_type>();
+                 opts.include_nodata = op.includes_nodata();
 
                  return stats_for_feature.emplace(op.key(), RasterStats<value_type>(opts));
              },

@@ -19,11 +19,11 @@
 #include "feature.h"
 #include "grid.h"
 #include "raster_source.h"
-#include "raster_stats.h"
 #include "stats_registry.h"
 #include "utils.h"
 
 namespace exactextract {
+
 /**
  * @brief The Operation class defines a single operation (e.g, "mean", "sum", "coverage")
  *        and the raster(s) to which it is to be applied. When provided with a `StatsRegistry`,
@@ -100,6 +100,11 @@ class Operation
     virtual bool requires_stored_locations() const
     {
         return false;
+    }
+
+    virtual bool includes_nodata() const
+    {
+        return m_include_nodata;
     }
 
     /// Return the minimum fraction of a pixel that must be covered for its value
@@ -184,6 +189,7 @@ class Operation
 
     float m_min_coverage;
     CoverageWeightType m_coverage_weight_type;
+    bool m_include_nodata;
 
   private:
     const ArgMap m_options;

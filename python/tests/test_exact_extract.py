@@ -1354,6 +1354,90 @@ def test_custom_function():
     )
 
 
+@pytest.mark.parametrize("weighted", (False, True))
+def test_custom_function_nodata(weighted):
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3), nodata=7)
+    rast_weights = NumPyRasterSource(np.arange(9).reshape(3, 3), nodata=6)
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    values = None
+    weights = None
+    coverage = None
+
+    def py_get_values(v, c):
+        py_get_weighted_values(v, c, None)
+
+    def py_get_weighted_values(v, c, w):
+        nonlocal values, coverage, weights
+
+        values = v
+        coverage = c
+
+        if w is not None:
+            weights = w
+
+    if weighted:
+        results = exact_extract(
+            rast,
+            square,
+            [py_get_weighted_values, "values", "coverage"],
+            weights=rast_weights,
+        )
+
+        # Unlike values, weights are always coerced to doubles, because they are considered
+        # to have no meaning except when multiplied by the coverage fraction (itself a double)
+        assert len(weights) == 9
+        np.testing.assert_array_equal(
+            weights.data, [0, 1, 2, 3, 4, 5, float("nan"), 7, 8]
+        )
+        np.testing.assert_array_equal(
+            weights.mask, [False, False, False, False, False, False, True, False, False]
+        )
+
+    else:
+        results = exact_extract(rast, square, [py_get_values, "values", "coverage"])
+
+    # The NODATA value of 7 comes out, but the value of the masked array
+    # indicates that it should be considered nodata.
+    assert len(values) == 9
+    np.testing.assert_array_equal(values.data, [0, 1, 2, 3, 4, 5, 6, 7, 8])
+    np.testing.assert_array_equal(
+        values.mask, [False, False, False, False, False, False, False, True, False]
+    )
+
+    assert len(coverage) == 9
+    np.testing.assert_array_equal(
+        coverage, [0.25, 0.5, 0.25, 0.5, 1, 0.5, 0.25, 0.5, 0.25]
+    )
+
+    # The built-in operations do not consider NODATA values, despite being invoked at
+    # the same time as a Python operation that does
+    np.testing.assert_array_equal(
+        results[0]["properties"]["values"], [0, 1, 2, 3, 4, 5, 6, 8]
+    )
+    np.testing.assert_array_equal(
+        results[0]["properties"]["coverage"], [0.25, 0.5, 0.25, 0.5, 1, 0.5, 0.25, 0.25]
+    )
+
+
+def test_custom_function_not_intersecting():
+    rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
+    faraway_square = make_rect(100, 100, 200, 200)
+
+    def py_sentinel(v, c):
+        pytest.fail("function was called")
+
+    def py_sentinel_weighted(v, c, w):
+        pytest.fail("function was called")
+
+    assert exact_extract(rast, faraway_square, py_sentinel)[0]["properties"] == {
+        "py_sentinel": None
+    }
+    assert exact_extract(rast, faraway_square, py_sentinel_weighted, weights=rast)[0][
+        "properties"
+    ] == {"py_sentinel_weighted": None}
+
+
 def test_explicit_operation():
 
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
