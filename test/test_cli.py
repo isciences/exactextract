@@ -107,7 +107,7 @@ def write_raster(tmp_path):
             if offset:
                 ds.GetRasterBand(i + 1).SetOffset(offset)
             if mask is not None:
-                ds.GetRasterBand(i + 1).CreateMaskBand(gdal.GMF_ALL_VALID)
+                ds.GetRasterBand(i + 1).CreateMaskBand(gdal.GMF_PER_DATASET)
                 mb = ds.GetRasterBand(i + 1).GetMaskBand()
                 assert mb.WriteArray(mask) == gdal.CE_None
                 del mb
@@ -604,6 +604,24 @@ def test_scale_offset(run, write_raster, write_features):
 
     assert int(rows[0]["d2m_cell_id"]) == 0
     assert float(rows[0]["d2m_values"]) == pytest.approx(278.2057, rel=1e-3)
+
+
+def test_scale_offset_nodata(run, write_raster, write_features):
+
+    data = np.array([[1, 2, 3], [-999, -999, -999], [4, 5, 6]], dtype=np.int32)
+
+    rows = run(
+        polygons=write_features(
+            {"id": 1, "geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2.5, 0.5 2.5, 0.5 0.5))"}
+        ),
+        fid="id",
+        raster=f"{write_raster(data, scale=2, offset=-1, nodata=-999)}",
+        stat=["values"],
+        nested_output=True,
+    )
+
+    values = np.fromstring(rows[0]["values"].strip("[").strip("]"), sep=",")
+    np.testing.assert_array_equal(values, [1, 3, 5, 7, 9, 11])
 
 
 def test_id_rename(run, write_raster, write_features):

@@ -169,11 +169,15 @@ GDALRasterWrapper::read_box(const Box& box)
         throw std::runtime_error("Error reading from raster.");
     }
 
+    bool mask_needed = GDALGetMaskFlags(m_band) != GMF_ALL_VALID && GDALGetMaskFlags(m_band) != GMF_NODATA;
+
     if (has_scale || has_offset) {
         apply_scale_and_offset(static_cast<double*>(buffer), cropped_grid.size(), scale, offset);
+        mask_needed = mask_needed || GDALGetMaskFlags(m_band) == GMF_NODATA;
     }
 
-    if (GDALRasterBandH mask = GDALGetMaskBand(m_band)) {
+    if (mask_needed) {
+        GDALRasterBandH mask = GDALGetMaskBand(m_band);
         auto mask_rast = make_raster<std::int8_t>(cropped_grid);
         buffer = mask_rast->data().data();
 
