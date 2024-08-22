@@ -410,6 +410,7 @@ Operation::
   , name{ std::move(p_name) }
   , values{ p_values }
   , weights{ p_weights }
+  , m_include_nodata{ false }
   , m_options{ options }
 {
     m_min_coverage = static_cast<float>(extract_arg<double>(options, "min_coverage_frac", 0));
