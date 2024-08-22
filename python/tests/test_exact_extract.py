@@ -486,7 +486,7 @@ def test_nodata_scale_offset(tmp_path, libname):
     values = results[0]["properties"]["values"]
 
     assert values.dtype == np.float64
-    np.testing.assert_array_equal(values, [4, 6, 8, 10, 12, 14])
+    np.testing.assert_array_equal(values, [1, 3, 5, 7, 9, 11])
 
 
 @pytest.mark.parametrize("libname", ("gdal", "rasterio", "xarray"))
@@ -690,10 +690,10 @@ def create_gdal_raster(
 
     if offset is not None:
         if type(offset) in {list, tuple}:
-            for i, v in enumerate(scale):
+            for i, v in enumerate(offset):
                 ds.GetRasterBand(i + 1).SetOffset(v)
         else:
-            ds.GetRasterBand(1).SetOffset(scale)
+            ds.GetRasterBand(1).SetOffset(offset)
 
     if len(values.shape) == 2:
         ds.WriteArray(values)
