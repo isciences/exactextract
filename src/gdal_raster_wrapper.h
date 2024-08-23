@@ -75,6 +75,13 @@ class GDALRasterWrapper : public RasterSource
     bool m_has_nodata;
     Grid<bounded_extent> m_grid;
 
+    double m_scale;
+    double m_offset;
+    bool m_scaled;
+    bool m_read_mask;
+
+    void read_scale_and_offset();
+
     void compute_raster_grid();
 
     template<typename T>
