@@ -53,6 +53,8 @@ class GDALRasterSource(RasterSource):
 
         self.band = self.ds.GetRasterBand(band_idx)
         self.isfloat = self.band.DataType in {gdal.GDT_Float32, gdal.GDT_Float64}
+        self.scaled = self.band.GetScale() != 1.0 or self.band.GetOffset() != 0.0
+        self.use_mask_band = self._calc_use_mask_band()
 
         if name:
             self.set_name(name)
@@ -74,18 +76,32 @@ class GDALRasterSource(RasterSource):
         return (left, bottom, right, top)
 
     def nodata_value(self):
+        if self.scaled:
+            # for scaled rasters we rely on the NODATA mask rather than inverting the scaling
+            return False
+
         val = self.band.GetNoDataValue()
 
-        if val is not None:
+        if val is not None and not self.scaled:
             return val if self.isfloat else int(val)
 
-    def read_window(self, x0, y0, nx, ny):
+    def _calc_use_mask_band(self):
         from osgeo import gdal
+
+        flags = self.band.GetMaskFlags()
+
+        if flags == gdal.GMF_ALL_VALID:
+            return False
+        if flags == gdal.GMF_NODATA:
+            return self.scaled
+        return True
+
+    def read_window(self, x0, y0, nx, ny):
 
         arr = self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
 
         mask = None
-        if self.band.GetMaskFlags() != gdal.GMF_ALL_VALID:
+        if self.use_mask_band:
             mask = ~(
                 self.band.GetMaskBand()
                 .ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
@@ -211,6 +227,10 @@ class RasterioRasterSource(RasterSource):
         if name:
             self.set_name(name)
 
+        self.scale = self.ds.scales[self.band_idx - 1]
+        self.offset = self.ds.offsets[self.band_idx - 1]
+        self.scaled = self.scale != 1.0 or self.offset != 0.0
+
     def res(self):
         dx = (self.ds.bounds.right - self.ds.bounds.left) / self.ds.width
         dy = (self.ds.bounds.top - self.ds.bounds.bottom) / self.ds.height
@@ -231,7 +251,7 @@ class RasterioRasterSource(RasterSource):
         )
 
     def nodata_value(self):
-        if self.ds.nodata is not None:
+        if self.ds.nodata is not None and not self.scaled:
             return self.ds.nodata if self.isfloat else int(self.ds.nodata)
 
     def read_window(self, x0, y0, nx, ny):
@@ -239,16 +259,11 @@ class RasterioRasterSource(RasterSource):
 
         arr = self.ds.read(self.band_idx, window=Window(x0, y0, nx, ny), masked=True)
 
-        scale = self.ds.scales[self.band_idx - 1]
-        offset = self.ds.offsets[self.band_idx - 1]
-
-        scaled = scale != 1.0 or offset != 0.0
-
-        if scaled:
+        if self.scaled:
             if issubclass(arr.dtype.type, np.integer):
                 arr = arr.astype(np.float64)
 
-            arr = arr * scale + offset
+            arr = arr * self.scale + self.offset
 
         if len(arr.mask.shape):
             return arr

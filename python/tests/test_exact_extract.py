@@ -470,7 +470,7 @@ def test_nodata():
 def test_nodata_scale_offset(tmp_path, libname):
     gdal = pytest.importorskip("osgeo.gdal")
 
-    data = np.array([[1, 2, 3], [-999, -999, -999], [4, 5, 6]])
+    data = np.array([[1, 2, 3], [-999, -999, -999], [4, 5, -499]])
 
     raster_fname = tmp_path / "test.tif"
 
@@ -486,7 +486,7 @@ def test_nodata_scale_offset(tmp_path, libname):
     values = results[0]["properties"]["values"]
 
     assert values.dtype == np.float64
-    np.testing.assert_array_equal(values, [1, 3, 5, 7, 9, 11])
+    np.testing.assert_array_equal(values, [1, 3, 5, 7, 9, -999])
 
 
 @pytest.mark.parametrize("libname", ("gdal", "rasterio", "xarray"))
