@@ -53,7 +53,10 @@ class GDALRasterSource(RasterSource):
 
         self.band = self.ds.GetRasterBand(band_idx)
         self.isfloat = self.band.DataType in {gdal.GDT_Float32, gdal.GDT_Float64}
-        self.scaled = self.band.GetScale() != 1.0 or self.band.GetOffset() != 0.0
+        self.scaled = self.band.GetScale() not in (
+            None,
+            1.0,
+        ) or self.band.GetOffset() not in (None, 0.0)
         self.use_mask_band = self._calc_use_mask_band()
 
         if name:
@@ -78,7 +81,7 @@ class GDALRasterSource(RasterSource):
     def nodata_value(self):
         if self.scaled:
             # for scaled rasters we rely on the NODATA mask rather than inverting the scaling
-            return False
+            return None
 
         val = self.band.GetNoDataValue()
 

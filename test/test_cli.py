@@ -608,7 +608,7 @@ def test_scale_offset(run, write_raster, write_features):
 
 def test_scale_offset_nodata(run, write_raster, write_features):
 
-    data = np.array([[1, 2, 3], [-999, -999, -999], [4, 5, 6]], dtype=np.int32)
+    data = np.array([[1, 2, 3], [-999, -999, -999], [4, 5, -499]], dtype=np.int32)
 
     rows = run(
         polygons=write_features(
@@ -621,7 +621,7 @@ def test_scale_offset_nodata(run, write_raster, write_features):
     )
 
     values = np.fromstring(rows[0]["values"].strip("[").strip("]"), sep=",")
-    np.testing.assert_array_equal(values, [1, 3, 5, 7, 9, 11])
+    np.testing.assert_array_equal(values, [1, 3, 5, 7, 9, -999])
 
 
 def test_id_rename(run, write_raster, write_features):

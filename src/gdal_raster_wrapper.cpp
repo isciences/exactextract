@@ -41,10 +41,32 @@ GDALRasterWrapper::
     m_has_nodata = static_cast<bool>(has_nodata);
     // set_name(GDALGetDescription(m_rast->get()));
     compute_raster_grid();
+    read_scale_and_offset();
+
+    auto mask_flags = GDALGetMaskFlags(m_band);
+
+    m_read_mask = !(mask_flags == GMF_ALL_VALID || (mask_flags == GMF_NODATA && !m_scaled));
+    if (m_read_mask) {
+        m_has_nodata = false;
+    }
 }
 
 GDALRasterWrapper::~GDALRasterWrapper()
 {
+}
+
+void
+GDALRasterWrapper::read_scale_and_offset()
+{
+    int has_scale = 0;
+    double scale = 1;
+    int has_offset = 0;
+    double offset = 0;
+
+    m_scale = GDALGetRasterScale(m_band, &has_scale);
+    m_offset = GDALGetRasterOffset(m_band, &has_offset);
+
+    m_scaled = has_scale || has_offset;
 }
 
 bool
@@ -77,15 +99,7 @@ GDALRasterWrapper::read_box(const Box& box)
     void* buffer;
     GDALDataType read_type;
 
-    int has_scale = 0;
-    double scale = 1;
-    int has_offset = 0;
-    double offset = 0;
-
-    scale = GDALGetRasterScale(m_band, &has_scale);
-    offset = GDALGetRasterOffset(m_band, &has_offset);
-
-    if (has_scale || has_offset) {
+    if (m_scaled) {
         auto rast = make_raster<double>(cropped_grid);
         buffer = rast->data().data();
         ret = std::move(rast);
@@ -169,14 +183,11 @@ GDALRasterWrapper::read_box(const Box& box)
         throw std::runtime_error("Error reading from raster.");
     }
 
-    bool mask_needed = GDALGetMaskFlags(m_band) != GMF_ALL_VALID && GDALGetMaskFlags(m_band) != GMF_NODATA;
-
-    if (has_scale || has_offset) {
-        apply_scale_and_offset(static_cast<double*>(buffer), cropped_grid.size(), scale, offset);
-        mask_needed = mask_needed || GDALGetMaskFlags(m_band) == GMF_NODATA;
+    if (m_scaled) {
+        apply_scale_and_offset(static_cast<double*>(buffer), cropped_grid.size(), m_scale, m_offset);
     }
 
-    if (mask_needed) {
+    if (m_read_mask) {
         GDALRasterBandH mask = GDALGetMaskBand(m_band);
         auto mask_rast = make_raster<std::int8_t>(cropped_grid);
         buffer = mask_rast->data().data();
