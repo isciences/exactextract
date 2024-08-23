@@ -2,7 +2,7 @@ name: testenv
 channels:
   - conda-forge
 dependencies:
-  - build
+  - python-build
   - gdal
   - geopandas
   - geos
