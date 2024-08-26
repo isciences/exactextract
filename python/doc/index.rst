@@ -4,6 +4,13 @@ exactextract
 ``exactextract`` is a library for extracting and summarizing the values
 in the portion of a raster dataset that is covered by a polygon, often referred
 to as `zonal statistics`. 
+
+.. image:: /_static/exactextract.svg
+   :width: 400
+   :height: 400
+   :align: right
+
+
 The goals of ``exactextract`` are to be:
 
 - fast - the :ref:`algorithm <algorithm>` used by ``exactextract`` outperforms many other implementations by avoiding point-in-polygon tests used to determine whether pixels are inside or outside the raster.

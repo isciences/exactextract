@@ -28,10 +28,10 @@ The area covered by the polygon is shaded purple.
 
     * - Example Value Raster
       - Example Weighting Raster
-    * - .. image:: https://gitlab.com/isciences/exactextract/-/raw/master/doc/readme_example_values.svg
+    * - .. image:: /_static/operations/readme_example_values.svg
            :width: 200
            :height: 200
-      - .. image:: https://gitlab.com/isciences/exactextract/-/raw/master/doc/readme_example_weights.svg
+      - .. image:: /_static/operations/readme_example_weights.svg
            :width: 200
            :height: 200
 
