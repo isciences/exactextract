@@ -1,5 +1,7 @@
+import contextlib
 import math
 import os
+import warnings
 
 import numpy as np
 import pytest
@@ -43,6 +45,17 @@ def make_rect(xmin, ymin, xmax, ymax, id=None, properties=None):
         f["properties"] = properties
 
     return f
+
+
+@contextlib.contextmanager
+def use_gdal_exceptions():
+    from osgeo import gdal
+
+    prev = gdal.GetUseExceptions()
+    gdal.UseExceptions()
+    yield
+    if not prev:
+        gdal.UseExceptions()
 
 
 @pytest.mark.parametrize("output_format", ("geojson", "pandas"), indirect=True)
@@ -653,10 +666,19 @@ def test_default_weight():
 
 
 def create_gdal_raster(
-    fname, values, *, gt=None, gdal_type=None, nodata=None, scale=None, offset=None
+    fname,
+    values,
+    *,
+    gt=None,
+    gdal_type=None,
+    nodata=None,
+    scale=None,
+    offset=None,
+    crs=None,
 ):
     gdal = pytest.importorskip("osgeo.gdal")
     gdal_array = pytest.importorskip("osgeo.gdal_array")
+    osr = pytest.importorskip("osgeo.osr")
 
     drv = gdal.GetDriverByName("GTiff")
 
@@ -673,6 +695,14 @@ def create_gdal_raster(
         ds.SetGeoTransform((0.0, 1.0, 0.0, values.shape[-2], 0.0, -1.0))
     else:
         ds.SetGeoTransform(gt)
+
+    if crs is not None:
+        srs = osr.SpatialReference()
+        if crs.startswith("EPSG"):
+            srs.ImportFromEPSG(int(crs.strip("EPSG:")))
+        else:
+            srs.ImportFromWkt(crs)
+        ds.SetSpatialRef(srs)
 
     if nodata is not None:
         if type(nodata) in {list, tuple}:
@@ -706,7 +736,7 @@ def create_gdal_raster(
         ds.GetRasterBand(1).GetMaskBand().WriteArray(~values.mask)
 
 
-def create_gdal_features(fname, features, name="test"):
+def create_gdal_features(fname, features, name="test", *, crs=None):
     gdal = pytest.importorskip("osgeo.gdal")
 
     import json
@@ -719,8 +749,9 @@ def create_gdal_features(fname, features, name="test"):
         )
         tf.flush()
 
-        ds = gdal.VectorTranslate(str(fname), tf.name)
-        ds = None  # noqa: F841
+        with use_gdal_exceptions():
+            ds = gdal.VectorTranslate(str(fname), tf.name, dstSRS=crs)
+            ds = None  # noqa: F841
 
     os.remove(tf.name)
 
@@ -1481,3 +1512,72 @@ def test_grid_compat_tol():
     exact_extract(
         values, square, "weighted_mean", weights=weights, grid_compat_tol=1e-2
     )
+
+
+def test_crs_mismatch(tmp_path):
+    crs_list = (4269, 4326, None)
+
+    rasters = {}
+    features = {}
+    for crs in crs_list:
+        rasters[crs] = tmp_path / f"{crs}.tif"
+        features[crs] = tmp_path / f"{crs}.shp"
+        create_gdal_raster(
+            rasters[crs], np.arange(9).reshape(3, 3), crs=f"EPSG:{crs}" if crs else None
+        )
+        create_gdal_features(
+            features[crs],
+            [make_rect(0.5, 0.5, 2.5, 2.5)],
+            crs=f"EPSG:{crs}" if crs else None,
+        )
+
+    with pytest.warns(
+        RuntimeWarning, match="input features does not exactly match raster"
+    ) as record:
+        exact_extract(rasters[4326], features[4269], "mean")
+    assert len(record) == 1
+
+    with pytest.warns(
+        RuntimeWarning, match="input features does not exactly match raster"
+    ) as record:
+        exact_extract([rasters[4326], rasters[4269]], features[4326], "mean")
+    assert len(record) == 1
+
+    with pytest.warns(
+        RuntimeWarning, match="input features does not exactly match weighting raster"
+    ) as record:
+        exact_extract(
+            rasters[4326], features[4326], "weighted_mean", weights=rasters[4269]
+        )
+    assert len(record) == 1
+
+    # make sure only a single warning is raised
+    with pytest.warns(
+        RuntimeWarning, match="input features does not exactly match raster"
+    ) as record:
+        exact_extract([rasters[4326], rasters[4269]], features[4326], ["mean", "sum"])
+    assert len(record) == 1
+
+    # any CRS is considered to match an undefined CRS
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        exact_extract(rasters[None], features[4326], "mean")
+
+
+def test_crs_match_after_normalization(tmp_path):
+
+    pytest.importorskip("osgeo.osr")
+
+    rast = tmp_path / "test.tif"
+    square = tmp_path / "test.shp"
+
+    rast_crs = 'PROJCS["WGS 84 / UTM zone 4N",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-159],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","32604"]]'
+
+    vec_crs = 'PROJCRS["WGS 84 / UTM zone 4N",BASEGEOGCRS["WGS 84",DATUM["World Geodetic System 1984",ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],ID["EPSG",4326]],CONVERSION["UTM zone 4N",METHOD["Transverse Mercator",ID["EPSG",9807]],PARAMETER["Latitude of natural origin",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8801]],PARAMETER["Longitude of natural origin",-159,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8802]],PARAMETER["Scale factor at natural origin",0.9996,SCALEUNIT["unity",1],ID["EPSG",8805]],PARAMETER["False easting",500000,LENGTHUNIT["metre",1],ID["EPSG",8806]],PARAMETER["False northing",0,LENGTHUNIT["metre",1],ID["EPSG",8807]]],CS[Cartesian,2],AXIS["easting",east,ORDER[1],LENGTHUNIT["metre",1]],AXIS["northing",north,ORDER[2],LENGTHUNIT["metre",1]],ID["EPSG",32604]]'
+
+    create_gdal_raster(rast, np.arange(9).reshape(3, 3), crs=rast_crs)
+    create_gdal_features(square, [make_rect(0.5, 0.5, 2.5, 2.5)], crs=vec_crs)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        exact_extract(rast, square, "mean")
