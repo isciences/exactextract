@@ -1,5 +1,7 @@
 import copy
+import functools
 import os
+import warnings
 from itertools import chain
 from typing import Mapping, Optional
 
@@ -253,6 +255,57 @@ def prep_writer(output, srs_wkt, options):
     raise Exception("Unsupported value of output")
 
 
+@functools.cache
+def crs_matches(a, b):
+    if a.srs_wkt() is None or b.srs_wkt() is None:
+        return True
+
+    if a.srs_wkt() == b.srs_wkt():
+        return True
+
+    try:
+        from osgeo import osr
+
+        srs_a = osr.SpatialReference()
+        srs_b = osr.SpatialReference()
+
+        srs_a.ImportFromWkt(a.srs_wkt())
+        srs_b.ImportFromWkt(b.srs_wkt())
+
+        srs_a.StripVertical()
+        srs_b.StripVertical()
+
+        return srs_a.IsSame(srs_b)
+
+    except ImportError:
+        return False
+
+
+def warn_on_crs_mismatch(vec, ops):
+
+    check_rast_vec = True
+    check_rast_weights = True
+
+    for op in ops:
+        if check_rast_vec and not crs_matches(vec, op.values):
+            check_rast_vec = False
+            warnings.warn(
+                "Spatial reference system of input features does not exactly match raster.",
+                RuntimeWarning,
+            )
+
+        if (
+            check_rast_weights
+            and op.weights is not None
+            and not crs_matches(vec, op.weights)
+        ):
+            check_rast_weights = False
+            warnings.warn(
+                "Spatial reference system of input features does not exactly match weighting raster.",
+                RuntimeWarning,
+            )
+
+
 def exact_extract(
     rast,
     vec,
@@ -321,7 +374,6 @@ def exact_extract(
     rast = prep_raster(rast)
     weights = prep_raster(weights, name_root="weight")
     vec = prep_vec(vec)
-    # TODO: check CRS and transform if necessary/possible?
 
     if output_options is None:
         output_options = {}
@@ -329,6 +381,8 @@ def exact_extract(
     ops = prep_ops(
         ops, rast, weights, add_unique=output_options.get("frac_as_map", False)
     )
+
+    warn_on_crs_mismatch(vec, ops)
 
     if "frac_as_map" in output_options:
         output_options = copy.copy(output_options)
