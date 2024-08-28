@@ -4,6 +4,7 @@
 #
 
 import datetime
+import re
 
 # -- Project information -----------------------------------------------------
 
@@ -67,17 +68,27 @@ napoleon_attr_annotations = True
 autoapi_dirs = ["../src/exactextract"]
 autoapi_keep_files = False
 autoapi_add_toctree_entry = False
+autoapi_python_class_content = "both"  # include both class and __init__ docstrings
+
+autoapi_options = ["members", "undoc-members", "show-module-summary", "special-members"]
 
 
 def autoapi_skip_member(app, what, name, obj, skip, options):
-    if name.startswith("exactextract.processor"):
-        return True
-    if name.startswith("exactextract.feature."):
-        return True
-    if name.startswith("_"):
-        return name != "__init__"
 
-    return False
+    shortname = name.split(".")[-1]
+
+    # Don't emit documentation for anything named beginning with
+    # an underscore, except for __init__
+    if re.match("^_[a-z]", shortname):
+        return True
+
+    # Don't emit documentation for member variables, which are
+    # assumed to be private even if not prefixed with an
+    # underscore.
+    if what == "attribute":
+        return True
+
+    return None  # Fallback to default behavior
 
 
 def setup(sphinx):

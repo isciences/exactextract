@@ -3,6 +3,14 @@ import os
 from ._exactextract import Feature
 from ._exactextract import FeatureSource as _FeatureSource
 
+__all__ = [
+    "FeatureSource",
+    "GDALFeatureSource",
+    "JSONFeatureSource",
+    "GeoPandasFeatureSource",
+    "QGISFeatureSource",
+]
+
 
 class FeatureSource(_FeatureSource):
     """
@@ -13,6 +21,7 @@ class FeatureSource(_FeatureSource):
     - :py:class:`GDALFeatureSource`
     - :py:class:`JSONFeatureSource`
     - :py:class:`GeoPandasFeatureSource`
+    - :py:class:`QGISFeatureSource`
     """
 
     def __init__(self):
@@ -26,17 +35,14 @@ class GDALFeatureSource(FeatureSource):
 
     def __init__(self, src):
         """
-        Create a GDALFeatureSource.
-
         Args:
-            src: one of the following:
+            src: one of the following
                  - string or Path to a file/datasource that can be opened with GDAL/OGR
-                 - a `gdal.Dataset`
-                 - an `ogr.DataSource`
-                 - an `ogr.Layer`
-
-            If the file has more than one layer, e.g., a GeoPackage, an `ogr.Layer` must be provided
-            directly.
+                 - a ``gdal.Dataset``
+                 - an ``ogr.DataSource``
+                 - an ``ogr.Layer``
+                 If the file has more than one layer, e.g., a GeoPackage, an
+                 ``ogr.Layer`` must be provided directly.
         """
         super().__init__()
 
@@ -265,6 +271,8 @@ class QGISFeature(Feature):
 
 
 class QGISFeatureSource(FeatureSource):
+    """FeatureSource providing features from a QGIS vector layer."""
+
     def __init__(self, src):
         super().__init__()
         self.src = src
