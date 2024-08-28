@@ -282,7 +282,6 @@ def crs_matches(a, b):
 
 
 def warn_on_crs_mismatch(vec, ops):
-
     check_rast_vec = True
     check_rast_weights = True
 
@@ -321,7 +320,7 @@ def exact_extract(
     output_options: Optional[Mapping] = None,
     progress=False,
 ):
-    """Calculate zonal statistics
+    """Calculate zonal statistics.
 
     Args:
        rast: A :py:class:`RasterSource` or filename that can be opened
@@ -329,7 +328,8 @@ def exact_extract(
        vec: A :py:class:`FeatureSource` or filename that can be opened
              by GDAL/fiona
        ops: A list of :py:class:`Operation` objects, or strings that
-            can be used to construct them (e.g., ``"mean"``, ``"quantile(q=0.33)"``)
+            can be used to construct them (e.g., ``"mean"``, ``"quantile(q=0.33)"``).
+            Check out :doc:`Available operations <operations>` for more information.
        weights: An optional :py:class:`RasterSource` or filename for
             weights to be used in weighted operations.
        include_cols: An optional list of columns from the
