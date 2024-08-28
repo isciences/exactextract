@@ -209,6 +209,6 @@ The behavior of these statistics may be modified by the following arguments:
      - `area_cartesian` - :math:`c_i` is the fraction of the pixel multiplied by it x and y resolutions
      - `area_spherical_m2` - :math:`c_i` is the fraction of the pixel that is covered multiplied by a spherical approximation of the cell's area in square meters
      - `area_spherical_km2` - :math:`c_i` is the fraction of the pixel that is covered multiplied by a spherical approximation of the cell's area in square kilometers
-  * ``default_value`` - specifies a value to be used in place of NODATA
-  * ``default_weight`` - specifies a weighing value to be used in place of NODATA
+  * ``default_value`` - specifies a value to be used for NODATA pixels instead of ignoring them
+  * ``default_weight`` - specifies a weighing value to be used for NODATA pixels instead of ignoring them
   * ``min_coverage_frac`` - specifies the minimum fraction of the pixel (0 to 1) that must be covered in order for a pixel to be considered in calculations. Defaults to 0.
