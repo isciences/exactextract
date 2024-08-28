@@ -177,10 +177,8 @@ def prep_ops(stats, values, weights=None, *, add_unique=False):
             # these operations to create a set of PythonOperations.
             nargs = stat.__code__.co_argcount
             if nargs == 3:
-                weighted = True
                 dummy_stat = "weighted_sum"
             elif nargs == 2:
-                weighted = False
                 dummy_stat = "count"
             else:
                 raise Exception(
@@ -195,7 +193,6 @@ def prep_ops(stats, values, weights=None, *, add_unique=False):
                             op.name.replace(dummy_stat, stat.__name__),
                             op.values,
                             op.weights,
-                            weighted,
                         )
                     )
             except RuntimeError as e:

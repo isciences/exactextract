@@ -5,6 +5,8 @@ from typing import Mapping, Optional, Tuple
 from ._exactextract import Writer as _Writer
 from .feature import GDALFeature, JSONFeature, QGISFeature
 
+__all__ = ["Writer", "JSONWriter", "PandasWriter", "QGISWriter", "GDALWriter"]
+
 
 class Writer(_Writer):
     """Writes the results of summary operations to a desired format"""
@@ -25,14 +27,12 @@ class JSONWriter(Writer):
         map_fields: Optional[Mapping[str, Tuple[str]]] = None
     ):
         """
-        Create a new JSONWriter.
-
         Args:
             array_type: type that should be used to represent array outputs.
-                        Either "numpy" (default), "list", or "set"
-            map_fields: An optional dictionary of fields to be created by
+                        either "numpy" (default), "list", or "set"
+            map_fields: an optional dictionary of fields to be created by
                         interpreting one field as keys and another as values, in the format
-                        ``{ dst_field : (src_keys, src_vals) }``. For example, the fields
+                        ``{ dst_field : (src_keys, src_vals) }``. for example, the fields
                         "values" and "frac" would be combined into a field called
                         "frac_map" using ``map_fields = {"frac_map": ("values", "frac")}``.
         """
@@ -321,6 +321,16 @@ class GDALWriter(Writer):
     def __init__(
         self, dataset=None, *, filename=None, driver=None, layer_name="", srs_wkt=None
     ):
+        """
+        Args:
+            dataset: a ``gdal.Dataset`` or ``ogr.DataSource`` to which results
+                     should be created in a new layer
+            filename: file to write results to, if ``dataset`` is ``None``
+            driver: driver to use when creating ``filename``
+            layer_name: name of new layer to create in output dataset
+            srs_wkt: spatial reference system to assign to output dataset. No
+                     coordinate transformation will be performed.
+        """
         super().__init__()
 
         from osgeo import gdal, ogr

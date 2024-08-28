@@ -7,6 +7,8 @@ from .feature import FeatureSource
 from .operation import Operation
 from .writer import Writer
 
+__all__ = ["FeatureSequentialProcessor", "RasterSequentialProcessor"]
+
 
 class FeatureSequentialProcessor(_FeatureSequentialProcessor):
     """Binding class around exactextract FeatureSequentialProcessor"""
@@ -19,12 +21,12 @@ class FeatureSequentialProcessor(_FeatureSequentialProcessor):
         include_cols: Optional[List[Operation]] = None,
     ):
         """
-        Create FeatureSequentialProcessor object
-
         Args:
             ds (FeatureSource): Dataset to use
             writer (Writer): Writer to use
-            op_list (List[Operation]): List of operations
+            op_list: List of Operations to perform
+            include_cols: List of columns to copy from
+               input features
         """
         super().__init__(ds, writer)
         for col in include_cols or []:
@@ -44,12 +46,12 @@ class RasterSequentialProcessor(_RasterSequentialProcessor):
         include_cols: Optional[List[Operation]] = None,
     ):
         """
-        Create RasterSequentialProcessor object
-
         Args:
             ds (FeatureSource): Dataset to use
             writer (Writer): Writer to use
             op_list (List[Operation]): List of operations
+            include_cols: List of columns to copy from
+               input features
         """
         super().__init__(ds, writer)
         for col in include_cols or []:
