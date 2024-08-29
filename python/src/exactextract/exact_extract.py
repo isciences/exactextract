@@ -38,6 +38,85 @@ def make_raster_names(root: str, nbands: int) -> list:
             return [""]
 
 
+def prep_raster_gdal(rast, name_root=None) -> list:
+    try:
+        # eagerly import gdal_array to avoid possible ImportError when reading raster data
+        from osgeo import gdal, gdal_array  # noqa: F401
+
+        if isinstance(rast, (str, os.PathLike)):
+            rast = gdal.Open(str(rast))
+
+        if isinstance(rast, gdal.Dataset):
+            # Handle inputs such as a netCDF with multiple variables
+            if rast.RasterCount == 0 and rast.GetSubDatasets():
+                sources = []
+                for subds, _ in rast.GetSubDatasets():
+                    try:
+                        varname = gdal.GetSubdatasetInfo(subds).GetSubdatasetComponent()
+                    except AttributeError:
+                        varname = subds.split(":")[-1]
+                    sources.append(prep_raster_gdal(subds, name_root=varname))
+                return list(chain.from_iterable(sources))
+
+            names = make_raster_names(name_root, rast.RasterCount)
+            return [
+                GDALRasterSource(rast, i + 1, name=names[i])
+                for i in range(rast.RasterCount)
+            ]
+    except ImportError:
+        pass
+
+
+def prep_raster_rasterio(rast, name_root=None) -> list:
+    try:
+        import rasterio
+
+        if isinstance(rast, (str, os.PathLike)):
+            rast = rasterio.open(rast)
+
+        if isinstance(rast, rasterio.DatasetReader):
+            # Handle inputs such as a netCDF with multiple variables
+            if rast.count == 0 and rast.subdatasets:
+                sources = []
+                for subds in rast.subdatasets:
+                    varname = subds.split(":")[-1]
+                    sources.append(prep_raster_rasterio(subds, name_root=varname))
+                return list(chain.from_iterable(sources))
+
+            names = make_raster_names(name_root, rast.count)
+            return [
+                RasterioRasterSource(rast, i + 1, name=names[i])
+                for i in range(rast.count)
+            ]
+    except ImportError:
+        pass
+
+
+def prep_raster_xarray(rast, name_root=None) -> list:
+
+    try:
+        import rioxarray  # noqa: F401
+        import xarray
+
+        if isinstance(rast, xarray.core.dataset.Dataset):
+            sources = [
+                prep_raster_xarray(rast[varname], name_root=varname)
+                for varname in rast.data_vars.keys()
+            ]
+
+            return list(chain.from_iterable(sources))
+
+        if isinstance(rast, xarray.core.dataarray.DataArray):
+            names = make_raster_names(name_root, rast.rio.count)
+            return [
+                XArrayRasterSource(rast, i + 1, name=names[i])
+                for i in range(rast.rio.count)
+            ]
+
+    except ImportError:
+        pass
+
+
 def prep_raster(rast, name_root=None) -> list:
     # TODO add some hooks to allow RasterSource implementations
     # defined outside this library to handle other input types.
@@ -57,50 +136,10 @@ def prep_raster(rast, name_root=None) -> list:
             sources = [prep_raster(src) for src in rast]
         return list(chain.from_iterable(sources))
 
-    try:
-        # eagerly import gdal_array to avoid possible ImportError when reading raster data
-        from osgeo import gdal, gdal_array  # noqa: F401
-
-        if isinstance(rast, (str, os.PathLike)):
-            rast = gdal.Open(str(rast))
-
-        if isinstance(rast, gdal.Dataset):
-            names = make_raster_names(name_root, rast.RasterCount)
-            return [
-                GDALRasterSource(rast, i + 1, name=names[i])
-                for i in range(rast.RasterCount)
-            ]
-    except ImportError:
-        pass
-
-    try:
-        import rasterio
-
-        if isinstance(rast, (str, os.PathLike)):
-            rast = rasterio.open(rast)
-
-        if isinstance(rast, rasterio.DatasetReader):
-            names = make_raster_names(name_root, rast.count)
-            return [
-                RasterioRasterSource(rast, i + 1, name=names[i])
-                for i in range(rast.count)
-            ]
-    except ImportError:
-        pass
-
-    try:
-        import rioxarray  # noqa: F401
-        import xarray
-
-        if isinstance(rast, xarray.core.dataarray.DataArray):
-            names = make_raster_names(name_root, rast.rio.count)
-            return [
-                XArrayRasterSource(rast, i + 1, name=names[i])
-                for i in range(rast.rio.count)
-            ]
-
-    except ImportError:
-        pass
+    for loader in (prep_raster_gdal, prep_raster_rasterio, prep_raster_xarray):
+        sources = loader(rast, name_root)
+        if sources:
+            return sources
 
     raise Exception("Unhandled raster datatype")
 
