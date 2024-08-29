@@ -4,6 +4,11 @@ Installation
 The R and Python packages can be installed from `CRAN <https://github.com/isciences/exactextractr>`__ and `PyPI <https://pypi.org/project/exactextract/>`__, respectively.
 If these repositories do not provide a binary for your platform, then you may also need to install the dependencies listed in :ref:`compiling` below.
 
+Another installation option is to use conda. There is both an 
+`R conda package <https://anaconda.org/conda-forge/r-exactextractr>`__ and a
+`python conda package <https://anaconda.org/conda-forge/exactextract>`__ available
+in the `conda-forge` channel.
+
 To use the command line interface, you will likely need to compile it yourself.
 
 .. _compiling:
