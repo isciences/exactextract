@@ -315,6 +315,16 @@ TEST_CASE("prepare_operations")
         CHECK(ops[0]->name == "mean");
         CHECK(ops[1]->name == "adj_mean");
     }
+
+    SECTION("error when no rasters are provided")
+    {
+        auto values = make_rasters("v", 0);
+        std::vector<std::unique_ptr<RasterSource>> weights;
+        std::vector<std::string> stats{ "sum" };
+
+        CHECK_THROWS_WITH(prepare_operations(stats, values, weights),
+                          Catch::Contains("no rasters provided"));
+    }
 }
 
 TEST_CASE("parsing arguments")

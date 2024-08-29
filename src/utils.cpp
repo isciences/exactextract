@@ -342,6 +342,10 @@ prepare_operations(
   const RasterSourceVect& rasters,
   const RasterSourceVect& weights)
 {
+    if (!descriptors.empty() && rasters.empty()) {
+        throw std::runtime_error("no rasters provided to prepare_operations");
+    }
+
     std::vector<std::unique_ptr<Operation>> ops;
 
     std::vector<StatDescriptor> parsed_descriptors;
