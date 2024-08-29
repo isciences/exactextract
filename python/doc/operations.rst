@@ -36,6 +36,7 @@ The area covered by the polygon is shaded purple.
            :height: 200
 
 .. list-table::
+    :width: 100%
     :header-rows: 1
 
     * - Name
