@@ -6,6 +6,7 @@ dependencies:
   - gdal
   - geopandas
   - geos
+  - netCDF4
   - numpy
   - pytest
   - pytest-cov

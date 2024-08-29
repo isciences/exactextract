@@ -766,7 +766,10 @@ def open_with_lib(fname, libname):
     elif libname == "xarray":
         rioxarray = pytest.importorskip("rioxarray")  # noqa: F841
         xarray = pytest.importorskip("xarray")
-        return xarray.open_dataarray(fname)
+        try:
+            return xarray.open_dataarray(fname)
+        except ValueError:
+            return xarray.open_dataset(fname)
     elif libname == "ogr":
         ogr = pytest.importorskip("osgeo.ogr")
         return ogr.Open(fname)
@@ -1581,3 +1584,78 @@ def test_crs_match_after_normalization(tmp_path):
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         exact_extract(rast, square, "mean")
+
+
+@pytest.fixture()
+def multidim_nc(tmp_path):
+
+    gdal = pytest.importorskip("osgeo.gdal")
+
+    fname = str(tmp_path / "test_multidim.nc")
+
+    nx = 3
+    ny = 4
+    nt = 2
+
+    drv = gdal.GetDriverByName("netCDF")
+
+    ds = drv.CreateMultiDimensional(fname)
+    rg = ds.GetRootGroup()
+
+    x = rg.CreateDimension("longitude", None, None, nx)
+    y = rg.CreateDimension("latitude", None, None, ny)
+    t = rg.CreateDimension("time", None, None, nt)
+
+    for dim in (x, y, t):
+        values = np.arange(dim.GetSize()).astype(np.float32)
+
+        if dim.GetName() != t.GetName():
+            values += 0.5
+        if dim.GetName() == y.GetName():
+            values = np.flip(values)
+
+        arr = rg.CreateMDArray(
+            dim.GetName(), [dim], gdal.ExtendedDataType.Create(gdal.GDT_Float32)
+        )
+        arr.WriteArray(values)
+        standard_name = arr.CreateAttribute(
+            "standard_name", [], gdal.ExtendedDataType.CreateString()
+        )
+        standard_name.Write(dim.GetName())
+
+    t2m = rg.CreateMDArray(
+        "t2m", [t, y, x], gdal.ExtendedDataType.Create(gdal.GDT_Float32)
+    )
+    t2m_data = np.arange(nx * ny * nt).reshape((nt, ny, nx))
+    t2m.WriteArray(t2m_data)
+
+    tp_data = np.sqrt(t2m_data)
+    tp = rg.CreateMDArray(
+        "tp", [t, y, x], gdal.ExtendedDataType.Create(gdal.GDT_Float32)
+    )
+    tp.WriteArray(tp_data)
+
+    return fname
+
+
+@pytest.mark.parametrize("libname", ("gdal", "rasterio", "xarray"))
+def test_gdal_multi_variable(multidim_nc, libname):
+
+    square = make_rect(0.5, 0.5, 2.5, 2.5)
+
+    rast = open_with_lib(multidim_nc, libname)
+
+    results = exact_extract(rast, square, ["count", "sum"])
+
+    assert results[0]["properties"] == pytest.approx(
+        {
+            "tp_band_1_sum": 10.437034457921982,
+            "tp_band_2_sum": 17.4051194190979,
+            "t2m_band_1_sum": 28.0,
+            "tp_band_2_count": 4.0,
+            "t2m_band_2_sum": 76.0,
+            "tp_band_1_count": 4.0,
+            "t2m_band_2_count": 4.0,
+            "t2m_band_1_count": 4.0,
+        }
+    )
