@@ -368,7 +368,7 @@ def exact_extract(
              by GDAL/fiona
        ops: A list of :py:class:`Operation` objects, or strings that
             can be used to construct them (e.g., ``"mean"``, ``"quantile(q=0.33)"``).
-            Check out :doc:`Available operations <operations>` for more information.
+            Check out :doc:`Available operations </operations>` for more information.
        weights: An optional :py:class:`RasterSource` or filename for
             weights to be used in weighted operations.
        include_cols: An optional list of columns from the
