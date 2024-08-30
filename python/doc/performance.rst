@@ -29,7 +29,7 @@ Processing strategies
 The "feature sequential" strategy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In the ``feature-sequential`` strategy (the default), ``exactextract`` iterates over the features one at atime, reads the corresponding pixels from each raster, and computes the summary operations.
+In the ``feature-sequential`` strategy (the default), ``exactextract`` iterates over the features one at a time, reads the corresponding pixels from each raster, and computes the summary operations.
 
 This strategy is the most efficient from a memory consumption perspective. The entire vector dataset does not need to be read into memory at once, and statistics for each feature can be flushed to disk before the next feature is read. However, this strategy may be inefficient if the order of features causes the same raster blocks to be read and decompressed multiple times.
 
