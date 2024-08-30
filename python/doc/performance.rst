@@ -20,6 +20,7 @@ With relatively few polygons (hydrologic levels 1-6, up 3500 polygons) processin
 As the number of polygons increases, the resolution of the population raster becomes less significant. 
 At hydrologic levels 9 and 12 (approximately 1 million and 2 million polygons, respectively), increasing the resolution by a factor of 120 increases runtime by only 45%.
 
+.. _performance-processing-strategies:
 
 Processing strategies
 ---------------------
