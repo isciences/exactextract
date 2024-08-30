@@ -3,7 +3,7 @@ Available Operations
 
 ``exactextract`` provides numerous built-in operations for summarizing gridded data.
 This page provides a list of the :ref:`operations` and :ref:`arguments tuning their behavior <operation_arguments>`.
-If a built-in operation is not suitable, custom operations can be defined when using eithe the Python or R bindings.
+If a built-in operation is not suitable, custom operations can be defined when using either the Python or R bindings.
 
 .. note::
 
