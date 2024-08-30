@@ -338,15 +338,17 @@ def exact_extract(
             should be copied from the input features into
             the output.
        strategy: Specifies the strategy to use when processing features.
-                 Must be set to one of:
+          Detailed performance notes are available in
+          :ref:`Performance - Processing strategies <performance-processing-strategies>`.
+          Must be set to one of:
 
                  - ``"feature-sequential"`` (the default):
                    iterate over the features in ``vec``,
                    read the corresponding pixels from ``rast``/``weights``,
                    and compute the summary operations. This offers predictable
                    memory consumption but may be inefficient if the order of
-                   features in ``vec`` causes the same raster blocks to be read
-                   and decompressed.
+                   features in ``vec`` causes the same, relatively large raster
+                   blocks to be read and decompressed many times.
 
                  - ``"raster-sequential"``:
                    iterate over chunks of pixels in ``rast``, identify the intersecting
