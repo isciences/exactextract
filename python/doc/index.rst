@@ -97,18 +97,21 @@ Development of ``exactextract`` has been supported by the following organization
 .. figure:: /_static/logos/nasa_logo.svg
    :height: 80px
    :align: center
+   :target: https://www.nasa.gov
 
    `NASA <https://www.nasa.gov>`__
 
 .. figure:: /_static/logos/usace_logo.svg
    :height: 80px
    :align: center
+   :target: https://www.erdc.usace.army.mil
 
    `US Army Corps of Engineers, Engineer Research and Development Center <https://www.erdc.usace.army.mil/>`__
 
 .. figure:: /_static/logos/isciences_logo.svg
    :height: 60px
    :align: center
+   :target: https://www.isciences.com
 
    `ISciences, LLC <https://www.isciences.com>`__
 
