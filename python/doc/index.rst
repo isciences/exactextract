@@ -89,6 +89,29 @@ Command-line
 
 For more information, see :doc:`examples_cli`.
 
+Support
+^^^^^^^
+
+Development of ``exactextract`` has been supported by the following organizations:
+
+.. figure:: /_static/logos/nasa_logo.svg
+   :height: 80px
+   :align: center
+
+   `NASA <https://www.nasa.gov>`__
+
+.. figure:: /_static/logos/usace_logo.svg
+   :height: 80px
+   :align: center
+
+   `US Army Corps of Engineers, Engineer Research and Development Center <https://www.erdc.usace.army.mil/>`__
+
+.. figure:: /_static/logos/isciences_logo.svg
+   :height: 60px
+   :align: center
+
+   `ISciences, LLC <https://www.isciences.com>`__
+
 .. toctree::
    :maxdepth: 2
    :hidden:
