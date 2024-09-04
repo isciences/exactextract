@@ -138,6 +138,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "python/tests/*" = ["D"]
+"test/*" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
