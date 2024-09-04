@@ -2,7 +2,6 @@
 name = "exactextract"
 description = "Fast and accurate raster zonal statistics"
 license.file = "LICENSE"
-url = "https://github.com/isciences/exactextract"
 authors = [
   { "name" = "Daniel Baston" }
 ]
@@ -20,6 +19,9 @@ classifiers = [
 ]
 dynamic = ["version"]
 readme = "README.md"
+
+[project.urls]
+repository = "https://github.com/isciences/exactextract"
 
 [build-system]
 requires=["scikit-build-core", "pybind11"]
