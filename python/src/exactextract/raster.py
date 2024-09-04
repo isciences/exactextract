@@ -6,8 +6,7 @@ from ._exactextract import RasterSource as _RasterSource
 
 
 class RasterSource(_RasterSource):
-    """
-    Source from which raster data can be read.
+    """Source from which raster data can be read.
 
     A RasterSource provides the ability to read subsets of a single band of
     raster data. Several implementations are included in exactextract:
@@ -23,17 +22,13 @@ class RasterSource(_RasterSource):
 
 
 class GDALRasterSource(RasterSource):
-    """
-    RasterSource backed by GDAL
-    """
+    """RasterSource backed by GDAL"""
 
     def __init__(self, ds, band_idx: int = 1, *, name=None):
-        """
-
-        Args:
-            ds: A ``gdal.Dataset`` or path from which one can be opened
-            band_idx: 1-based numerical index of band to read
-            name: source name, to be used in generating field names for results
+        """Args:
+        ds: A ``gdal.Dataset`` or path from which one can be opened
+        band_idx: 1-based numerical index of band to read
+        name: source name, to be used in generating field names for results
         """
         super().__init__()
         from osgeo import gdal
@@ -80,7 +75,8 @@ class GDALRasterSource(RasterSource):
 
     def nodata_value(self):
         if self.scaled:
-            # for scaled rasters we rely on the NODATA mask rather than inverting the scaling
+            # for scaled rasters we rely on the NODATA mask rather than inverting the
+            # scaling
             return None
 
         val = self.band.GetNoDataValue()
@@ -100,7 +96,6 @@ class GDALRasterSource(RasterSource):
         return True
 
     def read_window(self, x0, y0, nx, ny):
-
         arr = self.band.ReadAsArray(xoff=x0, yoff=y0, win_xsize=nx, win_ysize=ny)
 
         mask = None
@@ -133,9 +128,7 @@ class GDALRasterSource(RasterSource):
 
 
 class NumPyRasterSource(RasterSource):
-    """
-    RasterSource backed by a NumPy array
-    """
+    """RasterSource backed by a NumPy array"""
 
     def __init__(
         self,
@@ -147,10 +140,9 @@ class NumPyRasterSource(RasterSource):
         *,
         nodata=None,
         name=None,
-        srs_wkt=None
+        srs_wkt=None,
     ):
-        """
-        Create a RasterSource that references a NumPy array.
+        """Create a RasterSource that references a NumPy array.
 
         If spatial extent arguments are not provided, the extent will be assumed to be
         from (0,0) to (nx,ny).
@@ -201,17 +193,13 @@ class NumPyRasterSource(RasterSource):
 
 
 class RasterioRasterSource(RasterSource):
-    """
-    RasterSource backed by rasterio
-    """
+    """RasterSource backed by rasterio"""
 
     def __init__(self, ds, band_idx=1, *, name=None):
-        """
-
-        Args:
-            ds: A ``rasterio.DatasetReader`` or path from which one can be opened
-            band_idx: 1-based numerical index of band to read
-            name: source name, to be used in generating field names for results
+        """Args:
+        ds: A ``rasterio.DatasetReader`` or path from which one can be opened
+        band_idx: 1-based numerical index of band to read
+        name: source name, to be used in generating field names for results
         """
         super().__init__()
         if isinstance(ds, (str, os.PathLike)):
@@ -275,20 +263,17 @@ class RasterioRasterSource(RasterSource):
 
 
 class XArrayRasterSource(RasterSource):
-    """
-    RasterSource backed by xarray
+    """RasterSource backed by xarray
 
     The rio-xarray extension is used to retrieve metadata such as the
     array extent, resolution, and spatial reference system.
     """
 
     def __init__(self, ds, band_idx=1, *, name=None):
-        """
-
-        Args:
-            ds: An xarray ``DataArray`` or a path from which one can be read.
-            band_idx: 1-based numerical index of band to read
-            name: source name, to be used in generating field names for results
+        """Args:
+        ds: An xarray ``DataArray`` or a path from which one can be read.
+        band_idx: 1-based numerical index of band to read
+        name: source name, to be used in generating field names for results
         """
         super().__init__()
 

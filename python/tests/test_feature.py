@@ -1,5 +1,4 @@
 import pytest
-
 from exactextract.feature import Feature, GDALFeature, JSONFeature
 
 

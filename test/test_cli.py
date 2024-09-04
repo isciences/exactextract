@@ -13,7 +13,9 @@ gdal.UseExceptions()
 
 @pytest.fixture(scope="module")
 def gdal_version():
-    result = subprocess.run(["./exactextract", "--version"], stdout=subprocess.PIPE)
+    result = subprocess.run(
+        ["./exactextract", "--version"], stdout=subprocess.PIPE, check=False
+    )
     match = re.search(b"GDAL (\\d+[.]\\d+[.]\\d+)", result.stdout)
     return tuple(int(x) for x in match[1].split(b"."))
 
@@ -36,7 +38,7 @@ def run(tmpdir):
                 else:
                     arglist += [f"--{arg_name}", f"{v}"]
 
-        cmd = [str(x) for x in ["./exactextract", "-o", output_fname] + arglist]
+        cmd = [str(x) for x in ["./exactextract", "-o", output_fname, *arglist]]
 
         if os.environ.get("USE_VALGRIND", "NO") == "YES":
             cmd.insert(0, "valgrind")
@@ -59,20 +61,18 @@ def run(tmpdir):
         if return_fname:
             return output_fname
 
-        with open(output_fname, "r") as f:
+        with open(output_fname) as f:
             reader = csv.DictReader(f)
-            return [row for row in reader]
+            return list(reader)
 
     return runner
 
 
 @pytest.fixture()
 def write_raster(tmp_path):
-
     files = []
 
     def writer(data, *, mask=None, nodata=None, scale=None, offset=None):
-
         fname = str(tmp_path / f"raster{len(files)}.tif")
 
         files.append(fname)
@@ -119,7 +119,6 @@ def write_raster(tmp_path):
 
 @pytest.fixture()
 def write_features(tmp_path):
-
     output_fname = tmp_path / "shape.geojson"
 
     def writer(features, srs=None):
@@ -158,7 +157,6 @@ def write_features(tmp_path):
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
 def test_multiple_stats(strategy, run, write_raster, write_features):
-
     data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
 
     rows = run(
@@ -336,7 +334,6 @@ naming_test_cases = {
 def test_column_naming(
     run, write_raster, write_features, raster, weights, stats, expected_names
 ):
-
     data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
     data = np.stack((data, data * 2))
 
@@ -395,7 +392,6 @@ def test_frac_output(run, write_raster, write_features):
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
 def test_feature_not_intersecting_raster(strategy, run, write_raster, write_features):
-
     data = np.array([[1, 2, 3], [1, 2, 2], [3, 3, 3]], np.float32)
 
     rows = run(
@@ -417,7 +413,6 @@ def test_feature_not_intersecting_raster(strategy, run, write_raster, write_feat
 def test_feature_intersecting_nodata(
     strategy, run, write_raster, write_features, dtype, nodata
 ):
-
     data = np.full((4, 3), nodata or np.nan, dtype=dtype)
 
     rows = run(
@@ -441,7 +436,6 @@ def test_feature_intersecting_nodata(
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
 def test_include_cols(strategy, run, write_raster, write_features):
-
     data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
 
     rows = run(
@@ -476,7 +470,6 @@ def test_include_cols(strategy, run, write_raster, write_features):
 
 
 def test_include_geom(run, write_raster, write_features):
-
     data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
 
     out = run(
@@ -510,7 +503,6 @@ def test_include_geom(run, write_raster, write_features):
 
 @pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
 def test_coverage_fractions(run, write_raster, write_features, strategy):
-
     data = np.arange(9, dtype=np.int32).reshape(3, 3)
 
     rows = run(
@@ -537,7 +529,6 @@ def test_coverage_fractions(run, write_raster, write_features, strategy):
 
 
 def test_coverage_fraction_args(run, write_raster, write_features):
-
     data = np.arange(9, dtype=np.int32).reshape(3, 3)
 
     rows = run(
@@ -588,7 +579,6 @@ def test_coverage_fraction_args(run, write_raster, write_features):
 
 
 def test_scale_offset(run, write_raster, write_features):
-
     data = np.array([[17650, 18085], [19127, 19428]], dtype=np.int16)
     scale = 0.001571273180860454
     offset = 250.47270984680802
@@ -607,7 +597,6 @@ def test_scale_offset(run, write_raster, write_features):
 
 
 def test_scale_offset_nodata(run, write_raster, write_features):
-
     data = np.array([[1, 2, 3], [-999, -999, -999], [4, 5, -499]], dtype=np.int32)
 
     rows = run(
@@ -625,7 +614,6 @@ def test_scale_offset_nodata(run, write_raster, write_features):
 
 
 def test_id_rename(run, write_raster, write_features):
-
     data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
 
     out = run(
@@ -655,7 +643,6 @@ def test_id_rename(run, write_raster, write_features):
 
 
 def test_id_change_type(run, write_raster, write_features):
-
     data = np.array([[1, 2, 3, 4], [1, 2, 2, 5], [3, 3, 3, 2]], np.int16)
 
     out = run(
@@ -684,7 +671,6 @@ def test_id_change_type(run, write_raster, write_features):
 
 
 def test_mask_band(run, write_raster, write_features):
-
     data = np.arange(1, 10, dtype=np.float32).reshape((3, 3))
     valid = np.array(
         [[False, False, False], [True, True, True], [False, False, False]]
@@ -713,7 +699,6 @@ def test_mask_band(run, write_raster, write_features):
     ],
 )
 def test_gdal_types(gdal_version, dtype, val, run, write_raster, write_features):
-
     if dtype in {np.int64, np.uint64} and gdal_version < (3, 5, 0):
         pytest.skip("Int64 data type not supported in this version of GDAL")
 

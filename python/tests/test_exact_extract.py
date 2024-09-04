@@ -5,7 +5,6 @@ import warnings
 
 import numpy as np
 import pytest
-
 from exactextract import Operation, exact_extract
 from exactextract.feature import JSONFeatureSource
 from exactextract.raster import NumPyRasterSource
@@ -20,7 +19,7 @@ def output_format(request):
 
 
 def prop_map(f, k, v):
-    return {v: f for v, f in zip(f["properties"][k], f["properties"][v])}
+    return dict(zip(f["properties"][k], f["properties"][v]))
 
 
 def make_square_raster(n):
@@ -552,7 +551,6 @@ def test_all_nodata_pandas():
 
 
 def test_all_nodata_qgis():
-
     pytest.importorskip("qgis.core")
 
     data = np.full((3, 3), -999, dtype=np.int32)
@@ -571,7 +569,6 @@ def test_all_nodata_qgis():
 
 
 def test_all_nodata_gdal():
-
     ogr = pytest.importorskip("osgeo.ogr")
 
     data = np.array([[1, 1, 1], [-999, -999, -999], [-999, -999, -999]], dtype=np.int32)
@@ -589,7 +586,7 @@ def test_all_nodata_gdal():
         output_options={"dataset": ds},
     )
 
-    features = [f for f in ds.GetLayer(0)]
+    features = list(ds.GetLayer(0))
 
     assert math.isnan(features[1]["mean"])
     assert features[1]["variety"] == 0
@@ -884,7 +881,8 @@ def test_gdal_data_types(tmp_path, rast_lib, dtype):
         assert type(results["mode"]) is int
 
 
-# Check that a negative nodata value for a raster with type GDT_Byte is ignored rather than causing an exception
+# Check that a negative nodata value for a raster with type GDT_Byte is ignored rather
+# than causing an exception
 def test_gdal_invalid_nodata_value(tmp_path):
     gdal = pytest.importorskip("osgeo.gdal")
 
@@ -991,7 +989,6 @@ def test_error_rotated_inputs(tmp_path, rast_lib):
 
 @pytest.mark.parametrize("dtype", (np.float64, np.float32, np.int32, np.int64))
 def test_types_preserved(dtype):
-
     rast = NumPyRasterSource(np.full((3, 3), 1, dtype))
 
     square = make_rect(0, 0, 3, 3)
@@ -1129,7 +1126,7 @@ def test_qgis_output():
         include_geom=True,
     )
 
-    features = [f for f in result.getFeatures()]
+    features = list(result.getFeatures())
 
     assert len(features) == 1
 
@@ -1163,7 +1160,6 @@ def test_masked_array():
 
 
 def test_output_no_numpy():
-
     rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
     square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
 
@@ -1175,7 +1171,6 @@ def test_output_no_numpy():
 
 
 def test_output_map_fields():
-
     rast = NumPyRasterSource(np.array([[1, 1, 1], [2, 2, 2], [3, 3, 4]]))
     weights = NumPyRasterSource(np.array([[0, 0, 0], [0, 0, 0], [1, 1, 1]]))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
@@ -1207,7 +1202,6 @@ def test_output_map_fields():
 
 
 def test_output_map_fields_multiband():
-
     rast = [
         NumPyRasterSource(np.arange(1, 10).reshape(3, 3), name="landcov"),
         NumPyRasterSource(2 * np.arange(1, 10).reshape(3, 3), name="landcat"),
@@ -1237,7 +1231,6 @@ def test_output_map_fields_multiband():
 
 
 def test_linear_geom():
-
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
     line = {
         "type": "Feature",
@@ -1262,7 +1255,6 @@ def test_linear_geom():
 
 
 def test_point_geom():
-
     rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
 
     point = {
@@ -1275,7 +1267,6 @@ def test_point_geom():
 
 
 def test_custom_function_throws_exception():
-
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
@@ -1287,7 +1278,6 @@ def test_custom_function_throws_exception():
 
 
 def test_custom_function_missing_weights():
-
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
@@ -1299,7 +1289,6 @@ def test_custom_function_missing_weights():
 
 
 def test_custom_function_bad_signature():
-
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
@@ -1323,7 +1312,6 @@ def test_custom_function_bad_signature():
 
 
 def test_custom_function_bad_return_type():
-
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
@@ -1344,7 +1332,6 @@ def test_custom_function_bad_return_type():
     ids=lambda x: f"ndarray[{x.dtype}]" if hasattr(x, "dtype") else type(x),
 )
 def test_custom_function_return_types(ret):
-
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
@@ -1362,7 +1349,6 @@ def test_custom_function_return_types(ret):
 
 
 def test_custom_function():
-
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
     weights = NumPyRasterSource(np.sqrt(np.arange(9).reshape(3, 3)))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
@@ -1418,8 +1404,9 @@ def test_custom_function_nodata(weighted):
             weights=rast_weights,
         )
 
-        # Unlike values, weights are always coerced to doubles, because they are considered
-        # to have no meaning except when multiplied by the coverage fraction (itself a double)
+        # Unlike values, weights are always coerced to doubles, because they are
+        # considered to have no meaning except when multiplied by the coverage fraction
+        # (itself a double)
         assert len(weights) == 9
         np.testing.assert_array_equal(
             weights.data, [0, 1, 2, 3, 4, 5, float("nan"), 7, 8]
@@ -1473,7 +1460,6 @@ def test_custom_function_not_intersecting():
 
 
 def test_explicit_operation():
-
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
@@ -1489,7 +1475,6 @@ def test_explicit_operation():
 
 
 def test_progress():
-
     rast = NumPyRasterSource(np.arange(9).reshape(3, 3))
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
@@ -1499,7 +1484,6 @@ def test_progress():
 
 
 def test_grid_compat_tol():
-
     values = NumPyRasterSource(
         np.arange(9).reshape(3, 3), xmin=0, xmax=1, ymin=0, ymax=1
     )
@@ -1568,15 +1552,14 @@ def test_crs_mismatch(tmp_path):
 
 
 def test_crs_match_after_normalization(tmp_path):
-
     pytest.importorskip("osgeo.osr")
 
     rast = tmp_path / "test.tif"
     square = tmp_path / "test.shp"
 
-    rast_crs = 'PROJCS["WGS 84 / UTM zone 4N",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-159],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","32604"]]'
+    rast_crs = 'PROJCS["WGS 84 / UTM zone 4N",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-159],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","32604"]]'  # noqa: E501
 
-    vec_crs = 'PROJCRS["WGS 84 / UTM zone 4N",BASEGEOGCRS["WGS 84",DATUM["World Geodetic System 1984",ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],ID["EPSG",4326]],CONVERSION["UTM zone 4N",METHOD["Transverse Mercator",ID["EPSG",9807]],PARAMETER["Latitude of natural origin",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8801]],PARAMETER["Longitude of natural origin",-159,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8802]],PARAMETER["Scale factor at natural origin",0.9996,SCALEUNIT["unity",1],ID["EPSG",8805]],PARAMETER["False easting",500000,LENGTHUNIT["metre",1],ID["EPSG",8806]],PARAMETER["False northing",0,LENGTHUNIT["metre",1],ID["EPSG",8807]]],CS[Cartesian,2],AXIS["easting",east,ORDER[1],LENGTHUNIT["metre",1]],AXIS["northing",north,ORDER[2],LENGTHUNIT["metre",1]],ID["EPSG",32604]]'
+    vec_crs = 'PROJCRS["WGS 84 / UTM zone 4N",BASEGEOGCRS["WGS 84",DATUM["World Geodetic System 1984",ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],ID["EPSG",4326]],CONVERSION["UTM zone 4N",METHOD["Transverse Mercator",ID["EPSG",9807]],PARAMETER["Latitude of natural origin",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8801]],PARAMETER["Longitude of natural origin",-159,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8802]],PARAMETER["Scale factor at natural origin",0.9996,SCALEUNIT["unity",1],ID["EPSG",8805]],PARAMETER["False easting",500000,LENGTHUNIT["metre",1],ID["EPSG",8806]],PARAMETER["False northing",0,LENGTHUNIT["metre",1],ID["EPSG",8807]]],CS[Cartesian,2],AXIS["easting",east,ORDER[1],LENGTHUNIT["metre",1]],AXIS["northing",north,ORDER[2],LENGTHUNIT["metre",1]],ID["EPSG",32604]]'  # noqa: E501
 
     create_gdal_raster(rast, np.arange(9).reshape(3, 3), crs=rast_crs)
     create_gdal_features(square, [make_rect(0.5, 0.5, 2.5, 2.5)], crs=vec_crs)
@@ -1588,7 +1571,6 @@ def test_crs_match_after_normalization(tmp_path):
 
 @pytest.fixture()
 def multidim_nc(tmp_path):
-
     gdal = pytest.importorskip("osgeo.gdal")
 
     fname = str(tmp_path / "test_multidim.nc")
@@ -1640,7 +1622,6 @@ def multidim_nc(tmp_path):
 
 @pytest.mark.parametrize("libname", ("gdal", "rasterio", "xarray"))
 def test_gdal_multi_variable(multidim_nc, libname):
-
     square = make_rect(0.5, 0.5, 2.5, 2.5)
 
     rast = open_with_lib(multidim_nc, libname)

@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from exactextract import Operation
 from exactextract.feature import JSONFeature
 from exactextract.writer import GDALWriter, JSONWriter, PandasWriter, QGISWriter

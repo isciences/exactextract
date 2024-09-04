@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from ._exactextract import FeatureSequentialProcessor as _FeatureSequentialProcessor
 from ._exactextract import Processor  # noqa: F401
@@ -17,16 +17,15 @@ class FeatureSequentialProcessor(_FeatureSequentialProcessor):
         self,
         ds: FeatureSource,
         writer: Writer,
-        op_list: List[Operation],
-        include_cols: Optional[List[Operation]] = None,
+        op_list: list[Operation],
+        include_cols: Optional[list[Operation]] = None,
     ):
-        """
-        Args:
-            ds (FeatureSource): Dataset to use
-            writer (Writer): Writer to use
-            op_list: List of Operations to perform
-            include_cols: List of columns to copy from
-               input features
+        """Args:
+        ds (FeatureSource): Dataset to use
+        writer (Writer): Writer to use
+        op_list: List of Operations to perform
+        include_cols: List of columns to copy from
+           input features
         """
         super().__init__(ds, writer)
         for col in include_cols or []:
@@ -36,22 +35,21 @@ class FeatureSequentialProcessor(_FeatureSequentialProcessor):
 
 
 class RasterSequentialProcessor(_RasterSequentialProcessor):
-    """Binding class around exactextract RasterSequentialProcessor"""
+    """Binding class around exactextract RasterSequentialProcessor."""
 
     def __init__(
         self,
         ds: FeatureSource,
         writer: Writer,
-        op_list: List[Operation],
-        include_cols: Optional[List[Operation]] = None,
+        op_list: list[Operation],
+        include_cols: Optional[list[Operation]] = None,
     ):
-        """
-        Args:
-            ds (FeatureSource): Dataset to use
-            writer (Writer): Writer to use
-            op_list (List[Operation]): List of operations
-            include_cols: List of columns to copy from
-               input features
+        """Args:
+        ds (FeatureSource): Dataset to use
+        writer (Writer): Writer to use
+        op_list (List[Operation]): List of operations
+        include_cols: List of columns to copy from
+           input features
         """
         super().__init__(ds, writer)
         for col in include_cols or []:
