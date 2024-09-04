@@ -1,3 +1,5 @@
+"""Module for writing the results of summary operations to a desired format."""
+
 import copy
 import os
 from collections.abc import Mapping
@@ -10,14 +12,14 @@ __all__ = ["Writer", "JSONWriter", "PandasWriter", "QGISWriter", "GDALWriter"]
 
 
 class Writer(_Writer):
-    """Writes the results of summary operations to a desired format"""
+    """Writes the results of summary operations to a desired format."""
 
     def __init__(self):
         super().__init__()
 
 
 class JSONWriter(Writer):
-    """Creates GeoJSON-like features"""
+    """Creates GeoJSON-like features."""
 
     def __init__(
         self,
@@ -25,14 +27,16 @@ class JSONWriter(Writer):
         array_type: str = "numpy",
         map_fields: Optional[Mapping[str, tuple[str]]] = None,
     ):
-        """Args:
-        array_type: type that should be used to represent array outputs.
-                    either "numpy" (default), "list", or "set"
-        map_fields: an optional dictionary of fields to be created by
-                    interpreting one field as keys and another as values, in the format
-                    ``{ dst_field : (src_keys, src_vals) }``. for example, the fields
-                    "values" and "frac" would be combined into a field called
-                    "frac_map" using ``map_fields = {"frac_map": ("values", "frac")}``.
+        """Constructor for JSONWriter.
+
+        Args:
+            array_type: type that should be used to represent array outputs.
+                either "numpy" (default), "list", or "set"
+            map_fields: an optional dictionary of fields to be created by
+                interpreting one field as keys and another as values, in the format
+                ``{ dst_field : (src_keys, src_vals) }``. for example, the fields
+                values" and "frac" would be combined into a field called
+                "frac_map" using ``map_fields = {"frac_map": ("values", "frac")}``.
         """
         super().__init__()
 
@@ -116,7 +120,7 @@ class JSONWriter(Writer):
 
 
 class PandasWriter(Writer):
-    """Creates a (Geo)Pandas DataFrame"""
+    """Creates a (Geo)Pandas DataFrame."""
 
     def __init__(self, *, srs_wkt=None):
         super().__init__()
@@ -166,7 +170,7 @@ class PandasWriter(Writer):
 
 
 class QGISWriter(Writer):
-    """Creates QGSVectorLayer"""
+    """Creates QGSVectorLayer."""
 
     def __init__(self, *, srs_wkt=None):
         super().__init__()
@@ -207,6 +211,7 @@ class QGISWriter(Writer):
 
     def _create_vector_layer(self):
         """Creates a vector layer with the defined geometry type, CRS and fields.
+
         Returns the created layer as well as its data provider.
 
         Returns:
@@ -231,7 +236,7 @@ class QGISWriter(Writer):
 
     @staticmethod
     def _get_geometry_type(feature: JSONFeature) -> str:
-        """Get geometry type of an input feature geometry
+        """Get geometry type of an input feature geometry.
 
         Args:
             feature (JSONFeature): feature with geometry field
@@ -249,7 +254,7 @@ class QGISWriter(Writer):
 
     @staticmethod
     def _convert_to_QgsFields(fields_list: list):
-        """Converts a list with `QgsField` into a `QgsFields` object
+        """Converts a list with `QgsField` into a `QgsFields` object.
 
         Args:
             fields_list (list): list with `QgsField`
@@ -312,19 +317,21 @@ class QGISWriter(Writer):
 
 
 class GDALWriter(Writer):
-    """Writes results using GDAL/OGR"""
+    """Writes results using GDAL/OGR."""
 
     def __init__(
         self, dataset=None, *, filename=None, driver=None, layer_name="", srs_wkt=None
     ):
-        """Args:
-        dataset: a ``gdal.Dataset`` or ``ogr.DataSource`` to which results
-                 should be created in a new layer
-        filename: file to write results to, if ``dataset`` is ``None``
-        driver: driver to use when creating ``filename``
-        layer_name: name of new layer to create in output dataset
-        srs_wkt: spatial reference system to assign to output dataset. No
-                 coordinate transformation will be performed.
+        """Constructor for GDALWriter.
+
+        Args:
+            dataset: a ``gdal.Dataset`` or ``ogr.DataSource`` to which results
+                should be created in a new layer
+            filename: file to write results to, if ``dataset`` is ``None``
+            driver: driver to use when creating ``filename``
+            layer_name: name of new layer to create in output dataset
+            srs_wkt: spatial reference system to assign to output dataset. No
+                coordinate transformation will be performed.
         """
         super().__init__()
 

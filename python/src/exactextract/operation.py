@@ -57,7 +57,7 @@ class Operation(_Operation):
 
 
 class PythonOperation(_PythonOperation):
-    """Summarize of pixel values using a Python function
+    """Summarize of pixel values using a Python function.
 
     Defines a summary operation to be performed on pixel values intersecting
     a geometry.
@@ -70,16 +70,19 @@ class PythonOperation(_PythonOperation):
         raster: RasterSource,
         weights: Optional[RasterSource],
     ):
-        """Args:
-        function: Function accepting either two arguments (if `weights` is `None`),
-                  or three arguments. The function will be called with
-                  arrays of equal length containing:
+        """Constructor for PythonOperation.
+
+        Args:
+            function: Function accepting either two arguments (if `weights` is `None`),
+                or three arguments. The function will be called with
+                arrays of equal length containing:
+
                   - pixel values from `raster` (masked array)
                   - cell coverage fractions
                   - pixel values from `weights` (masked array)
-        field_name: Name of the result field that is assigned by this Operation.
-        raster: Raster to compute over.
-        weights: Weight raster to use. Defaults to None.
+            field_name: Name of the result field that is assigned by this Operation.
+            raster: Raster to compute over.
+            weights: Weight raster to use. Defaults to None.
         """
         if raster is None:
             raise TypeError

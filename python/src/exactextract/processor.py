@@ -1,3 +1,5 @@
+"""Processor classes."""
+
 from typing import Optional
 
 from ._exactextract import FeatureSequentialProcessor as _FeatureSequentialProcessor
@@ -11,7 +13,7 @@ __all__ = ["FeatureSequentialProcessor", "RasterSequentialProcessor"]
 
 
 class FeatureSequentialProcessor(_FeatureSequentialProcessor):
-    """Binding class around exactextract FeatureSequentialProcessor"""
+    """Binding class around exactextract FeatureSequentialProcessor."""
 
     def __init__(
         self,
@@ -20,12 +22,13 @@ class FeatureSequentialProcessor(_FeatureSequentialProcessor):
         op_list: list[Operation],
         include_cols: Optional[list[Operation]] = None,
     ):
-        """Args:
-        ds (FeatureSource): Dataset to use
-        writer (Writer): Writer to use
-        op_list: List of Operations to perform
-        include_cols: List of columns to copy from
-           input features
+        """Constructor for FeatureSequentialProcessor.
+
+        Args:
+            ds (FeatureSource): Dataset to use
+            writer (Writer): Writer to use
+            op_list: List of Operations to perform
+            include_cols: List of columns to copy from input features
         """
         super().__init__(ds, writer)
         for col in include_cols or []:
@@ -44,12 +47,13 @@ class RasterSequentialProcessor(_RasterSequentialProcessor):
         op_list: list[Operation],
         include_cols: Optional[list[Operation]] = None,
     ):
-        """Args:
-        ds (FeatureSource): Dataset to use
-        writer (Writer): Writer to use
-        op_list (List[Operation]): List of operations
-        include_cols: List of columns to copy from
-           input features
+        """Constructor for RasterSequentialProcessor.
+
+        Args:
+            ds (FeatureSource): Dataset to use
+            writer (Writer): Writer to use
+            op_list (List[Operation]): List of operations
+            include_cols: List of columns to copy from input features
         """
         super().__init__(ds, writer)
         for col in include_cols or []:

@@ -1,3 +1,5 @@
+"""Classes for different feature sources."""
+
 import os
 
 from ._exactextract import Feature

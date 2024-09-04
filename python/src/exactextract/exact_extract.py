@@ -1,3 +1,5 @@
+"""Extract zonal statistics from raster data."""
+
 import copy
 import functools
 import os
