@@ -213,3 +213,19 @@ The behavior of these statistics may be modified by the following arguments:
   * ``default_value`` - specifies a value to be used for NODATA pixels instead of ignoring them
   * ``default_weight`` - specifies a weighing value to be used for NODATA pixels instead of ignoring them
   * ``min_coverage_frac`` - specifies the minimum fraction of the pixel (0 to 1) that must be covered in order for a pixel to be considered in calculations. Defaults to 0.
+
+Examples
+--------
+
+  * ``quantile(q=0.33)``: the 33% quantile of the pixels that intersect the polygon,
+    weighted by the percent of each cell that is covered.
+  * ``count(default_value=0)``: the Sum of all pixel coverage fractions, including
+    NODATA pixels, as they will be treated as having value 0 instead of being ignored.
+  * ``mean(min_coverage_frac=0.5)``: the mean value of pixels that intersect the
+    polygon. Only pixels with a coverage fraction of 50% or more will be considered in
+    the calculation and they will be weighted by the coverage fraction.
+  * ``mean(min_coverage_frac=0.5,coverage_weight=none)``: the mean value of pixels that
+    intersect the polygon. Only pixels with a coverage fraction of 50% or more will be
+    considered in the calculation, and they will be treated as having 100% coverage.
+  * ``mean(coverage_weight=none)``: the mean value of pixels that intersect the polygon.
+    All pixels with any coverage will be counted as having 100% coverage.
