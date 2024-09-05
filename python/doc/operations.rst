@@ -218,8 +218,8 @@ Examples
 --------
 
   * ``quantile(q=0.33)``: the 33% quantile of the pixels that intersect the polygon,
-    weighted by the percent of each cell that is covered.
-  * ``count(default_value=0)``: the Sum of all pixel coverage fractions, including
+    weighted by the coverage fraction of each pixel.
+  * ``count(default_value=0)``: the sum of all pixel coverage fractions, including
     NODATA pixels, as they will be treated as having value 0 instead of being ignored.
   * ``mean(min_coverage_frac=0.5)``: the mean value of pixels that intersect the
     polygon. Only pixels with a coverage fraction of 50% or more will be considered in
