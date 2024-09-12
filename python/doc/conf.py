@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
 #
@@ -74,7 +73,6 @@ autoapi_options = ["members", "undoc-members", "show-module-summary", "special-m
 
 
 def autoapi_skip_member(app, what, name, obj, skip, options):
-
     shortname = name.split(".")[-1]
 
     # Don't emit documentation for anything named beginning with

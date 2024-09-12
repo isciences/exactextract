@@ -1,6 +1,9 @@
+"""Module for writing the results of summary operations to a desired format."""
+
 import copy
 import os
-from typing import Mapping, Optional, Tuple
+from collections.abc import Mapping
+from typing import Optional
 
 from ._exactextract import Writer as _Writer
 from .feature import GDALFeature, JSONFeature, QGISFeature
@@ -9,32 +12,31 @@ __all__ = ["Writer", "JSONWriter", "PandasWriter", "QGISWriter", "GDALWriter"]
 
 
 class Writer(_Writer):
-    """Writes the results of summary operations to a desired format"""
+    """Writes the results of summary operations to a desired format."""
 
     def __init__(self):
         super().__init__()
 
 
 class JSONWriter(Writer):
-    """
-    Creates GeoJSON-like features
-    """
+    """Creates GeoJSON-like features."""
 
     def __init__(
         self,
         *,
         array_type: str = "numpy",
-        map_fields: Optional[Mapping[str, Tuple[str]]] = None
+        map_fields: Optional[Mapping[str, tuple[str]]] = None,
     ):
-        """
+        """Constructor for JSONWriter.
+
         Args:
             array_type: type that should be used to represent array outputs.
-                        either "numpy" (default), "list", or "set"
+                either "numpy" (default), "list", or "set"
             map_fields: an optional dictionary of fields to be created by
-                        interpreting one field as keys and another as values, in the format
-                        ``{ dst_field : (src_keys, src_vals) }``. for example, the fields
-                        "values" and "frac" would be combined into a field called
-                        "frac_map" using ``map_fields = {"frac_map": ("values", "frac")}``.
+                interpreting one field as keys and another as values, in the format
+                ``{ dst_field : (src_keys, src_vals) }``. for example, the fields
+                values" and "frac" would be combined into a field called
+                "frac_map" using ``map_fields = {"frac_map": ("values", "frac")}``.
         """
         super().__init__()
 
@@ -106,9 +108,7 @@ class JSONWriter(Writer):
 
                 assert len(props[key_field]) == len(props[val_field])
 
-                new_fields[new_field] = {
-                    k: v for k, v in zip(props[key_field], props[val_field])
-                }
+                new_fields[new_field] = dict(zip(props[key_field], props[val_field]))
 
         props.update(new_fields)
 
@@ -120,7 +120,7 @@ class JSONWriter(Writer):
 
 
 class PandasWriter(Writer):
-    """Creates a (Geo)Pandas DataFrame"""
+    """Creates a (Geo)Pandas DataFrame."""
 
     def __init__(self, *, srs_wkt=None):
         super().__init__()
@@ -170,7 +170,7 @@ class PandasWriter(Writer):
 
 
 class QGISWriter(Writer):
-    """Creates QGSVectorLayer"""
+    """Creates QGSVectorLayer."""
 
     def __init__(self, *, srs_wkt=None):
         super().__init__()
@@ -210,12 +210,13 @@ class QGISWriter(Writer):
         return self.vector_layer
 
     def _create_vector_layer(self):
-        """
-        Creates a vector layer with the defined geometry type, CRS and fields.
+        """Creates a vector layer with the defined geometry type, CRS and fields.
+
         Returns the created layer as well as its data provider.
 
         Returns:
-            Tuple[QgsVectorLayer, QgsVectorDataProvider]: initialized vector layer, data provider for created vector layer
+            Tuple[QgsVectorLayer, QgsVectorDataProvider]: initialized vector layer, data
+                provider for created vector layer
         """
         from qgis.core import QgsVectorLayer
 
@@ -228,14 +229,14 @@ class QGISWriter(Writer):
 
         # add fields
         data_provider.addAttributes(self.fields)
-        vector_layer.updateFields()  # tell the vector layer to fetch changes from the provider
+        # tell the vector layer to fetch changes from the provider
+        vector_layer.updateFields()
 
         return vector_layer, data_provider
 
     @staticmethod
     def _get_geometry_type(feature: JSONFeature) -> str:
-        """
-        get geometry type of an input feature geometry
+        """Get geometry type of an input feature geometry.
 
         Args:
             feature (JSONFeature): feature with geometry field
@@ -253,8 +254,7 @@ class QGISWriter(Writer):
 
     @staticmethod
     def _convert_to_QgsFields(fields_list: list):
-        """
-        Converts a list with `QgsField` into a `QgsFields` object
+        """Converts a list with `QgsField` into a `QgsFields` object.
 
         Args:
             fields_list (list): list with `QgsField`
@@ -272,9 +272,10 @@ class QGISWriter(Writer):
 
     @staticmethod
     def _set_fields_types(fields_list: list[str], feature: JSONFeature) -> list:
-        """
-        Sets field types based on provided data. If no type is specified it will be set as string by default
-        with type_name set as "Unknown".
+        """Sets field types based on provided data.
+
+        If no type is specified it will be set as string by default with type_name set
+        as "Unknown".
 
         Args:
             fields_list (list[str]): list with fields names
@@ -316,20 +317,21 @@ class QGISWriter(Writer):
 
 
 class GDALWriter(Writer):
-    """Writes results using GDAL/OGR"""
+    """Writes results using GDAL/OGR."""
 
     def __init__(
         self, dataset=None, *, filename=None, driver=None, layer_name="", srs_wkt=None
     ):
-        """
+        """Constructor for GDALWriter.
+
         Args:
             dataset: a ``gdal.Dataset`` or ``ogr.DataSource`` to which results
-                     should be created in a new layer
+                should be created in a new layer
             filename: file to write results to, if ``dataset`` is ``None``
             driver: driver to use when creating ``filename``
             layer_name: name of new layer to create in output dataset
             srs_wkt: spatial reference system to assign to output dataset. No
-                     coordinate transformation will be performed.
+                coordinate transformation will be performed.
         """
         super().__init__()
 
@@ -341,7 +343,6 @@ class GDALWriter(Writer):
             )
             self.ds = dataset
         elif isinstance(filename, (str, os.PathLike)):
-
             from osgeo_utils.auxiliary.util import GetOutputDriverFor
 
             if driver is None:

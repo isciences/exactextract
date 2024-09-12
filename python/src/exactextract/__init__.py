@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-""" Python bindings for exactextract """
+"""Python bindings for exactextract."""
+# ruff: noqa: F401
 
 from ._exactextract import __version__
 from .exact_extract import exact_extract

@@ -1,3 +1,5 @@
+"""Classes for different feature sources."""
+
 import os
 
 from ._exactextract import Feature
@@ -13,8 +15,7 @@ __all__ = [
 
 
 class FeatureSource(_FeatureSource):
-    """
-    Source from which polygon features can be read.
+    """Source from which polygon features can be read.
 
     Several implementations are included in exactextract:
 
@@ -25,24 +26,26 @@ class FeatureSource(_FeatureSource):
     """
 
     def __init__(self):
+        """Constructor."""
         super().__init__()
 
 
 class GDALFeatureSource(FeatureSource):
-    """
-    A FeatureSource using the GDAL/OGR Python interface to provide features.
-    """
+    """A FeatureSource using the GDAL/OGR Python interface to provide features."""
 
     def __init__(self, src):
-        """
+        """Constructor.
+
         Args:
-            src: one of the following
-                 - string or Path to a file/datasource that can be opened with GDAL/OGR
-                 - a ``gdal.Dataset``
-                 - an ``ogr.DataSource``
-                 - an ``ogr.Layer``
-                 If the file has more than one layer, e.g., a GeoPackage, an
-                 ``ogr.Layer`` must be provided directly.
+            src: one of the following:
+
+                - string or Path to a file/datasource that can be opened with GDAL/OGR
+                - a ``gdal.Dataset``
+                - an ``ogr.DataSource``
+                - an ``ogr.Layer``
+                If the file has more than one layer, e.g., a GeoPackage, an
+                ``ogr.Layer`` must be provided directly.
+
         """
         super().__init__()
 
@@ -59,7 +62,8 @@ class GDALFeatureSource(FeatureSource):
             self.ds = src  # keep a reference to ds
             if nlayers > 1:
                 raise Exception(
-                    "Can only process a single layer; call directly with ogr.Layer object."
+                    "Can only process a single layer; call directly with ogr.Layer "
+                    "object."
                 )
 
             self.src = src.GetLayer(0)
@@ -124,9 +128,7 @@ class GDALFeature(Feature):
 
 
 class JSONFeatureSource(FeatureSource):
-    """
-    A FeatureSource providing GeoJSON-like features.
-    """
+    """A FeatureSource providing GeoJSON-like features."""
 
     def __init__(self, src, *, srs_wkt=None):
         super().__init__()
@@ -197,9 +199,7 @@ class JSONFeature(Feature):
 
 
 class GeoPandasFeatureSource(FeatureSource):
-    """
-    A FeatureSource using GeoPandas GeoDataFrame to provide features.
-    """
+    """A FeatureSource using GeoPandas GeoDataFrame to provide features."""
 
     def __init__(self, src):
         super().__init__()

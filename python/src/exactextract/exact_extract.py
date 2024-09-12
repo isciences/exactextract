@@ -1,9 +1,12 @@
+"""Extract zonal statistics from raster data."""
+
 import copy
 import functools
 import os
 import warnings
+from collections.abc import Mapping
 from itertools import chain
-from typing import Mapping, Optional
+from typing import Optional
 
 from .feature import (
     FeatureSource,
@@ -40,7 +43,8 @@ def make_raster_names(root: str, nbands: int) -> list:
 
 def prep_raster_gdal(rast, name_root=None) -> list:
     try:
-        # eagerly import gdal_array to avoid possible ImportError when reading raster data
+        # eagerly import gdal_array to avoid possible ImportError when reading raster
+        # data
         from osgeo import gdal, gdal_array  # noqa: F401
 
         if isinstance(rast, (str, os.PathLike)):
@@ -93,7 +97,6 @@ def prep_raster_rasterio(rast, name_root=None) -> list:
 
 
 def prep_raster_xarray(rast, name_root=None) -> list:
-
     try:
         import rioxarray  # noqa: F401
         import xarray
@@ -240,7 +243,7 @@ def prep_ops(stats, values, weights=None, *, add_unique=False):
                 if "No weights provided" in str(e):
                     raise Exception(
                         f"No weights provided but {stat.__name__} expects 3 arguments"
-                    )
+                    ) from None
                 else:
                     raise
         elif isinstance(stat, Operation):
@@ -331,8 +334,10 @@ def warn_on_crs_mismatch(vec, ops):
         if check_rast_vec and not crs_matches(vec, op.values):
             check_rast_vec = False
             warnings.warn(
-                "Spatial reference system of input features does not exactly match raster.",
+                "Spatial reference system of input features does not exactly match "
+                "raster.",
                 RuntimeWarning,
+                stacklevel=2,
             )
 
         if (
@@ -342,8 +347,10 @@ def warn_on_crs_mismatch(vec, ops):
         ):
             check_rast_weights = False
             warnings.warn(
-                "Spatial reference system of input features does not exactly match weighting raster.",
+                "Spatial reference system of input features does not exactly match "
+                "weighting raster.",
                 RuntimeWarning,
+                stacklevel=2,
             )
 
 
@@ -365,24 +372,24 @@ def exact_extract(
     """Calculate zonal statistics.
 
     Args:
-       rast: A :py:class:`RasterSource` or filename that can be opened
-             by GDAL/rasterio/xarray.
-       vec: A :py:class:`FeatureSource` or filename that can be opened
-             by GDAL/fiona
-       ops: A list of :py:class:`Operation` objects, or strings that
+        rast: A :py:class:`RasterSource` or filename that can be opened
+            by GDAL/rasterio/xarray.
+        vec: A :py:class:`FeatureSource` or filename that can be opened
+            by GDAL/fiona
+        ops: A list of :py:class:`Operation` objects, or strings that
             can be used to construct them (e.g., ``"mean"``, ``"quantile(q=0.33)"``).
             Check out :doc:`Available operations </operations>` for more information.
-       weights: An optional :py:class:`RasterSource` or filename for
+        weights: An optional :py:class:`RasterSource` or filename for
             weights to be used in weighted operations.
-       include_cols: An optional list of columns from the
+        include_cols: An optional list of columns from the
             input features to be included into the output.
-       include_geom: Flag indicating whether the geometry
+        include_geom: Flag indicating whether the geometry
             should be copied from the input features into
             the output.
-       strategy: Specifies the strategy to use when processing features.
-          Detailed performance notes are available in
-          :ref:`Performance - Processing strategies <performance-processing-strategies>`.
-          Must be set to one of:
+        strategy: Specifies the strategy to use when processing features.
+            Detailed performance notes are available in
+            :ref:`Performance - Processing strategies <performance-processing-strategies>`.
+            Must be set to one of:
 
                  - ``"feature-sequential"`` (the default):
                    iterate over the features in ``vec``,
@@ -397,24 +404,27 @@ def exact_extract(
                    features from ``vec``, and compute statistics. This performs better
                    than ``strategy="feature-sequential"`` in some cases, but comes at
                    a cost of higher memory usage.
-       max_cells_in_memory: Indicates the maximum number of raster cells that should be
-                            loaded into memory at a given time.
-       grid_compat_tol: require value and weight grids to align within ``grid_compat_tol`` times the smaller of the two grid resolutions
-       output: An :py:class:`OutputWriter` or one of the following strings:
+        max_cells_in_memory: Indicates the maximum number of raster cells that should be
+            loaded into memory at a given time.
+        grid_compat_tol: require value and weight grids to align within
+            ``grid_compat_tol`` times the smaller of the two grid resolutions
+        output: An :py:class:`OutputWriter` or one of the following strings:
 
-                 - "geojson" (the default): return a list of GeoJSON-like features
-                 - "pandas": return a ``pandas.DataFrame`` or ``geopandas.GeoDataFrame``,
-                             depending on the value of ``include_geom``
-                 - "gdal": write results to disk using GDAL/OGR as they are written. This
-                           option (with ``strategy="feature-sequential"``) avoids the need
-                           to maintain results for all features in memory at a single time,
-                           which may be significant for operations with large result sizes
-                           such as ``cell_id``, ``values``, etc.
-       output_options: an optional dictionary of options passed to the :py:class:`writer.JSONWriter`, :py:class:`writer.PandasWriter`, or :py:class:`writer.GDALWriter`.
-       progress: if `True`, a progress bar will be displayed. Alternatively, a
-                 function may be provided that will be called with the completion fraction
-                 and a status message.
-    """
+                - "geojson" (the default): return a list of GeoJSON-like features
+                - "pandas": return a ``pandas.DataFrame`` or ``geopandas.GeoDataFrame``,
+                            depending on the value of ``include_geom``
+                - "gdal": write results to disk using GDAL/OGR as they are written. This
+                          option (with ``strategy="feature-sequential"``) avoids the
+                          need to maintain results for all features in memory at a
+                          single time, which may be significant for operations with
+                          large result sizes such as ``cell_id``, ``values``, etc.
+        output_options: an optional dictionary of options passed to the
+            :py:class:`writer.JSONWriter`, :py:class:`writer.PandasWriter`, or
+            :py:class:`writer.GDALWriter`.
+        progress: if `True`, a progress bar will be displayed. Alternatively, a function
+            may be provided that will be called with the completion fraction and a
+            status message.
+    """  # noqa: E501
     rast = prep_raster(rast)
     weights = prep_raster(weights, name_root="weight")
     vec = prep_vec(vec)

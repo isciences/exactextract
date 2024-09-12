@@ -2,7 +2,6 @@
 name = "exactextract"
 description = "Fast and accurate raster zonal statistics"
 license.file = "LICENSE"
-url = "https://github.com/isciences/exactextract"
 authors = [
   { "name" = "Daniel Baston" }
 ]
@@ -20,6 +19,9 @@ classifiers = [
 ]
 dynamic = ["version"]
 readme = "README.md"
+
+[project.urls]
+repository = "https://github.com/isciences/exactextract"
 
 [build-system]
 requires=["scikit-build-core", "pybind11"]
@@ -49,3 +51,97 @@ wheel.packages=["python/src/exactextract"]
 provider = "scikit_build_core.metadata.regex"
 input = "cmake/VersionSource.cmake"
 regex = "EXACTEXTRACT_VERSION_SOURCE \"(?P<value>.+)\""
+
+[tool.ruff]
+line-length = 88
+extend-exclude = ["python/doc/*", "local_ignore/*"]
+
+[tool.ruff.lint]
+select = [
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    "W",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-debugger
+    "T10",
+    # flake8-simplify
+    # "SIM",
+    # pylint
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    # misc lints
+    "PIE",
+    # implicit string concatenation
+    "ISC",
+    # type-checking imports
+    "TCH",
+    # comprehensions
+    "C4",
+    # Ruff-specific rules
+    "RUF",
+    # isort
+    "I",
+    # pydocstyle
+    "D",
+]
+
+ignore = [
+    ### Intentionally disabled
+    # module level import not at top of file
+    "E402",
+    # do not assign a lambda expression, use a def
+    "E731",
+    # mutable-argument-default
+    "B006",
+    # unused-loop-control-variable
+    "B007",
+    # get-attr-with-constant
+    "B009",
+    # Only works with python >=3.10
+    "B905",
+    # dict literals
+    "C408",
+    # Too many arguments to function call
+    "PLR0913",
+    # Too many returns
+    "PLR0911",
+    # Too many branches
+    "PLR0912",
+    # Too many statements
+    "PLR0915",
+    # Magic number
+    "PLR2004",
+    # Consider `elif` instead of `else` then `if` to remove indentation level
+    "PLR5501",
+    # Redefined loop name
+    "PLW2901",
+    # Global statements are discouraged
+    "PLW0603",
+    # compare-to-empty-string
+    "PLC1901",
+
+    ### Temporary disabled
+    # Missing docstring in public method
+    "D102",
+    # Missing docstring in `__init__`
+    "D107",
+    # Missing docstring in magic method
+    "D105",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"python/tests/*" = ["D"]
+"test/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true

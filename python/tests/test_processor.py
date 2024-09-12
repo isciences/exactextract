@@ -1,5 +1,4 @@
 import pytest
-
 from exactextract import Operation
 from exactextract.feature import JSONFeatureSource
 from exactextract.processor import FeatureSequentialProcessor, RasterSequentialProcessor
