@@ -1526,7 +1526,9 @@ def test_crs_mismatch(tmp_path):
         rasters[crs] = tmp_path / f"{crs}.tif"
         features[crs] = tmp_path / f"{crs}.shp"
         create_gdal_raster(
-            rasters[crs], np.arange(9).reshape(3, 3), crs=f"EPSG:{crs}" if crs else None
+            rasters[crs],
+            np.arange(9, dtype=np.int32).reshape(3, 3),
+            crs=f"EPSG:{crs}" if crs else None,
         )
         create_gdal_features(
             features[crs],
@@ -1578,7 +1580,7 @@ def test_crs_match_after_normalization(tmp_path):
 
     vec_crs = 'PROJCRS["WGS 84 / UTM zone 4N",BASEGEOGCRS["WGS 84",DATUM["World Geodetic System 1984",ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],ID["EPSG",4326]],CONVERSION["UTM zone 4N",METHOD["Transverse Mercator",ID["EPSG",9807]],PARAMETER["Latitude of natural origin",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8801]],PARAMETER["Longitude of natural origin",-159,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8802]],PARAMETER["Scale factor at natural origin",0.9996,SCALEUNIT["unity",1],ID["EPSG",8805]],PARAMETER["False easting",500000,LENGTHUNIT["metre",1],ID["EPSG",8806]],PARAMETER["False northing",0,LENGTHUNIT["metre",1],ID["EPSG",8807]]],CS[Cartesian,2],AXIS["easting",east,ORDER[1],LENGTHUNIT["metre",1]],AXIS["northing",north,ORDER[2],LENGTHUNIT["metre",1]],ID["EPSG",32604]]'
 
-    create_gdal_raster(rast, np.arange(9).reshape(3, 3), crs=rast_crs)
+    create_gdal_raster(rast, np.arange(9, dtype=np.int32).reshape(3, 3), crs=rast_crs)
     create_gdal_features(square, [make_rect(0.5, 0.5, 2.5, 2.5)], crs=vec_crs)
 
     with warnings.catch_warnings():
