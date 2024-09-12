@@ -311,8 +311,11 @@ def crs_matches(a, b):
         srs_a.ImportFromWkt(a.srs_wkt())
         srs_b.ImportFromWkt(b.srs_wkt())
 
-        srs_a.StripVertical()
-        srs_b.StripVertical()
+        try:
+            srs_a.StripVertical()
+            srs_b.StripVertical()
+        except AttributeError:
+            pass
 
         return srs_a.IsSame(srs_b)
 
