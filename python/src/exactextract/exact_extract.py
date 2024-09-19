@@ -365,8 +365,8 @@ def exact_extract(
     """Calculate zonal statistics.
 
     Args:
-       rast: A :py:class:`RasterSource` or filename that can be opened
-             by GDAL/rasterio/xarray.
+       rast: One or a list of :py:class:`RasterSource` object(s) or filename(s) that
+             can be opened by GDAL/rasterio/xarray.
        vec: A :py:class:`FeatureSource` or filename that can be opened
              by GDAL/fiona
        ops: A list of :py:class:`Operation` objects, or strings that
