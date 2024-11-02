@@ -198,6 +198,8 @@ set(PROJECT_SOURCES
         src/raster_cell_intersection.h
         src/raster_sequential_processor.cpp
         src/raster_sequential_processor.h
+        src/parallel_raster_processor.cpp
+        src/parallel_raster_processor.h
         src/raster_stats.h
         src/raster_coverage_iterator.h
         src/side.cpp

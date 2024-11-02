@@ -26,6 +26,7 @@
 #include "gdal_raster_wrapper.h"
 #include "gdal_writer.h"
 #include "operation.h"
+#include "parallel_raster_processor.h"
 #include "processor.h"
 #include "raster_sequential_processor.h"
 #include "utils.h"
@@ -133,6 +134,8 @@ main(int argc, char** argv)
             proc = std::make_unique<exactextract::FeatureSequentialProcessor>(shp, *writer);
         } else if (strategy == "raster-sequential") {
             proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer);
+        } else if (strategy == "raster-parallel") {
+            proc = std::make_unique<exactextract::RasterParallelProcessor>(shp, *writer);
         } else {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
         }
