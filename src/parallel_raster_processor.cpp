@@ -60,8 +60,15 @@ RasterParallelProcessor::process()
         populate_index();
 
         auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
-
         auto subgrids = subdivide(grid, m_max_cells_in_memory);
+
+        std::set<RasterSource*> rasterSources;
+        for (const auto& op : m_operations) {
+            rasterSources.insert(op->values);
+        }
+
+        //TODO: split subgridding by raster to optimise IO based on raster block size per input?
+        //logic below currently assumes that all raster inputs have the same total geospatial coverage
         for (std::size_t i = 0; i < subgrids.size(); i++) {
             const auto& subgrid = subgrids[i];
             std::vector<const Feature*> hits;
@@ -77,52 +84,44 @@ RasterParallelProcessor::process()
             },
             &hits);
 
-            std::map<RasterSource*, std::unique_ptr<RasterVariant>> raster_values;
+            if (hits.empty()) {
+                continue;
+            }
 
-            for (const Feature* f : hits) {
-                std::unique_ptr<Raster<float>> coverage;
-                std::set<std::string> processed;
+            for (const auto& raster : rasterSources) {
+                auto values = std::make_unique<RasterVariant>(raster->read_box(subgrid.extent().intersection(raster->grid().extent())));
 
-                for (const auto& op : m_operations) {
-                    // Avoid processing same values/weights for different stats
-                    if (processed.find(op->key()) != processed.end()) {
-                        continue;
-                    } else {
-                        processed.insert(op->key());
-                    }
+                for (const Feature* f : hits) {
+                    auto coverage = std::make_unique<Raster<float>>(raster_cell_intersection(subgrid, m_geos_context, f->geometry()));
+                    std::set<std::string> processed;
 
-                    if (!op->values->grid().extent().contains(subgrid.extent())) {
-                        continue;
-                    }
-
-                    if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
-                        continue;
-                    }
-
-                    // Lazy-initialize coverage
-                    if (coverage == nullptr) {
-                        coverage = std::make_unique<Raster<float>>(
-                        raster_cell_intersection(subgrid, m_geos_context, f->geometry()));
-                    }
-
-                    // FIXME need to ensure that no values are read from a raster that have already been read.
-                    // This may be possible when reading box is expanded slightly from floating-point roundoff problems.
-                    RasterVariant* values = raster_values[op->values].get();
-                    if (values == nullptr) {
-                        raster_values[op->values] = std::make_unique<RasterVariant>(op->values->read_box(subgrid.extent().intersection(op->values->grid().extent())));
-                        values = raster_values[op->values].get();
-                    }
-
-                    if (op->weighted()) {
-                        RasterVariant* weights = raster_values[op->weights].get();
-                        if (weights == nullptr) {
-                            raster_values[op->weights] = std::make_unique<RasterVariant>(op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent())));
-                            weights = raster_values[op->weights].get();
+                    for (const auto& op : m_operations) {
+                        if (op->values != raster) {
+                            continue;
                         }
 
-                        m_reg.update_stats(*f, *op, *coverage, *values, *weights);
-                    } else {
-                        m_reg.update_stats(*f, *op, *coverage, *values);
+                        //TODO: push this earlier and remove duplicate operations entirely
+                        if (processed.find(op->key()) != processed.end()) {
+                            continue;
+                        } else {
+                            processed.insert(op->key());
+                        }
+
+                        if (!op->values->grid().extent().contains(subgrid.extent())) {
+                            continue;
+                        }
+
+                        if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
+                            continue;
+                        }
+
+                        if (op->weighted()) {
+                            //TODO: cache weighted input
+                            auto weights = std::make_unique<RasterVariant>(op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent())));
+                            m_reg.update_stats(*f, *op, *coverage, *values, *weights);
+                        } else {
+                            m_reg.update_stats(*f, *op, *coverage, *values);
+                        }
                     }
                 }
             }
