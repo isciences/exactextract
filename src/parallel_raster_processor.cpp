@@ -30,6 +30,13 @@ namespace exactextract {
 
 typedef std::vector<const Feature*> FeatureHits;
 
+struct ZonalStatsCalc {
+    Grid<bounded_extent> subgrid;
+    FeatureHits hits;
+    RasterSource* source;
+    std::unique_ptr<RasterVariant> values;
+};
+
 void
 RasterParallelProcessor::read_features()
 {
@@ -98,51 +105,57 @@ RasterParallelProcessor::process()
 
             return {subgrid, hits};
         }) &
-        oneapi::tbb::make_filter<std::tuple<Grid<bounded_extent>, FeatureHits>, void>(oneapi::tbb::filter_mode::serial_in_order,
-        [rasterSources, this] (std::tuple<Grid<bounded_extent>, FeatureHits> inputs) {
+        oneapi::tbb::make_filter<std::tuple<Grid<bounded_extent>, FeatureHits>, ZonalStatsCalc>(oneapi::tbb::filter_mode::serial_out_of_order,
+        [rasterSources, this] (std::tuple<Grid<bounded_extent>, FeatureHits> inputs) -> ZonalStatsCalc {
             auto& subgrid = std::get<0>(inputs);
             auto& hits = std::get<1>(inputs);
 
-            for (const auto& raster : rasterSources) {
-                auto values = std::make_unique<RasterVariant>(raster->read_box(subgrid.extent().intersection(raster->grid().extent())));
+            if (rasterSources.size() > 1) {
+                    throw std::runtime_error("More than 1 raster sources not yet supported.");
+            }
+            auto raster = *rasterSources.begin();
+            auto values = std::make_unique<RasterVariant>(raster->read_box(subgrid.extent().intersection(raster->grid().extent())));
 
-                for (const Feature* f : hits) {
-                    auto coverage = std::make_unique<Raster<float>>(raster_cell_intersection(subgrid, m_geos_context, f->geometry()));
-                    std::set<std::string> processed;
-
-                    for (const auto& op : m_operations) {
-                        if (op->values != raster) {
-                            continue;
-                        }
-
-                        //TODO: push this earlier and remove duplicate operations entirely
-                        if (processed.find(op->key()) != processed.end()) {
-                            continue;
-                        } else {
-                            processed.insert(op->key());
-                        }
-
-                        if (!op->values->grid().extent().contains(subgrid.extent())) {
-                            continue;
-                        }
-
-                        if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
-                            continue;
-                        }
-
-                        if (op->weighted()) {
-                            //TODO: cache weighted input
-                            auto weights = std::make_unique<RasterVariant>(op->weights->read_box(subgrid.extent().intersection(op->weights->grid().extent())));
-                            m_reg.update_stats(*f, *op, *coverage, *values, *weights);
-                        } else {
-                            m_reg.update_stats(*f, *op, *coverage, *values);
-                        }
-                    }
-                }
+            return {subgrid, hits, raster, std::move(values)};
+        }) &
+        oneapi::tbb::make_filter<ZonalStatsCalc, void>(oneapi::tbb::filter_mode::serial_out_of_order,
+        [this] (ZonalStatsCalc inputs) {
+            if (!inputs.values) {
+                throw std::runtime_error("No raster values to process.");
             }
 
-            if (m_show_progress) {
-                //TODO
+            for (const Feature* f : inputs.hits) {
+                auto coverage = std::make_unique<Raster<float>>(raster_cell_intersection(inputs.subgrid, m_geos_context, f->geometry()));
+                std::set<std::string> processed;
+
+                for (const auto& op : m_operations) {
+                    if (op->values != inputs.source) {
+                        continue;
+                    }
+
+                    //TODO: push this earlier and remove duplicate operations entirely
+                    if (processed.find(op->key()) != processed.end()) {
+                        continue;
+                    } else {
+                        processed.insert(op->key());
+                    }
+
+                    if (!op->values->grid().extent().contains(inputs.subgrid.extent())) {
+                        continue;
+                    }
+
+                    if (op->weighted() && !op->weights->grid().extent().contains(inputs.subgrid.extent())) {
+                        continue;
+                    }
+
+                    if (op->weighted()) {
+                        //TODO: cache weighted input
+                        auto weights = std::make_unique<RasterVariant>(op->weights->read_box(inputs.subgrid.extent().intersection(op->weights->grid().extent())));
+                        m_reg.update_stats(*f, *op, *coverage, *inputs.values, *weights);
+                    } else {
+                        m_reg.update_stats(*f, *op, *coverage, *inputs.values);
+                    }
+                }
             }
         })
     );
