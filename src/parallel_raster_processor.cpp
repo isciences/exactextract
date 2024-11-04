@@ -65,7 +65,7 @@ RasterParallelProcessor::process()
     auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
     auto subgrids = subdivide(grid, m_max_cells_in_memory);
 
-    oneapi::tbb::parallel_pipeline(1, 
+    oneapi::tbb::parallel_pipeline(4, 
         oneapi::tbb::make_filter<void, Grid<bounded_extent>>(oneapi::tbb::filter_mode::serial_in_order,
         [&subgrids] (oneapi::tbb::flow_control& fc) -> Grid<bounded_extent> {
             //TODO: split subgridding by raster to optimise IO based on raster block size per input?
@@ -78,7 +78,7 @@ RasterParallelProcessor::process()
             subgrids.pop_back();
             return sg;
         }) &
-        oneapi::tbb::make_filter<Grid<bounded_extent>, std::tuple<Grid<bounded_extent>, FeatureHits>>(oneapi::tbb::filter_mode::serial_in_order,
+        oneapi::tbb::make_filter<Grid<bounded_extent>, std::tuple<Grid<bounded_extent>, FeatureHits>>(oneapi::tbb::filter_mode::parallel,
         [rasterSources, this] (Grid<bounded_extent> subgrid) -> std::tuple<Grid<bounded_extent>, FeatureHits> {
             std::vector<const Feature*> hits;
             auto query_rect = geos_make_box_polygon(m_geos_context, subgrid.extent());
