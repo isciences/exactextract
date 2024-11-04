@@ -110,6 +110,10 @@ RasterParallelProcessor::process()
             auto& subgrid = std::get<0>(inputs);
             auto& hits = std::get<1>(inputs);
 
+            if (hits.empty()) {
+                return {subgrid, hits, nullptr, nullptr};
+            }
+
             if (rasterSources.size() > 1) {
                     throw std::runtime_error("More than 1 raster sources not yet supported.");
             }
@@ -121,7 +125,7 @@ RasterParallelProcessor::process()
         oneapi::tbb::make_filter<ZonalStatsCalc, void>(oneapi::tbb::filter_mode::serial_out_of_order,
         [this] (ZonalStatsCalc inputs) {
             if (!inputs.values) {
-                throw std::runtime_error("No raster values to process.");
+                return;
             }
 
             for (const Feature* f : inputs.hits) {
