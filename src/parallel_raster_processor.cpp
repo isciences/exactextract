@@ -72,6 +72,8 @@ RasterParallelProcessor::process()
     auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
     auto subgrids = subdivide(grid, m_max_cells_in_memory);
 
+    oneapi::tbb::concurrent_vector<std::unique_ptr<StatsRegistry>> registries;
+
     oneapi::tbb::parallel_pipeline(4, 
         oneapi::tbb::make_filter<void, Grid<bounded_extent>>(oneapi::tbb::filter_mode::serial_in_order,
         [&subgrids] (oneapi::tbb::flow_control& fc) -> Grid<bounded_extent> {
@@ -123,10 +125,16 @@ RasterParallelProcessor::process()
 
             return {subgrid, hits, raster, std::move(values)};
         }) &
-        oneapi::tbb::make_filter<ZonalStatsCalc, void>(oneapi::tbb::filter_mode::serial_out_of_order,
-        [this] (ZonalStatsCalc inputs) {
+        oneapi::tbb::make_filter<ZonalStatsCalc, void>(oneapi::tbb::filter_mode::parallel,
+        [&registries, this] (ZonalStatsCalc inputs) {
             if (!inputs.values) {
                 return;
+            }
+
+            auto block_registry = std::make_unique<StatsRegistry>();
+
+            for (const auto& op : m_operations) {
+                block_registry->prepare(*op);
             }
 
             for (const Feature* f : inputs.hits) {
@@ -156,12 +164,14 @@ RasterParallelProcessor::process()
                     if (op->weighted()) {
                         //TODO: cache weighted input
                         auto weights = std::make_unique<RasterVariant>(op->weights->read_box(inputs.subgrid.extent().intersection(op->weights->grid().extent())));
-                        m_reg.update_stats(*f, *op, *coverage, *inputs.values, *weights);
+                        block_registry->update_stats(*f, *op, *coverage, *inputs.values, *weights);
                     } else {
-                        m_reg.update_stats(*f, *op, *coverage, *inputs.values);
+                        block_registry->update_stats(*f, *op, *coverage, *inputs.values);
                     }
                 }
             }
+
+            registries.push_back(std::move(block_registry));
         })
     );
 
