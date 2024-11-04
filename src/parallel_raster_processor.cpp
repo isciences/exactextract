@@ -28,6 +28,8 @@
 
 namespace exactextract {
 
+typedef std::vector<const Feature*> FeatureHits;
+
 void
 RasterParallelProcessor::read_features()
 {
@@ -76,8 +78,8 @@ RasterParallelProcessor::process()
             subgrids.pop_back();
             return sg;
         }) &
-        oneapi::tbb::make_filter<Grid<bounded_extent>, void>(oneapi::tbb::filter_mode::serial_in_order,
-        [rasterSources, this] (Grid<bounded_extent> subgrid) {
+        oneapi::tbb::make_filter<Grid<bounded_extent>, std::tuple<Grid<bounded_extent>, FeatureHits>>(oneapi::tbb::filter_mode::serial_in_order,
+        [rasterSources, this] (Grid<bounded_extent> subgrid) -> std::tuple<Grid<bounded_extent>, FeatureHits> {
             std::vector<const Feature*> hits;
             auto query_rect = geos_make_box_polygon(m_geos_context, subgrid.extent());
 
@@ -91,8 +93,15 @@ RasterParallelProcessor::process()
             &hits);
 
             if (hits.empty()) {
-                return;
+                return {Grid<bounded_extent>::make_empty(), FeatureHits()};
             }
+
+            return {subgrid, hits};
+        }) &
+        oneapi::tbb::make_filter<std::tuple<Grid<bounded_extent>, FeatureHits>, void>(oneapi::tbb::filter_mode::serial_in_order,
+        [rasterSources, this] (std::tuple<Grid<bounded_extent>, FeatureHits> inputs) {
+            auto& subgrid = std::get<0>(inputs);
+            auto& hits = std::get<1>(inputs);
 
             for (const auto& raster : rasterSources) {
                 auto values = std::make_unique<RasterVariant>(raster->read_box(subgrid.extent().intersection(raster->grid().extent())));
