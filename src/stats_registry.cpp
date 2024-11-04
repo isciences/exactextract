@@ -62,6 +62,27 @@ StatsRegistry::update_stats(const Feature& f, const Operation& op, const Raster<
                weights);
 }
 
+void
+StatsRegistry::merge(StatsRegistry& source)
+{
+    for (auto& feature : source.m_feature_stats) {
+        auto& my_feature = this->m_feature_stats[feature.first];
+
+        for (auto& op : feature.second) {
+            //op.first = string
+            //op.second = RasterStatsVariant
+            auto& my_feature_op = my_feature[op.first];
+
+            std::visit([&op] (auto& dest) {
+                using value_type = typename std::remove_reference_t<decltype(dest)>::ValueType;
+                RasterStats<value_type>& src = std::get<RasterStats<value_type>>(op.second);
+
+                dest.combine(src);
+            }, my_feature_op);
+        }
+    }
+}
+
 StatsRegistry::RasterStatsVariant&
 StatsRegistry::stats(const Feature& feature, const Operation& op)
 {

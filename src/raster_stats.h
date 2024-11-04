@@ -82,6 +82,31 @@ class RasterStats
     {
     }
 
+    void combine(const RasterStats<T>& source) {
+        m_min = std::min(m_min, source.m_min);
+        m_max = std::max(m_max, source.m_max);
+        // std::pair<double, double> m_min_xy;
+        // std::pair<double, double> m_max_xy;
+
+        m_sum_ciwi += source.m_sum_ciwi;
+        m_sum_ci += source.m_sum_ci;
+        m_sum_xici += source.m_sum_xici;
+        m_sum_xiciwi += source.m_sum_xiciwi;
+        // m_variance;
+        // m_weighted_variance;
+
+        // mutable std::unique_ptr<WeightedQuantiles> m_quantiles;
+        // std::unordered_map<T, ValueFreqEntry> m_freq;
+
+        // std::vector<float> m_cell_cov;
+        // std::vector<T> m_cell_values;
+        // std::vector<double> m_cell_weights;
+        // std::vector<double> m_cell_x;
+        // std::vector<double> m_cell_y;
+        // std::vector<bool> m_cell_values_defined;
+        // std::vector<bool> m_cell_weights_defined;
+    }
+
     static bool get_or_default(const AbstractRaster<T>& r, std::size_t i, std::size_t j, T& val, const std::optional<T>& default_value)
     {
         if (r.get(i, j, val)) {
