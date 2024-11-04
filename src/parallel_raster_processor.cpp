@@ -29,6 +29,7 @@
 namespace exactextract {
 
 typedef std::vector<const Feature*> FeatureHits;
+typedef std::shared_ptr<StatsRegistry> StatsRegistryPtr;
 
 struct ZonalStatsCalc {
     Grid<bounded_extent> subgrid;
@@ -67,12 +68,12 @@ RasterParallelProcessor::process()
     std::set<RasterSource*> rasterSources;
     for (const auto& op : m_operations) {
         rasterSources.insert(op->values);
+        m_reg.prepare(*op);
     }
 
     auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
     auto subgrids = subdivide(grid, m_max_cells_in_memory);
 
-    oneapi::tbb::concurrent_vector<std::unique_ptr<StatsRegistry>> registries;
 
     oneapi::tbb::parallel_pipeline(4, 
         oneapi::tbb::make_filter<void, Grid<bounded_extent>>(oneapi::tbb::filter_mode::serial_in_order,
@@ -125,13 +126,13 @@ RasterParallelProcessor::process()
 
             return {subgrid, hits, raster, std::move(values)};
         }) &
-        oneapi::tbb::make_filter<ZonalStatsCalc, void>(oneapi::tbb::filter_mode::parallel,
-        [&registries, this] (ZonalStatsCalc inputs) {
+        oneapi::tbb::make_filter<ZonalStatsCalc, StatsRegistryPtr>(oneapi::tbb::filter_mode::parallel,
+        [this] (ZonalStatsCalc inputs) -> StatsRegistryPtr {
             if (!inputs.values) {
-                return;
+                return nullptr;
             }
 
-            auto block_registry = std::make_unique<StatsRegistry>();
+            auto block_registry = std::make_shared<StatsRegistry>();
 
             for (const auto& op : m_operations) {
                 block_registry->prepare(*op);
@@ -171,7 +172,13 @@ RasterParallelProcessor::process()
                 }
             }
 
-            registries.push_back(std::move(block_registry));
+            return block_registry;
+        }) &
+        oneapi::tbb::make_filter<StatsRegistryPtr, void>(oneapi::tbb::filter_mode::serial_out_of_order, 
+        [this] (StatsRegistryPtr registry) {
+            if (registry) {
+                this->m_reg.merge(*registry);
+            }
         })
     );
 

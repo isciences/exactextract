@@ -82,6 +82,9 @@ class RasterStats
     {
     }
 
+    RasterStats(RasterStats<T>&& other) = default;
+    RasterStats<T>& operator=(RasterStats<T>&& other) = default;
+
     void combine(const RasterStats<T>& source) {
         m_min = std::min(m_min, source.m_min);
         m_max = std::max(m_max, source.m_max);
