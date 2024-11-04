@@ -77,8 +77,9 @@ RasterParallelProcessor::process()
         [&subgrids] (oneapi::tbb::flow_control& fc) -> Grid<bounded_extent> {
             //TODO: split subgridding by raster to optimise IO based on raster block size per input?
             //logic below currently assumes that all raster inputs have the same total geospatial coverage
-            if (subgrids.size() == 1) {
+            if (subgrids.empty()) {
                 fc.stop();
+                return Grid<bounded_extent>::make_empty();
             }
 
             auto sg = subgrids.back();
