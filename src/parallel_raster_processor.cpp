@@ -52,27 +52,33 @@ RasterParallelProcessor::populate_index()
 void
 RasterParallelProcessor::process()
 {
+    read_features();
+    populate_index();
+
+    std::set<RasterSource*> rasterSources;
+    for (const auto& op : m_operations) {
+        rasterSources.insert(op->values);
+    }
+
+    auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
+    auto subgrids = subdivide(grid, m_max_cells_in_memory);
+
     oneapi::tbb::parallel_pipeline(1, 
-        oneapi::tbb::make_filter<void, void>(oneapi::tbb::filter_mode::serial_in_order,
-        [this] (oneapi::tbb::flow_control& fc) -> void {
+        oneapi::tbb::make_filter<void, Grid<bounded_extent>>(oneapi::tbb::filter_mode::serial_in_order,
+        [&subgrids] (oneapi::tbb::flow_control& fc) -> Grid<bounded_extent> {
+            //TODO: split subgridding by raster to optimise IO based on raster block size per input?
+            //logic below currently assumes that all raster inputs have the same total geospatial coverage
+            if (subgrids.size() == 1) {
+                fc.stop();
+            }
 
-        read_features();
-        populate_index();
-
-        auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
-        auto subgrids = subdivide(grid, m_max_cells_in_memory);
-
-        std::set<RasterSource*> rasterSources;
-        for (const auto& op : m_operations) {
-            rasterSources.insert(op->values);
-        }
-
-        //TODO: split subgridding by raster to optimise IO based on raster block size per input?
-        //logic below currently assumes that all raster inputs have the same total geospatial coverage
-        for (std::size_t i = 0; i < subgrids.size(); i++) {
-            const auto& subgrid = subgrids[i];
+            auto sg = subgrids.back();
+            subgrids.pop_back();
+            return sg;
+        }) &
+        oneapi::tbb::make_filter<Grid<bounded_extent>, void>(oneapi::tbb::filter_mode::serial_in_order,
+        [rasterSources, this] (Grid<bounded_extent> subgrid) {
             std::vector<const Feature*> hits;
-
             auto query_rect = geos_make_box_polygon(m_geos_context, subgrid.extent());
 
             GEOSSTRtree_query_r(
@@ -85,7 +91,7 @@ RasterParallelProcessor::process()
             &hits);
 
             if (hits.empty()) {
-                continue;
+                return;
             }
 
             for (const auto& raster : rasterSources) {
@@ -127,14 +133,10 @@ RasterParallelProcessor::process()
             }
 
             if (m_show_progress) {
-                std::stringstream ss;
-                ss << subgrid.extent();
-                progress(static_cast<double>(i + 1) / static_cast<double>(subgrids.size()), ss.str());
+                //TODO
             }
-        }
-
-        fc.stop();
-    }));
+        })
+    );
 
     for (const auto& f_in : m_features) {
             write_result(f_in);
