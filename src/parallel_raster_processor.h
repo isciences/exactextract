@@ -25,12 +25,19 @@ class RasterParallelProcessor : public Processor
   public:
     using Processor::Processor;
 
+    RasterParallelProcessor(FeatureSource& ds, OutputWriter& out, size_t tokens)
+      : Processor(ds, out)
+      , m_tokens(tokens)
+    {
+    }
+
     void read_features();
     void populate_index();
 
     void process() override;
 
   private:
+    size_t m_tokens;
     std::vector<MapFeature> m_features;
     tree_ptr_r m_feature_tree{ geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10)) };
 };

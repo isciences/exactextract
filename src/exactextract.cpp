@@ -55,6 +55,7 @@ main(int argc, char** argv)
     std::vector<std::string> weight_descriptors;
     std::vector<std::string> include_cols;
     size_t max_cells_in_memory = 30;
+    size_t tokens = 4;
 
     bool progress = false;
     bool nested_output = false;
@@ -69,6 +70,7 @@ main(int argc, char** argv)
     app.add_option("-s,--stat", stats, "statistics")->required(false)->expected(-1);
     app.add_option("--max-cells", max_cells_in_memory, "maximum number of raster cells to read in memory at once, in millions")->required(false)->default_val("30");
     app.add_option("--strategy", strategy, "processing strategy")->required(false)->default_val("feature-sequential");
+    app.add_option("--tokens", tokens, "maximum number of parallel tokens that can processed, default 4")->required(false)->default_val(4);
     app.add_option("--id-type", dst_id_type, "override type of id field in output")->required(false);
     app.add_option("--id-name", dst_id_name, "override name of id field in output")->required(false);
     app.add_flag("--nested-output", nested_output, "nested output");
@@ -135,7 +137,7 @@ main(int argc, char** argv)
         } else if (strategy == "raster-sequential") {
             proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer);
         } else if (strategy == "raster-parallel") {
-            proc = std::make_unique<exactextract::RasterParallelProcessor>(shp, *writer);
+            proc = std::make_unique<exactextract::RasterParallelProcessor>(shp, *writer, tokens);
         } else {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
         }

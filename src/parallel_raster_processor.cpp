@@ -95,7 +95,7 @@ RasterParallelProcessor::process()
         return initGEOS_r(errorHandlerParallel, errorHandlerParallel);
     });
 
-    oneapi::tbb::parallel_pipeline(4, 
+    oneapi::tbb::parallel_pipeline(m_tokens, 
         oneapi::tbb::make_filter<void, Grid<bounded_extent>>(oneapi::tbb::filter_mode::serial_in_order,
         [&subgrids] (oneapi::tbb::flow_control& fc) -> Grid<bounded_extent> {
             //TODO: split subgridding by raster to optimise IO based on raster block size per input?
