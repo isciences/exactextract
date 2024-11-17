@@ -26,6 +26,23 @@
 
 #include <oneapi/tbb.h>
 
+namespace {
+
+void errorHandlerParallel(const char *fmt, ...) {
+
+    char buf[BUFSIZ], *p;
+    va_list ap;
+    va_start(ap, fmt);
+    vsprintf(buf, fmt, ap);
+    va_end(ap);
+    p = buf + strlen(buf) - 1;
+    if(strlen(buf) > 0 && *p == '\n') *p = '\0';
+
+    std::cout << "Error: " << buf << std::endl;
+}
+
+}
+
 namespace exactextract {
 
 typedef std::vector<const Feature*> FeatureHits;
@@ -74,6 +91,9 @@ RasterParallelProcessor::process()
     auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
     auto subgrids = subdivide(grid, m_max_cells_in_memory);
 
+    oneapi::tbb::enumerable_thread_specific<GEOSContextHandle_t> geos_context([] () -> GEOSContextHandle_t {
+        return initGEOS_r(errorHandlerParallel, errorHandlerParallel);
+    });
 
     oneapi::tbb::parallel_pipeline(4, 
         oneapi::tbb::make_filter<void, Grid<bounded_extent>>(oneapi::tbb::filter_mode::serial_in_order,
@@ -90,12 +110,12 @@ RasterParallelProcessor::process()
             return sg;
         }) &
         oneapi::tbb::make_filter<Grid<bounded_extent>, std::tuple<Grid<bounded_extent>, FeatureHits>>(oneapi::tbb::filter_mode::parallel,
-        [rasterSources, this] (Grid<bounded_extent> subgrid) -> std::tuple<Grid<bounded_extent>, FeatureHits> {
+        [&geos_context, this] (Grid<bounded_extent> subgrid) -> std::tuple<Grid<bounded_extent>, FeatureHits> {
             std::vector<const Feature*> hits;
-            auto query_rect = geos_make_box_polygon(m_geos_context, subgrid.extent());
+            auto query_rect = geos_make_box_polygon(geos_context.local(), subgrid.extent());
 
             GEOSSTRtree_query_r(
-            m_geos_context, m_feature_tree.get(), query_rect.get(), [](void* hit, void* userdata) {
+            geos_context.local(), m_feature_tree.get(), query_rect.get(), [](void* hit, void* userdata) {
                 auto feature = static_cast<const Feature*>(hit);
                 auto vec = static_cast<std::vector<const Feature*>*>(userdata);
 
@@ -127,7 +147,7 @@ RasterParallelProcessor::process()
             return {subgrid, hits, raster, std::move(values)};
         }) &
         oneapi::tbb::make_filter<ZonalStatsCalc, StatsRegistryPtr>(oneapi::tbb::filter_mode::parallel,
-        [this] (ZonalStatsCalc inputs) -> StatsRegistryPtr {
+        [&geos_context, this] (ZonalStatsCalc inputs) -> StatsRegistryPtr {
             if (!inputs.values) {
                 return nullptr;
             }
@@ -139,7 +159,7 @@ RasterParallelProcessor::process()
             }
 
             for (const Feature* f : inputs.hits) {
-                auto coverage = std::make_unique<Raster<float>>(raster_cell_intersection(inputs.subgrid, m_geos_context, f->geometry()));
+                auto coverage = std::make_unique<Raster<float>>(raster_cell_intersection(inputs.subgrid, geos_context.local(), f->geometry()));
                 std::set<std::string> processed;
 
                 for (const auto& op : m_operations) {
