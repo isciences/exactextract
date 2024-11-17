@@ -131,10 +131,9 @@ RasterParallelProcessor::process()
         }) &
         oneapi::tbb::make_filter<std::tuple<Grid<bounded_extent>, FeatureHits>, ZonalStatsCalc>(oneapi::tbb::filter_mode::serial_out_of_order,
         [rasterSources, this] (std::tuple<Grid<bounded_extent>, FeatureHits> inputs) -> ZonalStatsCalc {
-            auto& subgrid = std::get<0>(inputs);
-            auto& hits = std::get<1>(inputs);
+            auto& [subgrid, hits] = inputs;
 
-            if (hits.empty()) {
+            if (subgrid.empty() || hits.empty()) {
                 return {subgrid, hits, nullptr, nullptr};
             }
 
@@ -148,7 +147,7 @@ RasterParallelProcessor::process()
         }) &
         oneapi::tbb::make_filter<ZonalStatsCalc, StatsRegistryPtr>(oneapi::tbb::filter_mode::parallel,
         [&geos_context, this] (ZonalStatsCalc inputs) -> StatsRegistryPtr {
-            if (!inputs.values) {
+            if (inputs.subgrid.empty() || inputs.hits.empty() || !inputs.source || !inputs.values) {
                 return nullptr;
             }
 
