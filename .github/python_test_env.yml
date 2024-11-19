@@ -2,6 +2,7 @@ name: testenv
 channels:
   - conda-forge
 dependencies:
+  - libgdal-netcdf
   - python-build
   - gdal
   - geopandas
