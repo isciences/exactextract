@@ -317,10 +317,23 @@ def crs_matches(a, b):
         except AttributeError:
             pass
 
-        return srs_a.IsSame(srs_b)
+        return bool(srs_a.IsSame(srs_b))
 
     except ImportError:
-        return False
+        pass
+
+    try:
+        from pyproj import CRS
+
+        crs_a = CRS.from_string(a.srs_wkt())
+        crs_b = CRS.from_string(b.srs_wkt())
+
+        return crs_a == crs_b
+
+    except ImportError:
+        pass
+
+    return False
 
 
 def warn_on_crs_mismatch(vec, ops):
