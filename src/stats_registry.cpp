@@ -69,22 +69,22 @@ StatsRegistry::merge(StatsRegistry& source)
         auto& my_feature = this->m_feature_stats[feature.first];
 
         for (auto& op : feature.second) {
-            //op.first = string
-            //op.second = RasterStatsVariant
             const auto& feature_key = op.first;
             auto& src_rsv = op.second;
 
             auto my_feature_rsv = my_feature.find(feature_key);
             if (my_feature_rsv == my_feature.end()) {
-                std::visit([&my_feature, feature_key](auto& src){
+                std::visit([&my_feature, feature_key](auto& src) {
                     my_feature.emplace(feature_key, std::move(src));
-                }, src_rsv);
+                },
+                           src_rsv);
             } else {
-                std::visit([&my_feature_rsv] (auto& src) {
+                std::visit([&my_feature_rsv](auto& src) {
                     using value_type = typename std::remove_reference_t<decltype(src)>::ValueType;
                     RasterStats<value_type>& dest = std::get<RasterStats<value_type>>(my_feature_rsv->second);
                     dest.combine(src);
-                }, src_rsv);
+                },
+                           src_rsv);
             }
         }
     }

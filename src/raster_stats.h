@@ -85,27 +85,25 @@ class RasterStats
     RasterStats(RasterStats<T>&& other) = default;
     RasterStats<T>& operator=(RasterStats<T>&& other) = default;
 
-    void combine(const RasterStats<T>& source) {
+    void combine(const RasterStats<T>& source)
+    {
         m_min = std::min(m_min, source.m_min);
         m_max = std::max(m_max, source.m_max);
 
         if (m_options.store_xy) {
             double minX = std::min(m_min_xy.first, source.m_min_xy.first);
             double minY = std::min(m_min_xy.second, source.m_min_xy.second);
-            m_min_xy = {minX, minY};
+            m_min_xy = { minX, minY };
 
             double maxX = std::min(m_max_xy.first, source.m_max_xy.first);
             double maxY = std::min(m_max_xy.second, source.m_max_xy.second);
-            m_max_xy = {maxX, maxY};
+            m_max_xy = { maxX, maxY };
         }
 
         m_sum_ciwi += source.m_sum_ciwi;
         m_sum_ci += source.m_sum_ci;
         m_sum_xici += source.m_sum_xici;
         m_sum_xiciwi += source.m_sum_xiciwi;
-
-        // m_variance;
-        // m_weighted_variance;
 
         for (auto& v : source.m_freq) {
             auto it = m_freq.find(v.first);

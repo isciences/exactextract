@@ -28,7 +28,8 @@
 
 namespace {
 
-void errorHandlerParallel(const char *fmt, ...) {
+void
+errorHandlerParallel(const char *fmt, ...) {
 
     char buf[BUFSIZ], *p;
     va_list ap;
@@ -36,7 +37,8 @@ void errorHandlerParallel(const char *fmt, ...) {
     vsprintf(buf, fmt, ap);
     va_end(ap);
     p = buf + strlen(buf) - 1;
-    if(strlen(buf) > 0 && *p == '\n') *p = '\0';
+    if (strlen(buf) > 0 && *p == '\n')
+        *p = '\0';
 
     std::cout << "Error: " << buf << std::endl;
 }
@@ -48,7 +50,8 @@ namespace exactextract {
 typedef std::vector<const Feature*> FeatureHits;
 typedef std::shared_ptr<StatsRegistry> StatsRegistryPtr;
 
-struct ZonalStatsCalc {
+struct ZonalStatsCalc
+{
     Grid<bounded_extent> subgrid;
     FeatureHits hits;
     RasterSource* source;
@@ -93,7 +96,7 @@ RasterParallelProcessor::process()
     const auto totalSubgrids = subgrids.size();
     size_t processedSubgrids = 0;
 
-    oneapi::tbb::enumerable_thread_specific<GEOSContextHandle_t> geos_context([] () -> GEOSContextHandle_t {
+    oneapi::tbb::enumerable_thread_specific<GEOSContextHandle_t> geos_context([]() -> GEOSContextHandle_t {
         return initGEOS_r(errorHandlerParallel, errorHandlerParallel);
     });
 
@@ -214,7 +217,7 @@ RasterParallelProcessor::process()
     );
 
     for (const auto& f_in : m_features) {
-            write_result(f_in);
+        write_result(f_in);
     }
 }
 
