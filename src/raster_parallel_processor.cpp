@@ -90,6 +90,8 @@ RasterParallelProcessor::process()
 
     auto grid = common_grid(m_operations.begin(), m_operations.end(), m_grid_compat_tol);
     auto subgrids = subdivide(grid, m_max_cells_in_memory);
+    const auto totalSubgrids = subgrids.size();
+    size_t processedSubgrids = 0;
 
     oneapi::tbb::enumerable_thread_specific<GEOSContextHandle_t> geos_context([] () -> GEOSContextHandle_t {
         return initGEOS_r(errorHandlerParallel, errorHandlerParallel);
@@ -124,7 +126,7 @@ RasterParallelProcessor::process()
             &hits);
 
             if (hits.empty()) {
-                return {Grid<bounded_extent>::make_empty(), FeatureHits()};
+                return {subgrid, FeatureHits()};
             }
 
             return {subgrid, hits};
@@ -145,10 +147,10 @@ RasterParallelProcessor::process()
 
             return {subgrid, hits, raster, std::move(values)};
         }) &
-        oneapi::tbb::make_filter<ZonalStatsCalc, StatsRegistryPtr>(oneapi::tbb::filter_mode::parallel,
-        [&geos_context, this] (ZonalStatsCalc inputs) -> StatsRegistryPtr {
+        oneapi::tbb::make_filter<ZonalStatsCalc, std::tuple<Grid<bounded_extent>, StatsRegistryPtr>>(oneapi::tbb::filter_mode::parallel,
+        [&geos_context, this] (ZonalStatsCalc inputs) -> std::tuple<Grid<bounded_extent>, StatsRegistryPtr> {
             if (inputs.subgrid.empty() || inputs.hits.empty() || !inputs.source || !inputs.values) {
-                return nullptr;
+                return {inputs.subgrid, nullptr};
             }
 
             auto block_registry = std::make_shared<StatsRegistry>();
@@ -191,12 +193,22 @@ RasterParallelProcessor::process()
                 }
             }
 
-            return block_registry;
+            return {inputs.subgrid, block_registry};
         }) &
-        oneapi::tbb::make_filter<StatsRegistryPtr, void>(oneapi::tbb::filter_mode::serial_out_of_order, 
-        [this] (StatsRegistryPtr registry) {
-            if (registry) {
-                this->m_reg.merge(*registry);
+        oneapi::tbb::make_filter<std::tuple<Grid<bounded_extent>, StatsRegistryPtr>, void>(oneapi::tbb::filter_mode::serial_out_of_order, 
+        [&processedSubgrids, totalSubgrids, this] (std::tuple<Grid<bounded_extent>, StatsRegistryPtr> registry) {
+            auto& [registryGrid, regptr] = registry;
+            if (regptr) {
+                this->m_reg.merge(*regptr);
+            }
+
+            if (m_show_progress && !registryGrid.empty()) {
+                processedSubgrids++;
+
+                std::stringstream ss;
+                ss << registryGrid.extent();
+
+                progress(static_cast<double>(processedSubgrids) / static_cast<double>(totalSubgrids), ss.str());
             }
         })
     );
