@@ -33,7 +33,7 @@
 #include "version.h"
 
 #ifdef EE_PARALLEL
-#include "parallel_raster_processor.h"
+#include "raster_parallel_processor.h"
 #endif
 
 using exactextract::GDALDatasetWrapper;

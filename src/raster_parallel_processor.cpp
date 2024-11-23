@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "parallel_raster_processor.h"
+#include "raster_parallel_processor.h"
 #include "operation.h"
 #include "raster_cell_intersection.h"
 #include "raster_source.h"

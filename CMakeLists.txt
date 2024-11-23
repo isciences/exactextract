@@ -224,8 +224,8 @@ set(PROJECT_SOURCES
 if (BUILD_PARALLEL_TBB)
     set(PROJECT_SOURCES
         ${PROJECT_SOURCES}
-        src/parallel_raster_processor.cpp
-        src/parallel_raster_processor.h
+        src/raster_parallel_processor.cpp
+        src/raster_parallel_processor.h
         )
 endif() # BUILD_PARALLEL_TBB
 
