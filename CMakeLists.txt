@@ -42,7 +42,7 @@ option(BUILD_CLI "Build the exactextract cli binary" ON) #requires gdal, cli11
 option(BUILD_TEST "Build the exactextract tests" ON) #requires catch
 option(BUILD_PYTHON "Build the exactextract Python bindings" ON) # requires pybind11
 option(BUILD_DOC "Build documentation" ON) #requires doxygen
-option(BUILD_PARALLEL_TBB "Build with parallel support" ON) #requires libtbb
+option(BUILD_PARALLEL_TBB "Build with parallel support" OFF) #requires libtbb
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     # workaround for MacOS 10.13 and below which does not fully support std::variant
@@ -198,8 +198,6 @@ set(PROJECT_SOURCES
         src/raster_cell_intersection.h
         src/raster_sequential_processor.cpp
         src/raster_sequential_processor.h
-        src/parallel_raster_processor.cpp
-        src/parallel_raster_processor.h
         src/raster_stats.h
         src/raster_coverage_iterator.h
         src/side.cpp
@@ -222,6 +220,14 @@ set(PROJECT_SOURCES
         src/variance.h
         ${SRC_GENERATED}/version.h
         )
+
+if (BUILD_PARALLEL_TBB)
+    set(PROJECT_SOURCES
+        ${PROJECT_SOURCES}
+        src/parallel_raster_processor.cpp
+        src/parallel_raster_processor.h
+        )
+endif() # BUILD_PARALLEL_TBB
 
 add_library(${LIB_NAME} ${PROJECT_SOURCES})
 
@@ -289,6 +295,7 @@ if (BUILD_PARALLEL_TBB)
     if (TBB_FOUND)
         message(STATUS "TBB version: " ${TBB_VERSION})
         target_link_libraries(${LIB_NAME} PUBLIC TBB::tbb)
+        add_definitions(-DEE_PARALLEL)
     else()
         message(FATAL_ERROR "TBB is required.")
     endif()

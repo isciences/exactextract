@@ -26,12 +26,15 @@
 #include "gdal_raster_wrapper.h"
 #include "gdal_writer.h"
 #include "operation.h"
-#include "parallel_raster_processor.h"
 #include "processor.h"
 #include "raster_sequential_processor.h"
 #include "utils.h"
 #include "utils_cli.h"
 #include "version.h"
+
+#ifdef EE_PARALLEL
+#include "parallel_raster_processor.h"
+#endif
 
 using exactextract::GDALDatasetWrapper;
 using exactextract::GDALRasterWrapper;
@@ -137,7 +140,11 @@ main(int argc, char** argv)
         } else if (strategy == "raster-sequential") {
             proc = std::make_unique<exactextract::RasterSequentialProcessor>(shp, *writer);
         } else if (strategy == "raster-parallel") {
+#ifdef EE_PARALLEL
             proc = std::make_unique<exactextract::RasterParallelProcessor>(shp, *writer, tokens);
+#else
+            throw std::runtime_error("Parallel processor not supported.");
+#endif
         } else {
             throw std::runtime_error("Unknown processing strategy: " + strategy);
         }
