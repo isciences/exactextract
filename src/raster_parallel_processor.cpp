@@ -29,7 +29,8 @@
 namespace {
 
 void
-errorHandlerParallel(const char *fmt, ...) {
+errorHandlerParallel(const char* fmt, ...)
+{
 
     char buf[BUFSIZ], *p;
     va_list ap;
@@ -100,6 +101,7 @@ RasterParallelProcessor::process()
         return initGEOS_r(errorHandlerParallel, errorHandlerParallel);
     });
 
+    // clang-format off
     oneapi::tbb::parallel_pipeline(m_tokens, 
         oneapi::tbb::make_filter<void, Grid<bounded_extent>>(oneapi::tbb::filter_mode::serial_in_order,
         [&subgrids] (oneapi::tbb::flow_control& fc) -> Grid<bounded_extent> {
@@ -215,6 +217,7 @@ RasterParallelProcessor::process()
             }
         })
     );
+    // clang-format on
 
     for (const auto& f_in : m_features) {
         write_result(f_in);
