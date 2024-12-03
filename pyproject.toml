@@ -6,6 +6,9 @@ authors = [
   { "name" = "Daniel Baston" }
 ]
 requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+]
 classifiers = [
     "Operating System :: Unix",
     "Operating System :: MacOS",
