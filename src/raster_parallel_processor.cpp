@@ -96,10 +96,8 @@ RasterParallelProcessor::process()
     for (auto& source : raster_sources) {
         auto subgrids = subdivide(source->grid(), m_max_cells_in_memory);
         for (auto& subgrid : subgrids) {
-            raster_grids.push_back({
-                .source = source,
-                .subgrid = subgrid
-            });
+            raster_grids.push_back({ .source = source,
+                                     .subgrid = subgrid });
         }
     }
     const auto total_subgrids = raster_grids.size();

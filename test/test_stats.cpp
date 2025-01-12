@@ -577,12 +577,12 @@ TEST_CASE("min_coverage_frac is respected", "[stats]")
 
 TEST_CASE("Stats are combined")
 {
-    Box extent{0.0, 0.0, 1.0, 1.0};
-    Grid<bounded_extent> ex{extent, 0.5, 0.5};
+    Box extent{ 0.0, 0.0, 1.0, 1.0 };
+    Grid<bounded_extent> ex{ extent, 0.5, 0.5 };
     GEOSContextHandle_t context = init_geos();
     auto g = GEOSGeom_read_r(context, "POLYGON ((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0))");
     Raster<float> areas = raster_cell_intersection(ex, context, g.get());
-    Raster<int> values{Matrix<int>{ { { 1, 1 }, { 1, 1 } } }, extent };
+    Raster<int> values{ Matrix<int>{ { { 1, 1 }, { 1, 1 } } }, extent };
 
     auto opts = RasterStatsOptions{
         .store_histogram = true,
@@ -617,13 +617,13 @@ TEST_CASE("Stats are combined")
     CHECK(b.weighted_count(1) == 4.0);
     CHECK(b.minority() == 1);
     CHECK(b.variety() == 1);
-    CHECK(b.values() == std::vector<int>{1, 1, 1, 1});
-    CHECK(b.values_defined() == std::vector<bool>{true, true, true, true});
-    CHECK(b.coverage_fractions() == std::vector<float>{1.0f, 1.0f, 1.0f, 1.0f});
-    CHECK(b.weights() == std::vector<double>{1.0, 1.0, 1.0, 1.0});
-    CHECK(b.weights_defined() == std::vector<bool>{true, true, true, true});
-    CHECK(b.center_x() == std::vector<double>{0.25, 0.75, 0.25, 0.75});
-    CHECK(b.center_y() == std::vector<double>{0.75, 0.75, 0.25, 0.25});
+    CHECK(b.values() == std::vector<int>{ 1, 1, 1, 1 });
+    CHECK(b.values_defined() == std::vector<bool>{ true, true, true, true });
+    CHECK(b.coverage_fractions() == std::vector<float>{ 1.0f, 1.0f, 1.0f, 1.0f });
+    CHECK(b.weights() == std::vector<double>{ 1.0, 1.0, 1.0, 1.0 });
+    CHECK(b.weights_defined() == std::vector<bool>{ true, true, true, true });
+    CHECK(b.center_x() == std::vector<double>{ 0.25, 0.75, 0.25, 0.75 });
+    CHECK(b.center_y() == std::vector<double>{ 0.75, 0.75, 0.25, 0.25 });
 }
 
 }
