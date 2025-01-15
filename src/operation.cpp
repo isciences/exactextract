@@ -196,7 +196,7 @@ class OperationImpl : public Operation
                 return Feature::ValueType::INT64_ARRAY;
             }
 
-            if constexpr (std::is_same_v<result_type, std::vector<std::size_t>>) {
+            if constexpr (std::is_same_v<result_type, std::vector<std::uint64_t>>) {
                 return Feature::ValueType::INT64_ARRAY;
             }
 

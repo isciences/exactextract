@@ -70,7 +70,7 @@ TEST_CASE("GDAL feature access", "[gdal]")
         feature.set("int64_field", std::int64_t(6000000000));
         CHECK(feature.get_int64("int64_field") == 6000000000);
         CHECK(feature.field_type("int64_field") == Feature::ValueType::INT64);
-        CHECK_THROWS(feature.set("int64_field", static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max()) + 100));
+        CHECK_THROWS(feature.set("int64_field", static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 100));
     }
 
     SECTION("double field access")
