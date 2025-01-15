@@ -28,7 +28,7 @@ TEMPLATE_TEST_CASE("64-bit int fields", "[feature]", std::int64_t, std::size_t)
 
 TEST_CASE("exception thrown on oversize unsigned int", "[feature]")
 {
-    auto x = static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max()) + 1;
+    auto x = static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 1;
 
     MapFeature mf;
     CHECK_THROWS_WITH(mf.set("field", x), Catch::StartsWith("Value is too large"));
