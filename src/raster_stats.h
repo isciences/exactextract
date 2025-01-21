@@ -82,6 +82,48 @@ class RasterStats
     {
     }
 
+    RasterStats(RasterStats<T>&& other) = default;
+    RasterStats<T>& operator=(RasterStats<T>&& other) = default;
+
+    void combine(const RasterStats<T>& source)
+    {
+        m_min = std::min(m_min, source.m_min);
+        m_max = std::max(m_max, source.m_max);
+
+        if (m_options.store_xy) {
+            double minX = std::min(m_min_xy.first, source.m_min_xy.first);
+            double minY = std::min(m_min_xy.second, source.m_min_xy.second);
+            m_min_xy = { minX, minY };
+
+            double maxX = std::min(m_max_xy.first, source.m_max_xy.first);
+            double maxY = std::min(m_max_xy.second, source.m_max_xy.second);
+            m_max_xy = { maxX, maxY };
+        }
+
+        m_sum_ciwi += source.m_sum_ciwi;
+        m_sum_ci += source.m_sum_ci;
+        m_sum_xici += source.m_sum_xici;
+        m_sum_xiciwi += source.m_sum_xiciwi;
+
+        for (auto& v : source.m_freq) {
+            auto it = m_freq.find(v.first);
+            if (it != m_freq.end()) {
+                it->second.m_sum_ci += v.second.m_sum_ci;
+                it->second.m_sum_ciwi += v.second.m_sum_ciwi;
+            } else {
+                m_freq.insert(v);
+            }
+        }
+
+        m_cell_cov.insert(m_cell_cov.end(), source.m_cell_cov.begin(), source.m_cell_cov.end());
+        m_cell_values.insert(m_cell_values.end(), source.m_cell_values.begin(), source.m_cell_values.end());
+        m_cell_weights.insert(m_cell_weights.end(), source.m_cell_weights.begin(), source.m_cell_weights.end());
+        m_cell_x.insert(m_cell_x.end(), source.m_cell_x.begin(), source.m_cell_x.end());
+        m_cell_y.insert(m_cell_y.end(), source.m_cell_y.begin(), source.m_cell_y.end());
+        m_cell_values_defined.insert(m_cell_values_defined.end(), source.m_cell_values_defined.begin(), source.m_cell_values_defined.end());
+        m_cell_weights_defined.insert(m_cell_weights_defined.end(), source.m_cell_weights_defined.begin(), source.m_cell_weights_defined.end());
+    }
+
     static bool get_or_default(const AbstractRaster<T>& r, std::size_t i, std::size_t j, T& val, const std::optional<T>& default_value)
     {
         if (r.get(i, j, val)) {
