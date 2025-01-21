@@ -242,4 +242,10 @@ GDALRasterWrapper::compute_raster_grid()
     m_grid = { box, dx, dy };
 }
 
+OGRSpatialReferenceH
+GDALRasterWrapper::srs() const
+{
+    return GDALGetSpatialRef(m_rast->get());
+}
+
 }
