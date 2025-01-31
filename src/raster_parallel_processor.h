@@ -25,9 +25,9 @@ class RasterParallelProcessor : public Processor
   public:
     using Processor::Processor;
 
-    RasterParallelProcessor(FeatureSource& ds, OutputWriter& out, size_t tokens)
+    RasterParallelProcessor(FeatureSource& ds, OutputWriter& out, size_t threads)
       : Processor(ds, out)
-      , m_tokens(tokens)
+      , m_threads(threads)
     {
     }
 
@@ -37,7 +37,7 @@ class RasterParallelProcessor : public Processor
     void process() override;
 
   private:
-    size_t m_tokens;
+    size_t m_threads;
     std::vector<MapFeature> m_features;
     tree_ptr_r m_feature_tree{ geos_ptr(m_geos_context, GEOSSTRtree_create_r(m_geos_context, 10)) };
 };

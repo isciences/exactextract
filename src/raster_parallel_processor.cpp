@@ -112,7 +112,7 @@ RasterParallelProcessor::process()
     });
 
     // clang-format off
-    oneapi::tbb::parallel_pipeline(m_tokens, 
+    oneapi::tbb::parallel_pipeline(m_threads, 
         oneapi::tbb::make_filter<void, ZonalStatsCalc>(oneapi::tbb::filter_mode::serial_in_order,
         [&raster_grids] (oneapi::tbb::flow_control& fc) -> ZonalStatsCalc {
             //TODO: split subgridding by raster to optimise IO based on raster block size per input?
