@@ -90,6 +90,8 @@ RasterParallelProcessor::process()
     for (const auto& op : m_operations) {
         if (op->weighted()) {
             throw std::runtime_error("Weighted operations not yet supported in raster-parallel strategy.");
+        } else if (op->requires_variance()) {
+            throw std::runtime_error("Variance operations not yet supported in raster-parallel strategy.");
         }
 
         raster_sources.insert(op->values);
