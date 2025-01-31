@@ -88,6 +88,10 @@ RasterParallelProcessor::process()
 
     std::set<RasterSource*> raster_sources;
     for (const auto& op : m_operations) {
+        if (op->weighted()) {
+            throw std::runtime_error("Weighted operations not yet supported in raster-parallel strategy.");
+        }
+
         raster_sources.insert(op->values);
         m_reg.prepare(*op);
     }
@@ -181,17 +185,7 @@ RasterParallelProcessor::process()
                         processed.insert(op->key());
                     }
 
-                    if (op->weighted() && !op->weights->grid().extent().contains(context.subgrid.extent())) {
-                        continue;
-                    }
-
-                    if (op->weighted()) {
-                        //TODO: cache weighted input
-                        auto weights = std::make_unique<RasterVariant>(op->weights->read_box(context.subgrid.extent().intersection(op->weights->grid().extent())));
-                        block_registry->update_stats(*f, *op, *coverage, *context.values, *weights);
-                    } else {
-                        block_registry->update_stats(*f, *op, *coverage, *context.values);
-                    }
+                    block_registry->update_stats(*f, *op, *coverage, *context.values);
                 }
             }
 
