@@ -50,7 +50,7 @@ sdist.exclude=[
   "codecov.yml",
   "test"
 ]
-cmake.targets = ["_exactextract"]
+build.targets = ["_exactextract"]
 cmake.define = {"BUILD_CLI"= "NO", "BUILD_DOC"= "NO", "BUILD_BENCHMARKS"= "NO", "BUILD_TEST"= "NO"}
 wheel.packages=["python/src/exactextract"]
 
