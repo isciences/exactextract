@@ -77,7 +77,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     env:
-      GEOS_VERSION: "3.12.2"
+      GEOS_VERSION: "3.13.1"
 
     strategy:
       fail-fast: false
