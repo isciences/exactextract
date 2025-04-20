@@ -230,14 +230,22 @@ check_crs_consistent(const GDALDatasetWrapper& features, const std::vector<std::
     OGRSpatialReferenceH expected = features.srs();
     for (const auto& raster : rasters) {
         OGRSpatialReferenceH srs = static_cast<const GDALRasterWrapper*>(raster.get())->srs();
-        if (!OSRIsSame(srs, expected)) {
-            std::cerr << "Input features do not have the same CRS as raster " << raster->name() << std::endl;
+        if (!expected) {
+            expected = srs;
+        }
+
+        if (srs && expected && !OSRIsSame(srs, expected)) {
+            std::cerr << "Input features/rasters do not have the same CRS" << std::endl;
         }
     }
     for (const auto& raster : weights) {
         OGRSpatialReferenceH srs = static_cast<const GDALRasterWrapper*>(raster.get())->srs();
-        if (!OSRIsSame(srs, expected)) {
-            std::cerr << "Input features do not have the same CRS as raster " << raster->name() << std::endl;
+        if (!expected) {
+            expected = srs;
+        }
+
+        if (srs && expected && !OSRIsSame(srs, expected)) {
+            std::cerr << "Input features/rasters do not have the same CRS" << std::endl;
         }
     }
 }
