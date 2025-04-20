@@ -95,10 +95,7 @@ if(BUILD_CLI)
     )
 
     target_link_libraries(exactextract_gdal
-        PRIVATE ${GDAL_LIBRARY})
-
-    target_include_directories(exactextract_gdal
-        PUBLIC ${GDAL_INCLUDE_DIR})
+        PUBLIC GDAL::GDAL)
 
     add_executable(${BIN_NAME} src/exactextract.cpp)
     set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
@@ -108,12 +105,11 @@ if(BUILD_CLI)
 
     target_link_libraries(
         subdivide
-        PRIVATE ${GDAL_LIBRARY} ${LIB_NAME})
+        PRIVATE GDAL::GDAL ${LIB_NAME})
 
     target_include_directories(
         subdivide
         PRIVATE
-        ${GDAL_INCLUDE_DIR}
         ${SRC_GENERATED}
         )
 
