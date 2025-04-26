@@ -2,6 +2,13 @@ import pytest
 
 from exactextract.raster import NumPyRasterSource
 
+try:
+    from osgeo import gdal
+
+    gdal.UseExceptions()
+except ImportError:
+    pass
+
 
 @pytest.fixture()
 def np_raster_source():
