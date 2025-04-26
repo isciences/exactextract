@@ -16,12 +16,12 @@ def global_half_degree(tmp_path):
     srs = osr.SpatialReference()
     srs.ImportFromEPSG(4326)
 
-    fname = str(tmp_path / "test.nc")
+    fname = str(tmp_path / "test.tif")
 
     nx = 720
     ny = 360
 
-    drv = gdal.GetDriverByName("NetCDF")
+    drv = gdal.GetDriverByName("GTiff")
     ds = drv.Create(fname, nx, ny, eType=gdal.GDT_Int32)
     gt = (-180.0, 0.5, 0.0, 90.0, 0.0, -0.5)
     ds.SetGeoTransform(gt)
@@ -41,12 +41,12 @@ def global_half_degree(tmp_path):
 def scaled_temperature(tmp_path):
     gdal = pytest.importorskip("osgeo.gdal")
 
-    fname = str(tmp_path / "d2m.nc")
+    fname = str(tmp_path / "d2m.tif")
 
     nx = 2
     ny = 2
 
-    drv = gdal.GetDriverByName("NetCDF")
+    drv = gdal.GetDriverByName("GTiff")
     ds = drv.Create(fname, nx, ny, eType=gdal.GDT_Int16)
     gt = (1, 1, 0, 2, 0, -1)
     ds.SetGeoTransform(gt)
