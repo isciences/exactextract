@@ -5,7 +5,7 @@ from exactextract.feature import Feature, GDALFeature, JSONFeature
 
 @pytest.fixture()
 def ogr_point():
-    from osgeo import ogr
+    ogr = pytest.importorskip("osgeo.ogr")
 
     fd = ogr.FeatureDefn()
     fd.AddFieldDefn(ogr.FieldDefn("area", ogr.OFTReal))
