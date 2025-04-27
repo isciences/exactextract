@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024 ISciences, LLC.
+// Copyright (c) 2018-2025 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -25,20 +25,9 @@ namespace exactextract {
 class GDALRaster
 {
   public:
-    GDALRaster(const std::string& dsn)
-      : m_dataset(GDALOpen(dsn.c_str(), GA_ReadOnly))
-    {
-        if (m_dataset == nullptr) {
-            throw std::runtime_error("Failed to read raster: " + dsn);
-        }
-    }
+    GDALRaster(const std::string& dsn);
 
-    ~GDALRaster()
-    {
-        if (m_dataset != nullptr) {
-            GDALClose(m_dataset);
-        }
-    }
+    ~GDALRaster();
 
     GDALDatasetH get()
     {
@@ -69,6 +58,8 @@ class GDALRasterWrapper : public RasterSource
     OGRSpatialReferenceH srs() const;
 
     bool cartesian() const;
+
+    bool thread_safe() const override;
 
   private:
     std::shared_ptr<GDALRaster> m_rast;
