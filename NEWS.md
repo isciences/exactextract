@@ -1,5 +1,26 @@
 # version 0.3 (in development)
 
+# version 0.2.2 (2025-04-27)
+
+### Enhancements
+
+- Build: Avoid building documentation by default
+- Python: Use GEOS 3.13 in binary distributions
+- Python: Clear test warnings
+
+# version 0.2.1 (2025-03-06)
+
+### Enhancements
+
+- CLI: Warn if inputs do not have the same CRS
+
+### Fixes
+
+- Python: Use pyproj to check CRS equality if GDAL not available
+- Python: Correct formatting of `pyproject.toml`
+- Python: Fix tests that fail with GDAL < 3.6
+- Fix clang 16 warnings
+
 # version 0.2 (2024-08-31)
 
 ### Breaking changes

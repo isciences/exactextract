@@ -31,6 +31,7 @@
 #include "utils.h"
 #include "utils_cli.h"
 #include "version.h"
+#include <ogr_srs_api.h>
 
 #ifdef EE_PARALLEL
 #include "raster_parallel_processor.h"
@@ -46,6 +47,9 @@ load_dataset(const std::string& descriptor,
              const std::string& src_id_name,
              const std::string& dst_id_name,
              const std::string& dst_id_type);
+
+static void
+check_crs_consistent(const GDALDatasetWrapper& features, const std::vector<std::unique_ptr<exactextract::RasterSource>>& rasters, const std::vector<std::unique_ptr<exactextract::RasterSource>>& weights);
 
 int
 main(int argc, char** argv)
@@ -119,6 +123,8 @@ main(int argc, char** argv)
         auto operations = prepare_operations(stats, rasters, weights);
 
         GDALDatasetWrapper shp = load_dataset(poly_descriptor, include_cols, src_id_name, dst_id_name, dst_id_type);
+
+        check_crs_consistent(shp, rasters, weights);
 
         std::unique_ptr<exactextract::GDALWriter> gdal_writer = std::make_unique<exactextract::GDALWriter>(
           output_filename, !nested_output, shp.srs());
@@ -227,4 +233,30 @@ load_dataset(const std::string& descriptor,
     }
 
     return ds;
+}
+
+static void
+check_crs_consistent(const GDALDatasetWrapper& features, const std::vector<std::unique_ptr<exactextract::RasterSource>>& rasters, const std::vector<std::unique_ptr<exactextract::RasterSource>>& weights)
+{
+    OGRSpatialReferenceH expected = features.srs();
+    for (const auto& raster : rasters) {
+        OGRSpatialReferenceH srs = static_cast<const GDALRasterWrapper*>(raster.get())->srs();
+        if (!expected) {
+            expected = srs;
+        }
+
+        if (srs && expected && !OSRIsSame(srs, expected)) {
+            std::cerr << "Input features/rasters do not have the same CRS" << std::endl;
+        }
+    }
+    for (const auto& raster : weights) {
+        OGRSpatialReferenceH srs = static_cast<const GDALRasterWrapper*>(raster.get())->srs();
+        if (!expected) {
+            expected = srs;
+        }
+
+        if (srs && expected && !OSRIsSame(srs, expected)) {
+            std::cerr << "Input features/rasters do not have the same CRS" << std::endl;
+        }
+    }
 }

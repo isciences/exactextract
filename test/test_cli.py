@@ -20,7 +20,9 @@ def gdal_version():
 
 @pytest.fixture()
 def run(tmpdir):
-    def runner(*args, return_fname=False, output_ext="csv", **kwargs):
+    def runner(
+        *args, return_fname=False, return_output=False, output_ext="csv", **kwargs
+    ):
         output_fname = tmpdir / f"out.{output_ext}"
 
         arglist = list(args)
@@ -46,7 +48,7 @@ def run(tmpdir):
         # print(cmd_str)
 
         try:
-            subprocess.run(cmd, check=True)
+            output = subprocess.run(cmd, check=True, capture_output=True)
             fail = False
         except subprocess.CalledProcessError:
             fail = True
@@ -58,6 +60,9 @@ def run(tmpdir):
 
         if return_fname:
             return output_fname
+
+        if return_output:
+            return output
 
         with open(output_fname, "r") as f:
             reader = csv.DictReader(f)
@@ -71,7 +76,7 @@ def write_raster(tmp_path):
 
     files = []
 
-    def writer(data, *, mask=None, nodata=None, scale=None, offset=None):
+    def writer(data, *, mask=None, nodata=None, scale=None, offset=None, srs=None):
 
         fname = str(tmp_path / f"raster{len(files)}.tif")
 
@@ -92,6 +97,9 @@ def write_raster(tmp_path):
             eType=gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype),
         )
         ds.SetGeoTransform([0, 1, 0, ny, 0, -1])
+
+        if srs:
+            ds.SetProjection(f"EPSG:{srs}")
 
         if nz == 1:
             ds.GetRasterBand(1).WriteArray(data)
@@ -726,3 +734,30 @@ def test_gdal_types(gdal_version, dtype, val, run, write_raster, write_features)
     )
 
     assert rows[0]["mode"] == str(val)
+
+
+@pytest.mark.parametrize(
+    "feature_crs,raster_crs,warn",
+    [
+        (4326, None, False),
+        (4326, 4326, False),
+        (None, 4326, False),
+        (None, None, False),
+        (4326, 4269, True),
+    ],
+)
+def test_crs_consistency(
+    run, write_raster, write_features, feature_crs, raster_crs, warn
+):
+
+    features = {"geom": "POLYGON ((0.5 0.5, 2.5 0.5, 2.5 2, 0.5 2, 0.5 0.5))"}
+    data = np.array([[1]])
+
+    output = run(
+        polygons=write_features(features, srs=feature_crs),
+        raster=write_raster(data, srs=raster_crs),
+        stat=["cell_id"],
+        return_output=True,
+    )
+
+    assert (b"do not have the same CRS" in output.stderr) == warn

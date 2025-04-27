@@ -303,7 +303,7 @@ class XArrayRasterSource(RasterSource):
         if self.ds.rio.crs is None:
             # Set a default CRS to prevent clip_box from
             # complaining that we don't have one
-            self.ds.rio.set_crs("EPSG:4326", inplace=True)
+            self.ds.rio.write_crs("EPSG:4326", inplace=True)
         self.band_idx = band_idx
         self.band_dim = self._band_dim(self.ds)
         self.bounds = self.ds.rio.bounds()

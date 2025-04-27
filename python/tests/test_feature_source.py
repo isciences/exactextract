@@ -1,8 +1,10 @@
+import pytest
+
 from exactextract.feature import GDALFeatureSource, JSONFeatureSource
 
 
 def test_gdal_feature_source():
-    from osgeo import ogr
+    ogr = pytest.importorskip("osgeo.ogr")
 
     drv = ogr.GetDriverByName("Memory")
     ds = drv.CreateDataSource("")

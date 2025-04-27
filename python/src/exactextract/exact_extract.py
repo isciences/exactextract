@@ -28,12 +28,12 @@ __all__ = ["exact_extract"]
 def make_raster_names(root: str, nbands: int) -> list:
     if root:
         if nbands > 1:
-            return [f"{root}_band_{i+1}" for i in range(nbands)]
+            return [f"{root}_band_{i + 1}" for i in range(nbands)]
         else:
             return [f"{root}"]
     else:
         if nbands > 1:
-            return [f"band_{i+1}" for i in range(nbands)]
+            return [f"band_{i + 1}" for i in range(nbands)]
         else:
             return [""]
 
@@ -483,7 +483,7 @@ def exact_extract(
             except ImportError:
 
                 def status(frac, message):
-                    print(f"[{frac*100:0.1f}%] {message}")
+                    print(f"[{frac * 100:0.1f}%] {message}")
 
             processor.set_progress_fn(status)
         else:

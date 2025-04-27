@@ -66,6 +66,8 @@ class GDALRasterWrapper : public RasterSource
 
     ~GDALRasterWrapper() override;
 
+    OGRSpatialReferenceH srs() const;
+
     bool cartesian() const;
 
   private:

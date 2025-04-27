@@ -297,7 +297,7 @@ TEMPLATE_TEST_CASE("no error if feature does not intersect raster", "[processor]
 TEST_CASE("progress callback is called once for each feature", "[processor]")
 {
     GEOSContextHandle_t context = init_geos();
-    std::size_t num_features = 3;
+    int num_features = 3;
 
     Grid<bounded_extent> ex{ { 0, 0, 3, 3 }, 1, 1 }; // 3x3 grid
     Matrix<double> values{ { { 9, 1, 1 },
@@ -308,7 +308,7 @@ TEST_CASE("progress callback is called once for each feature", "[processor]")
     MemoryRasterSource value_src(std::move(value_rast));
 
     WKTFeatureSource ds;
-    for (std::size_t i = 0; i < num_features; i++) {
+    for (int i = 0; i < num_features; i++) {
         MapFeature mf;
         mf.set("fid", i);
         mf.set_geometry(geos_ptr(context, GEOSGeomFromWKT_r(context, "POLYGON ((0 0, 3 0, 3 3, 0 0))")));

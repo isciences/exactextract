@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.15)
 project(exactextract)
 set(DEFAULT_BUILD_TYPE "Release")
 
@@ -56,13 +56,11 @@ endif()
 if(BUILD_CLI)
     # Create our main program, statically linked to our library
     # Unlike the library, this depends on GDAL
-    find_package(GDAL)
+    find_package(GDAL CONFIG)
     if (GDAL_FOUND)
-        # Check GDAL version (requires CMake 3.14)
-        if (${CMAKE_VERSION} VERSION_LESS 3.14.0)
-                message(WARNING "GDAL 2.0+ is required but detected GDAL version is unknown.")
-        elseif(${GDAL_VERSION} VERSION_LESS 2.0)
-                unset(GDAL_FOUND)
+        message("GDAL version: ${GDAL_VERSION}")
+        if(${GDAL_VERSION} VERSION_LESS 2.0)
+            unset(GDAL_FOUND)
         endif()
     endif() #GDAL_FOUND
     if (NOT GDAL_FOUND)
@@ -98,10 +96,7 @@ if(BUILD_CLI)
     )
 
     target_link_libraries(exactextract_gdal
-        PRIVATE ${GDAL_LIBRARY})
-
-    target_include_directories(exactextract_gdal
-        PUBLIC ${GDAL_INCLUDE_DIR})
+        PUBLIC GDAL::GDAL)
 
     add_executable(${BIN_NAME} src/exactextract.cpp)
     set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
@@ -111,12 +106,11 @@ if(BUILD_CLI)
 
     target_link_libraries(
         subdivide
-        PRIVATE ${GDAL_LIBRARY} ${LIB_NAME})
+        PRIVATE GDAL::GDAL ${LIB_NAME})
 
     target_include_directories(
         subdivide
         PRIVATE
-        ${GDAL_INCLUDE_DIR}
         ${SRC_GENERATED}
         )
 
