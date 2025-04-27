@@ -1,7 +1,7 @@
 # Adapted from https://gitlab.kitware.com/cmake/cmake/blob/aec06dd4922187ce5346d20a9f0d53f01b6ce9fc/Source/CMakeVersionSource.cmake
 
 # Try to identify the current development source version.
-set(EXACTEXTRACT_VERSION_SOURCE "0.2.2-dev")
+set(EXACTEXTRACT_VERSION_SOURCE "0.2.2")
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git/HEAD)
   find_program(GIT_EXECUTABLE NAMES git git.cmd)
