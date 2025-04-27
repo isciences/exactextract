@@ -520,3 +520,60 @@ TEST_CASE("Operation arguments", "[operation]")
         CHECK_THROWS_WITH(Operation::create("sum", "sum", &mrs, nullptr, args), Catch::Contains("min_coverage_frac must be"));
     }
 }
+
+TEST_CASE("StatsRegistry is combined")
+{
+    Grid<bounded_extent> ex{ { 0, 0, 1, 1 }, 1, 1 }; // single-cell grid
+    Matrix<double> values(1, 1);
+    auto value_rast = std::make_unique<Raster<double>>(std::move(values), ex.extent());
+    MemoryRasterSource value_src(std::move(value_rast));
+
+    auto op = Operation::create("sum", "sum", &value_src, nullptr);
+
+    StatsRegistry reg_a, reg_b;
+    MapFeature a, b, c;
+
+    // Process feature A in registry A
+    std::visit([](auto& stats) {
+        stats.process_value(5, 0.7, 1.0);
+    },
+               reg_a.stats(a, *op));
+
+    // Process feature B in registry A
+    std::visit([](auto& stats) {
+        stats.process_value(7, 0.9, 1.0);
+    },
+               reg_a.stats(b, *op));
+
+    // Process feature B in registry B
+    std::visit([](auto& stats) {
+        stats.process_value(13, 0.7, 1.0);
+    },
+               reg_b.stats(b, *op));
+
+    // Process feature C in registry B
+    std::visit([](auto& stats) {
+        stats.process_value(17, 0.3, 1.0);
+    },
+               reg_b.stats(c, *op));
+
+    reg_a.merge(reg_b);
+
+    // Check stats for feature A
+    std::visit([](const auto& stats) {
+        CHECK(stats.sum() == Approx(5 * 0.7));
+    },
+               reg_a.stats(a, *op));
+
+    // Check stats for feature B
+    std::visit([](const auto& stats) {
+        CHECK(stats.sum() == Approx(7 * 0.9 + 13 * 0.7));
+    },
+               reg_a.stats(b, *op));
+
+    // Check stats for feature C
+    std::visit([](const auto& stats) {
+        CHECK(stats.sum() == Approx(17 * 0.3));
+    },
+               reg_a.stats(c, *op));
+}
