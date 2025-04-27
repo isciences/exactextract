@@ -47,6 +47,25 @@ struct RasterStatsOptions
     bool include_nodata = false;
     CoverageWeightType weight_type = CoverageWeightType::FRACTION;
     double default_weight = std::numeric_limits<double>::quiet_NaN();
+
+    bool operator==(const RasterStatsOptions& other) const
+    {
+        return min_coverage_fraction == other.min_coverage_fraction &&
+               calc_variance == other.calc_variance &&
+               store_histogram == other.store_histogram &&
+               store_values == other.store_values &&
+               store_weights == other.store_weights &&
+               store_coverage_fraction == other.store_coverage_fraction &&
+               store_xy == other.store_xy &&
+               include_nodata == other.include_nodata &&
+               weight_type == other.weight_type &&
+               (default_weight == other.default_weight || (std::isnan(default_weight) && std::isnan(other.default_weight)));
+    }
+
+    bool operator!=(const RasterStatsOptions& other) const
+    {
+        return !(*this == other);
+    }
 };
 
 template<typename T>
@@ -87,17 +106,28 @@ class RasterStats
 
     void combine(const RasterStats<T>& source)
     {
-        m_min = std::min(m_min, source.m_min);
-        m_max = std::max(m_max, source.m_max);
+        if (static_cast<const RasterStatsOptions&>(m_options) != static_cast<const RasterStatsOptions&>(source.m_options)) {
+            throw std::runtime_error("Cannot combine RasterStats with different options");
+        }
 
-        if (m_options.store_xy) {
-            double minX = std::min(m_min_xy.first, source.m_min_xy.first);
-            double minY = std::min(m_min_xy.second, source.m_min_xy.second);
-            m_min_xy = { minX, minY };
+        if (m_options.calc_variance) {
+            throw std::runtime_error("Cannot combine variance statistics");
+        }
 
-            double maxX = std::min(m_max_xy.first, source.m_max_xy.first);
-            double maxY = std::min(m_max_xy.second, source.m_max_xy.second);
-            m_max_xy = { maxX, maxY };
+        bool min_changed = source.m_min < m_min;
+        bool max_changed = source.m_max > m_max;
+
+        if (min_changed) {
+            m_min = source.m_min;
+            if (m_options.store_xy) {
+                m_min_xy = source.m_min_xy;
+            }
+        }
+        if (max_changed) {
+            m_max = source.m_max;
+            if (m_options.store_xy) {
+                m_max_xy = source.m_max_xy;
+            }
         }
 
         m_sum_ciwi += source.m_sum_ciwi;
