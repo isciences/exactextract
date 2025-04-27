@@ -8,6 +8,10 @@
 - Python: Use GEOS 3.13 in binary distributions
 - Python: Clear test warnings
 
+### Fixes
+
+- CLI: Avoid error in CRS consistency check if one input has no assigned CRS
+
 # version 0.2.1 (2025-03-06)
 
 ### Enhancements
