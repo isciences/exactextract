@@ -1,5 +1,12 @@
 # version 0.3 (in development)
 
+### Enhancements
+
+- Add "raster-parallel" processor to simultaneously process multiple raster
+  chunks in separate threads. Best performance is achieved using the CLI
+  and GDAL 3.10 or later, which allows raster I/O to be run in parallel as
+  well. Contributed by Daniel Burke.
+
 # version 0.2.2 (2025-04-27)
 
 ### Enhancements
