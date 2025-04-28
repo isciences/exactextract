@@ -31,10 +31,10 @@ void
 errorHandlerParallel(const char* fmt, ...)
 {
 
-    char buf[BUFSIZ], *p;
+    thread_local char buf[BUFSIZ], *p;
     va_list ap;
     va_start(ap, fmt);
-    vsprintf(buf, fmt, ap);
+    vsnprintf(buf, BUFSIZ, fmt, ap);
     va_end(ap);
     p = buf + strlen(buf) - 1;
     if (strlen(buf) > 0 && *p == '\n')
@@ -99,7 +99,7 @@ RasterParallelProcessor::process()
     }
 
     std::vector<ZonalStatsCalc> raster_grids;
-    for (auto& source : raster_sources) {
+    for (const auto& source : raster_sources) {
         if (!source->thread_safe()) {
             raster_read_multithreaded = false;
         }
