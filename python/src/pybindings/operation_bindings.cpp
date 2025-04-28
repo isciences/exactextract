@@ -36,11 +36,17 @@ class PythonOperation : public Operation
                     bool call_with_weights,
                     Operation::ArgMap args = {})
       : Operation("", p_name, p_values, p_weights, args)
-      , m_function(fun)
+      , m_function(std::make_shared<py::function>(fun))
       , m_call_with_weights(call_with_weights)
     {
         m_include_nodata = true;
         m_key += "|include_na";
+    }
+
+    virtual ~PythonOperation()
+    {
+        py::gil_scoped_acquire gil;
+        m_function.reset();
     }
 
     bool requires_stored_coverage_fractions() const override
@@ -72,6 +78,8 @@ class PythonOperation : public Operation
 
     virtual void set_result(const StatsRegistry::RasterStatsVariant& stats_variant, Feature& f_out) const override
     {
+        py::gil_scoped_acquire gil;
+
         py::object result = std::visit([this](const auto& stats) -> py::object {
             // TODO avoid array copies here?
             // Review solutions at https://github.com/pybind/pybind11/issues/1042
@@ -87,13 +95,13 @@ class PythonOperation : public Operation
             py::array mask = invert(py::cast(stats.values_defined()));
 
             if (m_call_with_weights) {
-                return m_function(
+                return (*m_function)(
                   masked_array(values, mask),
                   py::array(py::cast(stats.coverage_fractions())),
                   masked_array(stats.weights(), invert(py::cast(stats.weights_defined()))));
             }
 
-            return m_function(
+            return (*m_function)(
               masked_array(values, mask),
               py::array(py::cast(stats.coverage_fractions())));
         },
@@ -126,7 +134,7 @@ class PythonOperation : public Operation
     }
 
   private:
-    py::function m_function;
+    std::shared_ptr<py::function> m_function;
     const bool m_call_with_weights;
 };
 
