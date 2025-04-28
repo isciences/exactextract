@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2023 ISciences, LLC.
+// Copyright (c) 2020-2025 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -23,6 +23,11 @@ class RasterSource
   public:
     virtual const Grid<bounded_extent>& grid() const = 0;
     virtual RasterVariant read_box(const Box& box) = 0;
+
+    virtual bool thread_safe() const
+    {
+        return false;
+    }
 
     const RasterVariant& read_empty() const
     {

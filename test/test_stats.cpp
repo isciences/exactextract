@@ -40,6 +40,16 @@ fill_by_row(Raster<T>& r, T start, T dt)
 }
 
 template<typename T>
+void
+CHECK_VEC_SORTED_EQUAL(T a, T b)
+{
+    std::sort(a.begin(), a.end());
+    std::sort(b.begin(), b.end());
+
+    CHECK(a == b);
+}
+
+template<typename T>
 T
 nodata_test_value();
 
@@ -573,6 +583,78 @@ TEST_CASE("min_coverage_frac is respected", "[stats]")
 
     CHECK(stats.count() == 1);
     CHECK(stats.mode().value() == 2);
+}
+
+TEST_CASE("Stats are combined")
+{
+    GEOSContextHandle_t context = init_geos();
+
+    Box extent{ 0.0, 0.0, 10, 10 };
+    Grid<bounded_extent> ex{ extent, 1, 1 };
+    Raster<int> values{ ex };
+    fill_by_row<int>(values, 1, 2);
+
+    Raster<double> weights{ ex };
+    fill_by_row<double>(weights, 0.1, 0.1);
+
+    // Take two non-overlapping polygons, A and B, and their union, C
+    // Ensure that the combination of stats from A and B is the same as the stats from C.
+    auto g_a = GEOSGeom_read_r(context, "POLYGON ((0 0, 5 0, 5 5, 0 5, 0 0))");
+    auto g_b = GEOSGeom_read_r(context, "POLYGON ((5 5, 10 5, 10 10, 5 10, 5 5))");
+    auto g_c = geos_ptr(context, GEOSUnion_r(context, g_a.get(), g_b.get()));
+
+    Raster<float> areas_a = raster_cell_intersection(ex, context, g_a.get());
+    Raster<float> areas_b = raster_cell_intersection(ex, context, g_b.get());
+    Raster<float> areas_c = raster_cell_intersection(ex, context, g_c.get());
+
+    auto opts = RasterStatsOptions{
+        .store_histogram = true,
+        .store_values = true,
+        .store_weights = true,
+        .store_coverage_fraction = true,
+        .store_xy = true,
+        .include_nodata = true,
+    };
+
+    RasterStats<int> stats_a(opts);
+    RasterStats<int> stats_b(opts);
+    RasterStats<int> stats_c(opts);
+
+    stats_a.process(areas_a, values, weights);
+    stats_b.process(areas_b, values, weights);
+    stats_c.process(areas_c, values, weights);
+
+    RasterStats<int> stats_ab(opts);
+    stats_ab.combine(stats_a);
+    stats_ab.combine(stats_b);
+
+    CHECK(stats_ab.count() == stats_c.count());
+    CHECK(stats_ab.count(13) == stats_c.count(13));
+    CHECK(stats_ab.frac(13) == stats_c.frac(13));
+    CHECK(stats_ab.max() == stats_c.max());
+    CHECK(stats_ab.max_xy() == stats_c.max_xy());
+    CHECK(stats_ab.mean() == stats_c.mean());
+    CHECK(stats_ab.min() == stats_c.min());
+    CHECK(stats_ab.min_xy() == stats_c.min_xy());
+    CHECK(stats_ab.minority() == stats_c.minority());
+    CHECK(stats_ab.mode() == stats_c.mode());
+    CHECK(stats_ab.quantile(0.3) == stats_c.quantile(0.3));
+    CHECK(stats_ab.sum() == stats_c.sum());
+    CHECK(stats_ab.variety() == stats_c.variety());
+    CHECK(stats_ab.weighted_count() == stats_c.weighted_count());
+    CHECK(stats_ab.weighted_count(13) == stats_c.weighted_count(13));
+    CHECK(stats_ab.weighted_frac(13) == stats_c.weighted_frac(13));
+    CHECK(stats_ab.weighted_fraction() == stats_c.weighted_fraction());
+    CHECK(stats_ab.weighted_mean() == stats_c.weighted_mean());
+    CHECK(stats_ab.weighted_sum() == stats_c.weighted_sum());
+
+    CHECK_VEC_SORTED_EQUAL(stats_ab.center_x(), stats_c.center_x());
+    CHECK_VEC_SORTED_EQUAL(stats_ab.center_y(), stats_c.center_y());
+    CHECK_VEC_SORTED_EQUAL(stats_ab.coverage_fractions(), stats_c.coverage_fractions());
+    CHECK_VEC_SORTED_EQUAL(stats_ab.values(), stats_c.values());
+    CHECK_VEC_SORTED_EQUAL(stats_ab.values_defined(), stats_c.values_defined());
+    CHECK_VEC_SORTED_EQUAL(stats_ab.weights(), stats_c.weights());
+    CHECK_VEC_SORTED_EQUAL(stats_ab.weights_defined(), stats_c.weights_defined());
 }
 
 }

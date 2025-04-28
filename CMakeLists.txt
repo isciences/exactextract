@@ -42,6 +42,7 @@ option(BUILD_CLI "Build the exactextract cli binary" ON) #requires gdal, cli11
 option(BUILD_TEST "Build the exactextract tests" ON) #requires catch
 option(BUILD_PYTHON "Build the exactextract Python bindings" ON) # requires pybind11
 option(BUILD_DOC "Build documentation" ON) #requires doxygen
+option(BUILD_PARALLEL_TBB "Build with parallel support" OFF) #requires libtbb
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     # workaround for MacOS 10.13 and below which does not fully support std::variant
@@ -214,6 +215,14 @@ set(PROJECT_SOURCES
         ${SRC_GENERATED}/version.h
         )
 
+if (BUILD_PARALLEL_TBB)
+    set(PROJECT_SOURCES
+        ${PROJECT_SOURCES}
+        src/raster_parallel_processor.cpp
+        src/raster_parallel_processor.h
+        )
+endif() # BUILD_PARALLEL_TBB
+
 add_library(${LIB_NAME} ${PROJECT_SOURCES})
 
 
@@ -271,8 +280,17 @@ if(BUILD_DOC)
 
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
-
-        
-
     endif (DOXYGEN_FOUND)
 endif() #BUILD_DOC
+
+if (BUILD_PARALLEL_TBB)
+    find_package(TBB REQUIRED)
+
+    if (TBB_FOUND)
+        message(STATUS "TBB version: " ${TBB_VERSION})
+        target_link_libraries(${LIB_NAME} PUBLIC TBB::tbb)
+        target_compile_definitions(${BIN_NAME} PRIVATE -DEE_PARALLEL)
+    else()
+        message(FATAL_ERROR "TBB is required.")
+    endif()
+endif() # BUILD_PARALLEL_TBB

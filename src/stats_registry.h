@@ -70,6 +70,8 @@ class StatsRegistry
 
     void update_stats(const Feature& f, const Operation& op, const Raster<float>& coverage, const RasterVariant& values, const RasterVariant& weights);
 
+    void merge(StatsRegistry& source);
+
   private:
     template<typename T>
     static bool requires_stored_values(const T& ops)

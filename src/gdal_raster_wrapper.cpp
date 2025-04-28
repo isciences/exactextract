@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 ISciences, LLC.
+// Copyright (c) 2018-2025 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -19,6 +19,29 @@
 #include <stdexcept>
 
 namespace exactextract {
+
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 10, 0)
+constexpr bool GDAL_RASTER_THREAD_SAFE = true;
+constexpr int GDAL_RASTER_OPEN_FLAGS = GDAL_OF_RASTER | GDAL_OF_READONLY | GDAL_OF_THREAD_SAFE;
+#else
+constexpr bool GDAL_RASTER_THREAD_SAFE = false;
+constexpr int GDAL_RASTER_OPEN_FLAGS = GDAL_OF_RASTER | GDAL_OF_READONLY;
+#endif
+
+GDALRaster::GDALRaster(const std::string& dsn)
+  : m_dataset(GDALOpenEx(dsn.c_str(), GDAL_RASTER_OPEN_FLAGS, nullptr, nullptr, nullptr))
+{
+    if (m_dataset == nullptr) {
+        throw std::runtime_error("Failed to read raster: " + dsn);
+    }
+}
+
+GDALRaster::~GDALRaster()
+{
+    if (m_dataset != nullptr) {
+        GDALClose(m_dataset);
+    }
+}
 
 GDALRasterWrapper::
   GDALRasterWrapper(const std::string& dsn, int bandnum)
@@ -246,6 +269,12 @@ OGRSpatialReferenceH
 GDALRasterWrapper::srs() const
 {
     return GDALGetSpatialRef(m_rast->get());
+}
+
+bool
+GDALRasterWrapper::thread_safe() const
+{
+    return GDAL_RASTER_THREAD_SAFE;
 }
 
 }
