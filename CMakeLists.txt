@@ -95,7 +95,7 @@ if(BUILD_CLI)
     )
 
     target_link_libraries(exactextract_gdal
-        PUBLIC GDAL::GDAL)
+        PUBLIC GDAL::GDAL GEOS::geos_c)
 
     add_executable(${BIN_NAME} src/exactextract.cpp)
     set_target_properties(${BIN_NAME} PROPERTIES OUTPUT_NAME "exactextract")
