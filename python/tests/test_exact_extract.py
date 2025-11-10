@@ -1661,3 +1661,49 @@ def test_gdal_multi_variable(multidim_nc, libname):
             "t2m_band_1_count": 4.0,
         }
     )
+
+
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential"))
+def test_gh_178(tmp_path, strategy):
+
+    gdal = pytest.importorskip("osgeo.gdal")
+    ogr = pytest.importorskip("osgeo.ogr")
+    rxr = pytest.importorskip("rioxarray")
+
+    raster_fname = str(tmp_path / "src.tif")
+    poly_fname = str(tmp_path / "poly.shp")
+
+    src_ds = gdal.GetDriverByName("GTiff").Create(raster_fname, 72, 34, 2)
+    src_ds.SetGeoTransform(
+        (
+            117.09683458943421,
+            8.983152841204135e-05,
+            0.0,
+            4.273195975028152,
+            0.0,
+            -8.983152841195037e-05,
+        )
+    )
+    src_ds.GetRasterBand(1).Fill(1)
+    del src_ds
+
+    src_poly = gdal.GetDriverByName("ESRI Shapefile").Create(poly_fname, 0, 0, 0, 0)
+    src_lyr = src_poly.CreateLayer("poly")
+    src_feature = ogr.Feature(src_lyr.GetLayerDefn())
+    src_feature.SetGeometry(
+        ogr.CreateGeometryFromWkt(
+            "POLYGON ((117.103213 4.271759,117.102853 4.271848,117.102853 4.272028,117.102314 4.272028,117.102224 4.272208,117.102045 4.272208,117.102045 4.271759,117.101775 4.271759,117.101775 4.271669,117.102045 4.271399,117.102045 4.271489,117.102314 4.271489,117.102224 4.271669,117.102404 4.271759,117.102404 4.27122,117.102584 4.27122,117.10265 4.271154,117.103074 4.271366,117.103033 4.271489,117.103123 4.271489,117.103213 4.271759))"
+        )
+    )
+    src_lyr.CreateFeature(src_feature)
+    del src_feature
+    del src_lyr
+    del src_poly
+
+    rast = rxr.open_rasterio(
+        raster_fname, masked=True, band_as_variable=True, parse_coordinates=True
+    )
+
+    results = exact_extract(rast, poly_fname, "count", strategy=strategy)
+
+    assert results[0]["properties"]["band_1_count"] == pytest.approx(95.1929023920793)
