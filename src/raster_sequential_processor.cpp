@@ -83,11 +83,11 @@ RasterSequentialProcessor::process()
                     processed.insert(op->key());
                 }
 
-                if (!op->values->grid().extent().contains(subgrid.extent())) {
+                if (!op->values->grid().extent().intersects(subgrid.extent())) {
                     continue;
                 }
 
-                if (op->weighted() && !op->weights->grid().extent().contains(subgrid.extent())) {
+                if (op->weighted() && !op->weights->grid().extent().intersects(subgrid.extent())) {
                     continue;
                 }
 
