@@ -295,11 +295,11 @@ def prep_writer(output, srs_wkt, options):
 
 
 @functools.cache
-def crs_matches(a, b):
-    if a.srs_wkt() is None or b.srs_wkt() is None:
+def crs_matches(wkt_a, wkt_b):
+    if wkt_a is None or wkt_b is None:
         return True
 
-    if a.srs_wkt() == b.srs_wkt():
+    if wkt_a == wkt_b:
         return True
 
     try:
@@ -308,8 +308,8 @@ def crs_matches(a, b):
         srs_a = osr.SpatialReference()
         srs_b = osr.SpatialReference()
 
-        srs_a.ImportFromWkt(a.srs_wkt())
-        srs_b.ImportFromWkt(b.srs_wkt())
+        srs_a.ImportFromWkt(wkt_a)
+        srs_b.ImportFromWkt(wkt_b)
 
         try:
             srs_a.StripVertical()
@@ -325,8 +325,8 @@ def crs_matches(a, b):
     try:
         from pyproj import CRS
 
-        crs_a = CRS.from_string(a.srs_wkt())
-        crs_b = CRS.from_string(b.srs_wkt())
+        crs_a = CRS.from_string(wkt_a)
+        crs_b = CRS.from_string(wkt_b)
 
         return crs_a == crs_b
 
@@ -341,7 +341,7 @@ def warn_on_crs_mismatch(vec, ops):
     check_rast_weights = True
 
     for op in ops:
-        if check_rast_vec and not crs_matches(vec, op.values):
+        if check_rast_vec and not crs_matches(vec.srs_wkt(), op.values.srs_wkt()):
             check_rast_vec = False
             warnings.warn(
                 "Spatial reference system of input features does not exactly match raster.",
@@ -351,7 +351,7 @@ def warn_on_crs_mismatch(vec, ops):
         if (
             check_rast_weights
             and op.weights is not None
-            and not crs_matches(vec, op.weights)
+            and not crs_matches(vec.srs_wkt(), op.weights.srs_wkt())
         ):
             check_rast_weights = False
             warnings.warn(
