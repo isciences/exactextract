@@ -1,4 +1,5 @@
 # Build the Python bindings, which require pybind11
+set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 QUIET)
 if (pybind11_FOUND)
     # TODO: which pybind11 version

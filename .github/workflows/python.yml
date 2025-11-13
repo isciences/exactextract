@@ -36,6 +36,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         python-version: ${{ matrix.python-version }}
+        conda-remove-defaults: true
         environment-file: .github/python_test_env.yml
 
     - name: Set development version number
@@ -77,7 +78,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     env:
-      GEOS_VERSION: "3.13.1"
+      GEOS_VERSION: "3.14.1"
 
     strategy:
       fail-fast: false
@@ -85,21 +86,24 @@ jobs:
         include:
         - os: ubuntu-latest
           arch: x86_64
-        - os: windows-2019
+        - os: windows-2025
           arch: x86
           msvc_arch: x86
-        - os: windows-2019
+        - os: windows-2025
           arch: AMD64
           msvc_arch: x64
-        - os: macos-13
+        - os: windows-11-arm
+          arch: ARM64
+          msvc_arch: ARM64
+        - os: macos-15-intel
           arch: x86_64
           cmake_osx_architectures: x86_64
-        - os: macos-14
+        - os: macos-15
           arch: arm64
           cmake_osx_architectures: arm64
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -119,7 +123,7 @@ jobs:
         run: |
           cp ci/wheels/licenses/LICENSE_win32 .
         shell: bash
-        if: ${{ matrix.os == 'windows-2019' }}
+        if: ${{ startsWith(matrix.os, 'windows') }}
 
       - name: Activate MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -134,10 +138,10 @@ jobs:
           sed -i.old "s/-dev/-dev${COMMIT_NUM}/" cmake/VersionSource.cmake
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.20.0
+        uses: pypa/cibuildwheel@v3.2.1
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
-          CIBW_SKIP: cp36-* cp37-* cp38-* pp* *musllinux* *-manylinux_i686
+          CIBW_SKIP: cp38-* *musllinux* *-manylinux_i686
           CIBW_TEST_SKIP: "cp38-macosx_arm64"
           CIBW_ENVIRONMENT_LINUX:
             GEOS_VERSION=${{ env.GEOS_VERSION }}
@@ -149,7 +153,7 @@ jobs:
             GEOS_INSTALL=${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
             GEOS_DIR=${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
             GEOS_CONFIG=${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
-            MACOSX_DEPLOYMENT_TARGET=10.9
+            MACOSX_DEPLOYMENT_TARGET=11.0
             CMAKE_OSX_ARCHITECTURES='${{ matrix.cmake_osx_architectures }}'
           CIBW_ENVIRONMENT_WINDOWS:
             GEOS_INSTALL='${{ runner.temp }}\geos-${{ env.GEOS_VERSION }}'
@@ -167,7 +171,7 @@ jobs:
             python -c "import exactextract; exactextract.__version__"  &&
             python -m pytest {package}/python/tests/test_exact_extract.py {package}/python/tests/test_operation.py {package}/python/tests/test_processor.py -s -v
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: release-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
@@ -182,7 +186,7 @@ jobs:
     environment:
       name: pypi
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
         with:
           pattern: release-*
           merge-multiple: true
