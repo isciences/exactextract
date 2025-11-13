@@ -7,6 +7,16 @@
   and GDAL 3.10 or later, which allows raster I/O to be run in parallel as
   well. Contributed by Daniel Burke.
 
+### Fixes
+
+- Fix memory leak in Python bindings when calling `exact_extract` inside a
+  loop (#164).
+- RasterSequentialProcessor: Avoid skipping cells due to grid subdivision
+  precision (#178). Only known to happen with Python bindings and multi-band
+  rasters.
+- Add missing include file preventing building with some compilers (#175).
+  
+
 # version 0.2.2 (2025-04-27)
 
 ### Enhancements
