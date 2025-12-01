@@ -42,59 +42,70 @@ class PyFeatureBase : public Feature
 
     double get_double(const std::string& name) const override
     {
+        py::gil_scoped_acquire gil;
         return get_py(name).cast<double>();
     }
 
     DoubleArray get_double_array(const std::string& name) const override
     {
+        py::gil_scoped_acquire gil;
         py::array_t<double> arr = get_py(name);
         return { arr.data(), static_cast<std::size_t>(arr.size()) };
     }
 
     std::int32_t get_int(const std::string& name) const override
     {
+        py::gil_scoped_acquire gil;
         return get_py(name).cast<int32_t>();
     }
 
     std::int64_t get_int64(const std::string& name) const override
     {
+        py::gil_scoped_acquire gil;
         return get_py(name).cast<int64_t>();
     }
 
     IntegerArray get_integer_array(const std::string& name) const override
     {
+        py::gil_scoped_acquire gil;
         py::array_t<std::int32_t> arr = get_py(name);
         return { arr.data(), static_cast<std::size_t>(arr.size()) };
     }
 
     Integer64Array get_integer64_array(const std::string& name) const override
     {
+        py::gil_scoped_acquire gil;
         py::array_t<std::int64_t> arr = get_py(name);
         return { arr.data(), static_cast<std::size_t>(arr.size()) };
     }
 
     std::string get_string(const std::string& name) const override
     {
+        py::gil_scoped_acquire gil;
         return get_py(name).cast<std::string>();
     }
 
     void set(const std::string& name, std::string value) override
     {
+        py::gil_scoped_acquire gil;
         set_py(name, py::str(value));
     }
 
     void set(const std::string& name, std::int32_t value) override
     {
+        py::gil_scoped_acquire gil;
         set_py(name, py::int_(value));
     }
 
     void set(const std::string& name, std::int64_t value) override
     {
+        py::gil_scoped_acquire gil;
         set_py(name, py::int_(value));
     }
 
     void set(const std::string& name, double value) override
     {
+        py::gil_scoped_acquire gil;
         set_py(name, py::float_(value));
     }
 
@@ -116,6 +127,8 @@ class PyFeatureBase : public Feature
     template<typename T>
     void set_array(const std::string& name, const T& value)
     {
+        py::gil_scoped_acquire gil;
+
         std::size_t shape[1]{ value.size };
         py::array_t<typename T::value_type> values(shape);
         auto x = values.template mutable_unchecked<1>();
@@ -127,6 +140,7 @@ class PyFeatureBase : public Feature
 
     ValueType field_type(const std::string& name) const override
     {
+        py::gil_scoped_acquire gil;
         py::object value = get_py(name);
 
         try {
@@ -139,6 +153,8 @@ class PyFeatureBase : public Feature
     const GEOSGeometry* geometry() const override
     {
         if (m_geom == nullptr) {
+            py::gil_scoped_acquire gil;
+
             py::object geom = geometry_py();
             if (py::isinstance<py::bytes>(geom)) {
                 py::buffer_info info = py::buffer(geom).request();
@@ -171,6 +187,8 @@ class PyFeatureBase : public Feature
             m_geom = nullptr;
         }
 
+        py::gil_scoped_acquire gil;
+
         if (other == nullptr) {
             set_geometry_py(py::none());
         } else {
@@ -195,6 +213,8 @@ class PyFeatureBase : public Feature
 
     void copy_to(Feature& other) const override
     {
+        py::gil_scoped_acquire gil;
+
         py::iterable field_list = fields();
         for (py::handle field : field_list) {
             std::string field_name = field.cast<std::string>();
