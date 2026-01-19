@@ -13,7 +13,7 @@ from .feature import (
     QGISFeatureSource,
 )
 from .operation import Operation, PythonOperation, change_stat, prepare_operations
-from .processor import FeatureSequentialProcessor, RasterSequentialProcessor
+from .processor import FeatureSequentialProcessor, RasterParallelProcessor, RasterSequentialProcessor
 from .raster import (
     GDALRasterSource,
     RasterioRasterSource,
@@ -270,6 +270,7 @@ def prep_processor(strategy):
     processors = {
         "feature-sequential": FeatureSequentialProcessor,
         "raster-sequential": RasterSequentialProcessor,
+        "raster-parallel": RasterParallelProcessor,
     }
 
     return processors[strategy]
@@ -369,6 +370,7 @@ def exact_extract(
     include_cols=None,
     include_geom=False,
     strategy: str = "feature-sequential",
+    threads: int = 4,
     max_cells_in_memory: int = 30000000,
     grid_compat_tol: float = 1e-3,
     output: str = "geojson",
@@ -410,6 +412,14 @@ def exact_extract(
                    features from ``vec``, and compute statistics. This performs better
                    than ``strategy="feature-sequential"`` in some cases, but comes at
                    a cost of higher memory usage.
+
+                 - ``"raster-parallel"``:
+                   iterate over chunks of pixels in ``rast`` in parallel, identify the
+                   intersecting features from ``vec``, and compute statistics. Uses
+                   TBB for parallel processing. Does not support weighted operations
+                   or variance operations (e.g., ``"variance"``, ``"std"``).
+       threads: Number of threads to use for parallel processing when
+                ``strategy="raster-parallel"``. Default is 4.
        max_cells_in_memory: Indicates the maximum number of raster cells that should be
                             loaded into memory at a given time.
        grid_compat_tol: require value and weight grids to align within ``grid_compat_tol`` times the smaller of the two grid resolutions
@@ -452,11 +462,27 @@ def exact_extract(
     if type(include_cols) is str:
         include_cols = [include_cols]
 
+    if strategy == "raster-parallel":
+        for op in ops:
+            if op.weighted():
+                raise ValueError(
+                    "Weighted operations are not supported with strategy='raster-parallel'. "
+                    "Use strategy='feature-sequential' or strategy='raster-sequential' instead."
+                )
+            if op.requires_variance():
+                raise ValueError(
+                    "Variance operations are not supported with strategy='raster-parallel'. "
+                    "Use strategy='feature-sequential' or strategy='raster-sequential' instead."
+                )
+
     Processor = prep_processor(strategy)
 
     writer = prep_writer(output, vec.srs_wkt(), output_options)
 
-    processor = Processor(vec, writer, ops, include_cols)
+    if strategy == "raster-parallel":
+        processor = Processor(vec, writer, ops, include_cols, threads)
+    else:
+        processor = Processor(vec, writer, ops, include_cols)
     if include_geom:
         processor.add_geom()
     processor.set_max_cells_in_memory(max_cells_in_memory)
