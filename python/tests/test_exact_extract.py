@@ -1707,3 +1707,114 @@ def test_gh_178(tmp_path, strategy):
     results = exact_extract(rast, poly_fname, "count", strategy=strategy)
 
     assert results[0]["properties"]["band_1_count"] == pytest.approx(95.1929023920793)
+
+
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential", "raster-parallel"))
+def test_basic_stats_raster_parallel(strategy):
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(rast, square, "mean", strategy=strategy)
+
+    assert result[0]["properties"]["mean"] == pytest.approx(5.0)
+
+
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential", "raster-parallel"))
+def test_coverage_area_raster_parallel(strategy):
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(
+        rast,
+        square,
+        [
+            "m1=mean",
+            "m2=mean(coverage_weight=area_spherical_m2)",
+            "c1=coverage",
+            "c2=coverage(coverage_weight=area_spherical_m2)",
+            "c3=coverage(coverage_weight=area_spherical_km2)",
+            "c4=coverage(coverage_weight=area_cartesian)",
+        ],
+        strategy=strategy,
+    )[0]["properties"]
+
+    assert result["m2"] > result["m1"]
+
+    assert np.all(np.isclose(result["c3"], result["c2"] * 1e-6))
+    assert np.all(result["c4"] == result["c1"])
+
+
+@pytest.mark.parametrize("strategy", ("feature-sequential", "raster-sequential", "raster-parallel"))
+def test_multiple_stats_raster_parallel(strategy):
+    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(rast, square, ("min", "max", "mean"), strategy=strategy)
+
+    fields = result[0]["properties"]
+
+    assert fields == {
+        "min": 1,
+        "max": 9,
+        "mean": 5,
+    }
+
+
+def test_weighted_mean_raster_parallel_not_supported():
+    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
+    weights = NumPyRasterSource(np.full((3, 3), 1))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    with pytest.raises(ValueError, match="Weighted operations are not supported with strategy='raster-parallel'"):
+        exact_extract(rast, square, "weighted_mean", weights=weights, strategy="raster-parallel")
+
+
+@pytest.mark.parametrize("stat", ("variance", "stdev", "coefficient_of_variation"))
+def test_variance_operations_raster_parallel_not_supported(stat):
+    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    with pytest.raises(ValueError, match="Variance operations are not supported with strategy='raster-parallel'"):
+        exact_extract(rast, square, stat, strategy="raster-parallel")
+
+
+@pytest.mark.parametrize("stat", ("mean", "sum", "stdev", "variance"))
+def test_weighted_stats_raster_parallel_not_supported(stat):
+    rast = NumPyRasterSource(np.arange(1, 10).reshape(3, 3))
+    weights = NumPyRasterSource(np.full((3, 3), 1))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    weighted_stat = f"weighted_{stat}"
+
+    with pytest.raises(ValueError, match="Weighted operations are not supported with strategy='raster-parallel'"):
+        exact_extract(rast, square, weighted_stat, weights=weights, strategy="raster-parallel")
+
+
+@pytest.mark.parametrize("threads", (1, 2, 4, 8))
+def test_raster_parallel_threads(threads):
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+
+    result = exact_extract(rast, square, "mean", strategy="raster-parallel", threads=threads)
+
+    assert result[0]["properties"]["mean"] == pytest.approx(5.0)
+
+
+def test_raster_parallel_threads_parameter_passed():
+    from exactextract.processor import RasterParallelProcessor
+
+    # Test that RasterParallelProcessor can be instantiated with different thread counts
+    # This verifies the threads parameter is correctly accepted
+    from exactextract.writer import JSONWriter
+    from exactextract.feature import JSONFeatureSource
+    import numpy as np
+
+    rast = NumPyRasterSource(np.arange(1, 10, dtype=np.int32).reshape(3, 3))
+    square = JSONFeatureSource(make_rect(0.5, 0.5, 2.5, 2.5))
+    writer = JSONWriter()
+
+    # Test with different thread counts
+    for threads in [1, 2, 4, 7, 16]:
+        proc = RasterParallelProcessor(square, writer, [], threads=threads)
+        # Just verify it was created without error
