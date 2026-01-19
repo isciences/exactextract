@@ -194,7 +194,8 @@ bind_raster_source(py::module& m)
 {
     py::class_<RasterSource>(m, "RasterSourceBase")
       .def("set_name", &RasterSource::set_name, py::arg("name"))
-      .def("name", &RasterSource::name);
+      .def("name", &RasterSource::name)
+      .def("thread_safe", &RasterSource::thread_safe);
 
     py::class_<PyRasterSourceBase>(m, "PyRasterSourceBase");
 
@@ -204,6 +205,7 @@ bind_raster_source(py::module& m)
       .def("res", &PyRasterSource::res)
       .def("srs_wkt", &PyRasterSourceBase::srs_wkt)
       .def("nodata_value", &PyRasterSource::nodata_value)
-      .def("read_window", &PyRasterSource::read_window);
+      .def("read_window", &PyRasterSource::read_window)
+      .def("thread_safe", &PyRasterSourceBase::thread_safe);
 }
 }
