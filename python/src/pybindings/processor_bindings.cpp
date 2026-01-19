@@ -19,6 +19,7 @@
 #include "output_writer.h"
 #include "processor.h"
 #include "processor_bindings.h"
+#include "raster_parallel_processor.h"
 #include "raster_sequential_processor.h"
 
 namespace py = pybind11;
@@ -49,5 +50,8 @@ bind_processor(py::module& m)
 
     py::class_<RasterSequentialProcessor, Processor>(m, "RasterSequentialProcessor")
       .def(py::init<FeatureSource&, OutputWriter&>());
+
+    py::class_<RasterParallelProcessor, Processor>(m, "RasterParallelProcessor")
+      .def(py::init<FeatureSource&, OutputWriter&, size_t>());
 }
 }
