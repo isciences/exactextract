@@ -1707,3 +1707,25 @@ def test_gh_178(tmp_path, strategy):
     results = exact_extract(rast, poly_fname, "count", strategy=strategy)
 
     assert results[0]["properties"]["band_1_count"] == pytest.approx(95.1929023920793)
+
+
+def test_gh_186(tmp_path):
+    gpd = pytest.importorskip("geopandas")
+    pd = pytest.importorskip("pandas")
+
+    df = pd.DataFrame(
+        {"name": ["a", "b", "c", "d", "e"], "x": [0, 1, 2, 3, 4], "y": [0, 1, 2, 3, 4]}
+    )
+
+    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df["x"], df["y"]).buffer(1))
+
+    # shuffle the input
+    gdf = gdf.sample(frac=1, replace=False, random_state=123)
+
+    rast = make_square_raster(5)
+
+    result = exact_extract(rast, gdf, "min", output="pandas")
+
+    gdf["min"] = result
+
+    assert gdf[gdf["name"] == "b"]["min"].item() == 16

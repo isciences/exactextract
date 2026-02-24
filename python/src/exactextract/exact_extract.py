@@ -492,4 +492,11 @@ def exact_extract(
     processor.process()
     writer.finish()
 
-    return writer.features()
+    result = writer.features()
+
+    # for the Pandas -> Pandas case, make the index of the output data frame
+    # match the input (https://github.com/isciences/exactextract/issues/186)
+    if isinstance(vec, GeoPandasFeatureSource) and isinstance(writer, PandasWriter):
+        result.set_index(vec.src.index, inplace=True)
+
+    return result
