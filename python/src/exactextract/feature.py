@@ -213,7 +213,8 @@ class GeoPandasFeatureSource(FeatureSource):
             yield JSONFeature(f)
 
     def srs_wkt(self):
-        return self.src.crs.to_wkt()
+        if self.src.crs:
+            return self.src.crs.to_wkt()
 
 
 class QGISFeature(Feature):
