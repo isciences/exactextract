@@ -45,6 +45,8 @@ class PyWriter : public OutputWriter
 
     void write(const Feature& f) override
     {
+        py::gil_scoped_acquire gil;
+
         // https://github.com/pybind/pybind11/issues/2033#issuecomment-703177186
         py::object dummy = py::cast(f, py::return_value_policy::reference);
         PYBIND11_OVERLOAD_PURE(void, PyWriter, write, f);
