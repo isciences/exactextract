@@ -86,6 +86,8 @@ jobs:
         include:
         - os: ubuntu-latest
           arch: x86_64
+        - os: ubuntu-24.04-arm
+          arch: aarch64
         - os: windows-2025
           arch: x86
           msvc_arch: x86
