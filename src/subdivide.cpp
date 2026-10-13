@@ -61,7 +61,7 @@ main(int argc, char** argv)
         return 1;
     }
 
-    OGRDataSourceH ds_out = GDALCreate(dstDriver, dst.c_str(), 0, 0, 0, GDT_Unknown, nullptr);
+    GDALDatasetH ds_out = GDALCreate(dstDriver, dst.c_str(), 0, 0, 0, GDT_Unknown, nullptr);
 
     OGRLayerH lyr_out = GDALDatasetCreateLayer(ds_out, "out", NULL, wkbMultiPolygon, nullptr);
 
