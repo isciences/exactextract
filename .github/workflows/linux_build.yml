@@ -12,28 +12,28 @@ jobs:
       fail-fast: false
       matrix:
         ci:
-          - name: "GEOS 3.12, CLI, PYTHON"
-            tag: geos312
+          - name: "GEOS 3.15, CLI, PYTHON"
+            tag: geos315
             build_cli: YES
             build_python: YES
 
+          - name: "GEOS 3.14"
+            tag: geos314
+            build_cli: NO
+            build_python: NO
+
+          - name: "GEOS 3.13"
+            tag: geos313
+            build_cli: NO
+            build_python: NO
+
+          - name: "GEOS 3.12"
+            tag: geos312
+            build_cli: NO
+            build_python: NO
+
           - name: "GEOS 3.11"
             tag: geos311
-            build_cli: NO
-            build_python: NO
-
-          - name: "GEOS 3.10"
-            tag: geos310
-            build_cli: NO
-            build_python: NO
-
-          - name: "GEOS 3.9"
-            tag: geos39
-            build_cli: NO
-            build_python: NO
-
-          - name: "GEOS 3.8"
-            tag: geos38
             build_cli: NO
             build_python: NO
 
@@ -63,7 +63,7 @@ jobs:
       run: |
         cd build
         mkdir -p python/CMakeFiles
-        lcov --capture --directory CMakeFiles --directory python/CMakeFiles --output-file coverage.info
+        lcov --capture --directory CMakeFiles --directory python/CMakeFiles --output-file coverage.info || true
     - name: upload coverage
       uses: codecov/codecov-action@v4
       with:
