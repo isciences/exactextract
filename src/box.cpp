@@ -93,9 +93,14 @@ Box::crossing(const Coordinate& c1, const Coordinate& c2) const
             }
         }
     } else {
+        // For downward segments, we calculate constructed coordinates relative to c2, not c1. This is so the
+        // same coordinate will be calculated regardless of the segment orientation. This is important for maintaining
+        // valid polygon coverages (the same segment will be processed with opposite orientation along shared
+        // boundaries)
+
         if (right) {
             // 4th quadrant
-            double y2 = c1.y - m * (xmax - c1.x);
+            const double y2 = c2.y + m * (c2.x - xmax);
 
             if (y2 > ymin) {
                 return Crossing{ Side::RIGHT, xmax, clamp(y2, ymin, ymax) };
@@ -105,12 +110,12 @@ Box::crossing(const Coordinate& c1, const Coordinate& c2) const
             }
         } else {
             // 3rd quadrant
-            double y2 = c1.y - m * (c1.x - xmin);
+            const double y2 = c2.y + m * (xmin - c2.x);
 
             if (y2 > ymin) {
                 return Crossing{ Side::LEFT, xmin, clamp(y2, ymin, ymax) };
             } else {
-                double x2 = c1.x - (c1.y - ymin) / m;
+                double x2 = c2.x + (ymin - c2.y) / m;
                 return Crossing{ Side::BOTTOM, clamp(x2, xmin, xmax), ymin };
             }
         }
