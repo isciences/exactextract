@@ -669,3 +669,20 @@ TEST_CASE("Processing region incorporates overlapping area of all component boxe
 
     CHECK(processing_region(raster_extent, component_boxes) == raster_extent);
 }
+
+TEST_CASE("exactextractr issue 119")
+{
+    auto context = init_geos();
+
+    Grid<bounded_extent> ex({ 0, 0, 10, 10 }, 0.1, 0.1);
+
+    auto g = GEOSGeom_read_r(context, "POLYGON ((0.3 0.3, 4.7 0.3, 2.5 6.2, 0.3 0.3))");
+
+    auto result = raster_cell_intersection(ex, context, g.get());
+    auto tot = std::accumulate(result.begin(), result.end(), 0.0);
+
+    double expected;
+    CHECK(GEOSArea_r(context, g.get(), &expected) == 1);
+
+    CHECK(tot * ex.dx() * ex.dy() == Approx(expected));
+}
