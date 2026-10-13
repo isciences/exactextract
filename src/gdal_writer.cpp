@@ -135,7 +135,7 @@ GDALWriter::write(const Feature& f)
         }
     } else {
         auto defn = OGR_L_GetLayerDefn(m_layer);
-        GDALFeature f_out(defn);
+        GDALFeature f_out(OGR_F_Create(defn));
         f.copy_to(f_out);
         OGRErr err = OGR_L_CreateFeature(m_layer, f_out.raw());
         if (err != OGRERR_NONE) {
