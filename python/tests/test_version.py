@@ -16,7 +16,7 @@ def test_version_consistency():
 
     try:
         mdversion = version("exactextract")
-        if mdversion.endswith("dev0"):
+        if "dev" in mdversion:
             pytest.skip()
     except PackageNotFoundError:
         pytest.skip()
