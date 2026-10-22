@@ -30,9 +30,15 @@ class NumPyRaster : public AbstractRaster<T>
     NumPyRaster(py::array_t<T, py::array::c_style | py::array::forcecast> array,
                 const Grid<bounded_extent>& g)
       : AbstractRaster<T>(g)
-      , m_array(array)
+      , m_array(std::make_unique<py::array_t<T>>(array))
       , m_array_proxy(array.template unchecked<2>())
     {
+    }
+
+    virtual ~NumPyRaster()
+    {
+        py::gil_scoped_acquire gil;
+        m_array.reset();
     }
 
     T operator()(std::size_t row, std::size_t col) const override
@@ -41,7 +47,7 @@ class NumPyRaster : public AbstractRaster<T>
     }
 
   private:
-    py::array_t<T> m_array;
+    std::unique_ptr<py::array_t<T>> m_array;
     Unchecked2DArrayProxy m_array_proxy;
 };
 
@@ -83,6 +89,8 @@ class PyRasterSourceBase : public RasterSource
 
     RasterVariant read_box(const Box& box) override
     {
+        py::gil_scoped_acquire gil;
+
         auto cropped_grid = grid().crop(box);
 
         auto x0 = cropped_grid.col_offset(grid());
@@ -119,6 +127,8 @@ class PyRasterSourceBase : public RasterSource
     const Grid<bounded_extent>& grid() const override
     {
         if (m_grid == nullptr) {
+            py::gil_scoped_acquire gil;
+
             py::sequence grid_ext = extent();
 
             if (grid_ext.size() != 4) {

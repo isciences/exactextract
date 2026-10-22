@@ -31,11 +31,13 @@ class PyFeatureSourceBase : public FeatureSource
 
     std::size_t count() const override
     {
+        py::gil_scoped_acquire gil;
         return py_count().cast<std::size_t>();
     }
 
     bool next() override
     {
+        py::gil_scoped_acquire gil;
         if (!m_initialized) {
             m_it = py_iter();
             m_initialized = true;
@@ -52,6 +54,7 @@ class PyFeatureSourceBase : public FeatureSource
 
     const Feature& feature() const override
     {
+        py::gil_scoped_acquire gil;
         return m_feature.cast<const Feature&>();
     }
 
@@ -59,6 +62,7 @@ class PyFeatureSourceBase : public FeatureSource
 
     virtual py::object py_srs_wkt() const
     {
+        py::gil_scoped_acquire gil;
         return py::none();
     }
 
