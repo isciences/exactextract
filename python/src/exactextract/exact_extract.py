@@ -20,7 +20,7 @@ from .raster import (
     RasterSource,
     XArrayRasterSource,
 )
-from .writer import GDALWriter, JSONWriter, PandasWriter, QGISWriter, Writer
+from .writer import GDALWriter, JSONWriter, PandasWriter, QGISWriter, Writer, XArrayWriter
 
 __all__ = ["exact_extract"]
 
@@ -290,6 +290,8 @@ def prep_writer(output, srs_wkt, options):
         return QGISWriter(srs_wkt=srs_wkt, **options)
     elif output == "gdal":
         return GDALWriter(srs_wkt=srs_wkt, **options)
+    elif output == "xarray":
+        return XArrayWriter(**options)
 
     raise Exception("Unsupported value of output")
 
@@ -423,7 +425,13 @@ def exact_extract(
                            to maintain results for all features in memory at a single time,
                            which may be significant for operations with large result sizes
                            such as ``cell_id``, ``values``, etc.
-       output_options: an optional dictionary of options passed to the :py:class:`writer.JSONWriter`, :py:class:`writer.PandasWriter`, or :py:class:`writer.GDALWriter`.
+                 - "xarray": Writer that returns an :py:class:`xarray.Dataset`, with one or more data variables
+                            for each of the computed statistics. 
+                            Returned dimensions depend on the structure of the input raster: ``(feature)`` for 
+                            single variable and single band raster, ``(feature, band)`` for single variable and 
+                            multi band raster, ``(feature, var)`` for multi variable and single band raster, and 
+                            ``(feature, var, band)`` for multi variable and multi band raster. 
+       output_options: an optional dictionary of options passed to the :py:class:`writer.JSONWriter`, :py:class:`writer.PandasWriter`, :py:class:`writer.GDALWriter`, or :py:class:`writer.XArrayWriter`.
        progress: if `True`, a progress bar will be displayed. Alternatively, a
                  function may be provided that will be called with the completion fraction
                  and a status message.
